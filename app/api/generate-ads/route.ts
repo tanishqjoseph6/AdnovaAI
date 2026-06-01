@@ -3,23 +3,23 @@ import { NextResponse } from "next/server";
 export async function POST() {
   return NextResponse.json({
     hooks: [
-      "Build muscle faster with every scoop",
-      "25g protein. Zero excuses.",
-      "The protein serious athletes trust",
-      "Transform your recovery routine",
-      "Results start with better protein",
+      "Stop wasting money on bad ads",
+      "The easiest way to boost conversions",
+      "Why customers are switching today",
+      "Your competitors don't want you to know this",
+      "Results that speak for themselves"
     ],
     captions: [
-      "Fuel your workouts with premium whey protein designed for serious athletes.",
-      "Recover faster, train harder, and reach your goals sooner.",
-      "No added sugar. Just clean protein and real results.",
+      "Premium quality product designed for maximum performance.",
+      "Trusted by customers who value quality and results.",
+      "Upgrade your experience with a smarter solution."
     ],
     ctas: [
       "Shop Now",
-      "Start Building Muscle",
-      "Try It Today",
+      "Get Yours Today",
+      "Try It Risk Free"
     ],
     ugcScript:
-      "I started using this whey protein a few weeks ago and the difference has been incredible. Recovery is faster, workouts feel stronger, and the chocolate flavor is amazing.",
+      "[HOOK] I wasn't expecting this... [PROBLEM] Nothing else worked. [DEMO] Then I tried this product. [CTA] Check it out today."
   });
 }
