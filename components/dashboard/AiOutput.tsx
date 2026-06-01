@@ -1,3 +1,4 @@
+import CopyButton from "./CopyButton";
 "use client";
 
 type AiOutputProps = {
