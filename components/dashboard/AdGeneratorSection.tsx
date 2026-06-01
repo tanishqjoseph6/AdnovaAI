@@ -61,7 +61,7 @@ export default function AdGeneratorSection({
           <AiOutput
             data={outputData}
             isLoading={isLoading}
-            showCtas={false}
+            
           />
         </div>
       )}
