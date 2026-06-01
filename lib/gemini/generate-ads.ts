@@ -51,19 +51,22 @@ function extractJson(raw: string): string {
 export async function generateAdsWithGemini(
   productDescription: string
 ): Promise<GenerateAdsResponse> {
-  const model = getGeminiClient().getGenerativeModel({
-    model: getGeminiModel(),
-    generationConfig: {
-      temperature: 0.8,
-      topP: 0.95,
-      responseMimeType: "application/json",
-      maxOutputTokens: 1200,
-    },
-  });
-
   const prompt = `${SYSTEM_PROMPT}\n\nProduct description:\n${productDescription}`;
-  const result = await model.generateContent(prompt);
-  const text = result.response.text();
+
+const result = await getGeminiClient().models.generateContent({
+  model: getGeminiModel(),
+  contents: prompt,
+});
+
+    
+    
+  
+  const text = result.text ?? ""; 
+
+
+  
+  
+  
 
   if (!text) {
     throw new Error("Model returned an empty response");
