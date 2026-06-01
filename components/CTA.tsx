@@ -14,7 +14,7 @@ export default function CTA() {
               <span className="gradient-text">actually convert</span>?
             </h2>
             <p className="mx-auto mt-4 max-w-xl text-lg text-zinc-300">
-              Join 12,000+ marketers using AdNova AI to ship creative faster
+              Join 12,000+ marketers using Advora AI to ship creative faster
               and spend smarter.
             </p>
 

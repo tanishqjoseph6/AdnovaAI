@@ -22,7 +22,7 @@ export default function Hero() {
           </h1>
 
           <p className="mx-auto mt-6 max-w-2xl text-lg leading-relaxed text-zinc-400 md:text-xl">
-            AdNova AI turns your product URL into scroll-stopping copy, visuals,
+            Advora AI turns your product URL into scroll-stopping copy, visuals,
             and multi-channel campaigns—optimized by machine learning for every
             platform.
           </p>
@@ -76,7 +76,7 @@ export default function Hero() {
                   <span className="h-3 w-3 rounded-full bg-yellow-500/80" />
                   <span className="h-3 w-3 rounded-full bg-green-500/80" />
                   <span className="ml-4 text-xs text-zinc-500">
-                    adnova.ai/studio
+                    Advora.ai/studio
                   </span>
                 </div>
                 <div className="grid gap-4 p-6 md:grid-cols-2">

@@ -42,7 +42,7 @@ export default function Sidebar({ open, onClose }: SidebarProps) {
             </span>
             <div className="min-w-0">
               <p className="truncate text-sm font-semibold text-white">
-                AdNova<span className="text-cyan-400">AI</span>
+                Advora<span className="text-cyan-400">AI</span>
               </p>
               <p className="truncate text-xs text-zinc-500">Pro workspace</p>
             </div>

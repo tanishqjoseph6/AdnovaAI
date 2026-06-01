@@ -100,7 +100,7 @@ export default function Features() {
             <span className="gradient-text">scale creative</span>
           </h2>
           <p className="mt-4 text-lg text-zinc-400">
-            From solo founders to enterprise marketing teams, AdNova AI
+            From solo founders to enterprise marketing teams, Advora AI
             replaces your entire ad production workflow.
           </p>
         </div>

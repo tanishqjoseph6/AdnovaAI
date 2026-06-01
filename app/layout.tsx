@@ -19,7 +19,7 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "AdNova AI — AI Ad Generator for High-Converting Campaigns",
+  title: "Advora AI — AI Ad Generator for High-Converting Campaigns",
   description:
     "Generate scroll-stopping ad copy, visuals, and multi-channel campaigns in seconds. AI-powered creative for Meta, Google, TikTok, and more.",
 };

@@ -20,7 +20,7 @@ export default function Navbar() {
             A
           </span>
           <span className="text-lg font-semibold tracking-tight text-white">
-            AdNova<span className="text-cyan-400">AI</span>
+            Advora<span className="text-cyan-400">AI</span>
           </span>
         </Link>
 
