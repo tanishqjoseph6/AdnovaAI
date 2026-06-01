@@ -7,5 +7,5 @@ export function getGeminiClient() {
 }
 
 export function getGeminiModel() {
-  return "gemini-2.5-flash";
+  return "gemini-1.5-flash";
 }
