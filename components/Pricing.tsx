@@ -1,7 +1,7 @@
 const plans = [
   {
     name: "Starter",
-    price: "29",
+    price: "9",
     description: "For founders and small teams testing paid channels.",
     features: [
       "50 ad generations / month",
@@ -9,12 +9,12 @@ const plans = [
       "Meta & Google export",
       "Email support",
     ],
-    cta: "Start free trial",
+    cta: "Start Now",
     highlighted: false,
   },
   {
     name: "Pro",
-    price: "99",
+    price: "29",
     description: "For growth teams scaling creative across channels.",
     features: [
       "500 ad generations / month",
@@ -24,12 +24,12 @@ const plans = [
       "Performance scoring",
       "Priority support",
     ],
-    cta: "Start free trial",
+    cta: "Upgrade to Pro",
     highlighted: true,
   },
   {
-    name: "Enterprise",
-    price: "Custom",
+    name: "Agency",
+    price: "99",
     description: "For agencies and brands with advanced compliance needs.",
     features: [
       "Unlimited generations",
