@@ -43,6 +43,9 @@ export default function AdGeneratorSection({
     state.status === "success"
       ? state.data
       : emptyOutput;
+    
+      console.log("STATE:", state)
+      console.log("OUTPUT DATA:", outputData)
 
   const formError = state.status === "error" ? state.message : null;
 

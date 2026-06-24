@@ -111,7 +111,7 @@ export default function DashboardPage() {
         />
         <StatCard
           label="Credits remaining"
-          value="342"
+          value="100"
           change="-32"
           positive={false}
           accent="emerald"

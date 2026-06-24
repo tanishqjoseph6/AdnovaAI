@@ -31,7 +31,7 @@ export default function Footer() {
                 A
               </span>
               <span className="text-lg font-semibold text-white">
-                AdNova<span className="text-cyan-400">AI</span>
+                Advora<span className="text-cyan-400">AI</span>
               </span>
             </Link>
             <p className="mt-4 max-w-sm text-sm leading-relaxed text-zinc-500">
@@ -73,7 +73,7 @@ export default function Footer() {
 
         <div className="mt-12 flex flex-col items-center justify-between gap-4 border-t border-white/5 pt-8 md:flex-row">
           <p className="text-sm text-zinc-600">
-            © {new Date().getFullYear()} AdNova AI. All rights reserved.
+            © {new Date().getFullYear()} Advora AI. All rights reserved.
           </p>
           <p className="text-sm text-zinc-600">
             Built with Next.js & Tailwind CSS

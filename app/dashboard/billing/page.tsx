@@ -1,94 +1,159 @@
 import DashboardShell from "@/components/dashboard/DashboardShell";
 
-const invoices = [
-  { date: "May 26, 2026", amount: "$99.00", status: "Paid" },
-  { date: "Apr 26, 2026", amount: "$99.00", status: "Paid" },
-  { date: "Mar 26, 2026", amount: "$99.00", status: "Paid" },
-];
-
 export default function BillingPage() {
   return (
     <DashboardShell
       title="Billing"
-      subtitle="Manage your plan, payment method, and invoices"
+      subtitle="Manage your AdvoraAI subscription"
     >
-      <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
-        <section className="gradient-border min-w-0 rounded-2xl bg-[#0a0618] p-5 sm:p-6">
-          <div className="flex flex-wrap items-start justify-between gap-3">
-            <div className="min-w-0">
-              <p className="text-sm text-zinc-500">Current plan</p>
-              <h2 className="mt-1 text-2xl font-bold text-white">Pro</h2>
+      <div className="space-y-6">
+        {/* Current Plan */}
+        <section className="gradient-border rounded-2xl bg-[#0a0618] p-6">
+          <div className="flex items-center justify-between">
+            <div>
+              <p className="text-sm text-zinc-500">Current Plan</p>
+              <h2 className="mt-1 text-2xl font-bold text-white">
+                Starter ⭐
+              </h2>
               <p className="mt-2 text-sm text-zinc-400">
-                $99/month · Renews Jun 26, 2026
+                ₹999/month
               </p>
             </div>
-            <span className="shrink-0 rounded-full bg-gradient-to-r from-cyan-500/20 to-violet-500/20 px-3 py-1 text-xs font-medium text-cyan-300">
+
+            <span className="rounded-full bg-green-500/20 px-3 py-1 text-xs font-medium text-green-300">
               Active
             </span>
           </div>
+
           <div className="mt-6 space-y-2 text-sm text-zinc-400">
-            <p>500 ad generations / month</p>
-            <p>Unlimited brand profiles</p>
-            <p>All platform exports + AI studio</p>
+            <p>✅ 100 Ad Hooks / month</p>
+            <p>✅ 100 Captions / month</p>
+            <p>✅ 50 UGC Scripts / month</p>
           </div>
-          <button
-            type="button"
-            className="mt-6 w-full rounded-xl border border-white/15 bg-white/5 py-2.5 text-sm font-medium text-white transition hover:bg-white/10"
-          >
-            Change plan
-          </button>
+
+          <div className="mt-6 space-y-3">
+            <a
+              href="https://rzp.io/rzp/J1D9Wo2"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="block w-full rounded-xl bg-blue-600 py-3 text-center font-medium text-white hover:bg-blue-700"
+            >
+              Upgrade to Starter 🚀 ₹999
+            </a>
+
+            <a
+              href="https://rzp.io/rzp/b3jiN5f"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="block w-full rounded-xl bg-purple-600 py-3 text-center font-medium text-white hover:bg-purple-700"
+            >
+              Upgrade to Pro 👑 ₹2999
+            </a>
+          </div>
         </section>
 
-        <section className="glass min-w-0 rounded-2xl p-5 sm:p-6">
-          <h3 className="font-semibold text-white">Payment method</h3>
-          <div className="mt-4 flex flex-wrap items-center gap-4 rounded-xl border border-white/[0.06] bg-white/[0.02] p-4">
-            <div className="flex h-10 w-14 shrink-0 items-center justify-center rounded-lg bg-gradient-to-br from-violet-600 to-indigo-600 text-xs font-bold text-white">
-              VISA
+        {/* Pricing Cards */}
+        <section className="glass rounded-2xl p-6">
+          <h3 className="text-2xl font-bold text-white">
+            Available Plans
+          </h3>
+
+          <div className="mt-6 grid gap-6 md:grid-cols-3">
+            {/* Starter */}
+            <div className="rounded-2xl border border-cyan-500/20 bg-cyan-500/5 p-6 transition-all duration-300 hover:border-cyan-400 hover:shadow-lg hover:shadow-cyan-500/20">
+            🚀 Starter
+            <span className="inline-block rounded-full bg-cyan-500/20 px-3 py-1 text-xs font-bold text-cyan-300">
+                 BEST FOR BEGINNERS
+               </span>
+
+              <p className="mt-3 text-5xl font-bold text-cyan-300">
+                ₹999
+              </p>
+
+              <p className="text-zinc-400">per month</p>
+
+              <ul className="mt-6 space-y-2 text-zinc-300">
+                <li>✅ 100 Ad Hooks</li>
+                <li>✅ 100 Captions</li>
+                <li>✅ 50 UGC Scripts</li>
+              </ul>
+
+              <a
+                href="https://rzp.io/rzp/J1D9Wo2"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="mt-6 block rounded-xl bg-cyan-500 py-3 text-center font-semibold text-white hover:bg-cyan-600"
+              >
+                Get Starter
+              </a>
             </div>
-            <div className="min-w-0">
-              <p className="text-sm font-medium text-white">•••• •••• •••• 4242</p>
-              <p className="text-xs text-zinc-500">Expires 08/28</p>
+
+            {/* Pro */}
+            <div className="relative scale-105 rounded-3xl border-2 border-violet-400 bg-gradient-to-b from-violet-500/20 to-pink-500/10 p-6 shadow-2xl shadow-violet-500/40">
+            <span className="inline-block rounded-full bg-gradient-to-r from-yellow-400 to-orange-500 px-4 py-1 text-xs font-bold text-black shadow-lg">
+              🔥 MOST POPULAR
+                </span>
+
+              <h3 className="mt-4 text-xl font-bold text-white">
+                👑 Pro
+              </h3>
+
+              <p className="mt-3 text-4xl font-bold text-white">
+                ₹2999
+              </p>
+
+              <p className="text-zinc-400">per month</p>
+
+              <ul className="mt-6 space-y-2 text-zinc-300">
+                <li>✅ Unlimited Ad Hooks</li>
+                <li>✅ Unlimited Captions</li>
+                <li>✅ Unlimited UGC Scripts</li>
+                <li>✅ Priority Support</li>
+              </ul>
+
+              <a
+                href="https://rzp.io/rzp/b3jiN5f"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="mt-6 block rounded-xl bg-gradient-to-r from-violet-500 to-pink-500 py-3 text-center font-semibold text-white"
+              >
+                Upgrade to Pro
+              </a>
+            </div>
+
+            {/* Pro Plus */}
+            <div className="rounded-2xl border border-white/10 bg-white/5 p-6">
+              <h3 className="text-xl font-bold text-white">
+                💎 Pro Plus
+              </h3>
+
+              <p className="mt-3 text-4xl font-bold text-white">
+                Custom
+              </p>
+
+              <p className="text-zinc-400">Contact Sales</p>
+
+              <p className="text-xs text-cyan-400 mt-2">
+               Best for agencies and growing brands
+               </p>
+               
+              <ul className="mt-6 space-y-2 text-zinc-300">
+                <li>✅ Everything in Pro</li>
+                <li>✅ Dedicated Support</li>
+                <li>✅ Team Access</li>
+                <li>✅ Custom Features</li>
+              </ul>
+
+              <a
+                href="mailto:hello@advoraai.com"
+                className="mt-6 block w-full rounded-xl border border-cyan-500/30 py-3 text-center font-semibold text-white hover:bg-cyan-500/10"
+>
+            💎 Contact Sales (Coming Soon)
+              </a>
             </div>
           </div>
-          <button
-            type="button"
-            className="mt-4 text-sm font-medium text-cyan-400 hover:text-cyan-300"
-          >
-            Update payment method
-          </button>
         </section>
       </div>
-
-      <section className="glass mt-6 overflow-hidden rounded-2xl">
-        <div className="border-b border-white/[0.06] px-4 py-4 sm:px-6">
-          <h3 className="font-semibold text-white">Invoice history</h3>
-        </div>
-        <ul className="divide-y divide-white/[0.04]">
-          {invoices.map((invoice) => (
-            <li
-              key={invoice.date}
-              className="flex flex-col gap-3 px-4 py-4 sm:flex-row sm:items-center sm:justify-between sm:px-6"
-            >
-              <div className="min-w-0">
-                <p className="text-sm font-medium text-white">{invoice.date}</p>
-                <p className="text-xs text-zinc-500">Pro plan — monthly</p>
-              </div>
-              <div className="flex flex-wrap items-center gap-3 sm:gap-4">
-                <span className="text-sm text-zinc-300">{invoice.amount}</span>
-                <span className="rounded-full bg-emerald-500/10 px-2.5 py-0.5 text-xs text-emerald-400">
-                  {invoice.status}
-                </span>
-                <button
-                  type="button"
-                  className="text-sm font-medium text-cyan-400 hover:text-cyan-300"
-                >
-                  Download
-                </button>
-              </div>
-            </li>
-          ))}
-        </ul>
-      </section>
     </DashboardShell>
   );
 }
