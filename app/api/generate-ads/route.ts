@@ -1,4 +1,9 @@
 import { NextResponse } from "next/server";
+import {
+  ensureUserProfile,
+  incrementGenerationsUsedAtomically,
+  isGenerationLimitReached,
+} from "@/lib/subscription";
 import { createClient } from "@/lib/supabase/server";
 import OpenAI from "openai";
 
@@ -8,6 +13,16 @@ const openai = new OpenAI({
 
 export async function POST(req: Request) {
   try {
+    const supabase = await createClient();
+    const {
+      data: { user },
+      error: authError,
+    } = await supabase.auth.getUser();
+
+    if (authError || !user) {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    }
+
     const { productDescription } = await req.json();
 
     if (!productDescription) {
@@ -16,6 +31,15 @@ export async function POST(req: Request) {
           error: "Product description is required",
         },
         { status: 400 }
+      );
+    }
+
+    const subscription = await ensureUserProfile(user.id, user.email, supabase);
+
+    if (isGenerationLimitReached(subscription)) {
+      return NextResponse.json(
+        { error: "Generation limit reached. Upgrade your plan." },
+        { status: 403 }
       );
     }
 
@@ -67,8 +91,7 @@ Return ONLY valid JSON in this format:
       ],
     });
 
-    const content =
-      response.choices[0].message.content || "{}";
+    const content = response.choices[0].message.content || "{}";
 
     const parsed = JSON.parse(content) as Record<string, unknown>;
 
@@ -77,9 +100,16 @@ Return ONLY valid JSON in this format:
     const ctas = (parsed.ctas ?? []) as string[];
     const ugcScript = (parsed.ugcScript ?? parsed.ugc_script ?? "") as string;
 
-    const supabase = await createClient();
+    const incremented = await incrementGenerationsUsedAtomically(user.id);
+    if (!incremented) {
+      return NextResponse.json(
+        { error: "Generation limit reached. Upgrade your plan." },
+        { status: 403 }
+      );
+    }
+
     const { error: insertError } = await supabase.from("generations").insert({
-      user_email: "tanishq",
+      user_email: user.email ?? user.id,
       product_description: productDescription,
       hooks,
       captions,

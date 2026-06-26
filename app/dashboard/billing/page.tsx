@@ -1,7 +1,11 @@
 import DashboardShell from "@/components/dashboard/DashboardShell";
 import BillingPlanButton from "@/components/dashboard/BillingPlanButton";
 import { getPlan, PLANS } from "@/lib/billing/plans";
-import { getUserSubscription, isSubscriptionActive } from "@/lib/subscription";
+import {
+  ensureUserProfile,
+  getUserSubscription,
+  isSubscriptionActive,
+} from "@/lib/subscription";
 import { createClient } from "@/lib/supabase/server";
 
 type BillingPageProps = {
@@ -57,7 +61,9 @@ export default async function BillingPage({ searchParams }: BillingPageProps) {
   } = await supabase.auth.getUser();
 
   const subscription = user
-    ? await getUserSubscription(user.id)
+    ? await ensureUserProfile(user.id, user.email, supabase).then(() =>
+        getUserSubscription(user.id)
+      )
     : {
         plan: "free" as const,
         payment_id: null,
