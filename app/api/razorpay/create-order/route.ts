@@ -3,6 +3,13 @@ import { isPaidPlan, PLANS } from "@/lib/billing/plans";
 import { createPlanOrder } from "@/lib/razorpay";
 import { createClient } from "@/lib/supabase/server";
 
+/**
+ * POST /api/razorpay/create-order
+ *
+ * Step 1 of checkout: create a Razorpay order server-side with plan amount
+ * and user metadata in notes. Test Mode and Live Mode use the same code path;
+ * only RAZORPAY_KEY_ID / RAZORPAY_KEY_SECRET differ per environment.
+ */
 export async function POST(request: Request) {
   try {
     const supabase = await createClient();
@@ -35,6 +42,11 @@ export async function POST(request: Request) {
       prefill: {
         email: user.email ?? "",
         name: user.user_metadata?.full_name ?? "",
+        contact:
+          user.phone ??
+          (typeof user.user_metadata?.phone === "string"
+            ? user.user_metadata.phone
+            : ""),
       },
     });
   } catch (error) {

@@ -1,9 +1,10 @@
 import { NextResponse } from "next/server";
+import { CREDITS_ERROR_CODE } from "@/lib/credits/constants";
 import {
-  ensureUserProfile,
-  incrementGenerationsUsedAtomically,
-  isGenerationLimitReached,
-} from "@/lib/subscription";
+  canUseCredits,
+  deductUserCredit,
+  getUserCreditsForUser,
+} from "@/lib/credits/server";
 import { createClient } from "@/lib/supabase/server";
 import OpenAI from "openai";
 
@@ -34,11 +35,14 @@ export async function POST(req: Request) {
       );
     }
 
-    const subscription = await ensureUserProfile(user.id, user.email, supabase);
+    const userCredits = await getUserCreditsForUser(user.id, supabase);
 
-    if (isGenerationLimitReached(subscription)) {
+    if (!canUseCredits(userCredits)) {
       return NextResponse.json(
-        { error: "Generation limit reached. Upgrade your plan." },
+        {
+          error: "No credits remaining. Upgrade to Pro for unlimited generations.",
+          code: CREDITS_ERROR_CODE,
+        },
         { status: 403 }
       );
     }
@@ -100,12 +104,21 @@ Return ONLY valid JSON in this format:
     const ctas = (parsed.ctas ?? []) as string[];
     const ugcScript = (parsed.ugcScript ?? parsed.ugc_script ?? "") as string;
 
-    const incremented = await incrementGenerationsUsedAtomically(user.id);
-    if (!incremented) {
-      return NextResponse.json(
-        { error: "Generation limit reached. Upgrade your plan." },
-        { status: 403 }
-      );
+    let remainingCredits: number | null = null;
+
+    if (!userCredits.unlimited) {
+      const deduction = await deductUserCredit(user.id);
+      if (deduction.insufficient) {
+        return NextResponse.json(
+          {
+            error:
+              "No credits remaining. Upgrade to Pro for unlimited generations.",
+            code: CREDITS_ERROR_CODE,
+          },
+          { status: 403 }
+        );
+      }
+      remainingCredits = deduction.credits;
     }
 
     const { error: insertError } = await supabase.from("generations").insert({
@@ -126,6 +139,8 @@ Return ONLY valid JSON in this format:
       captions,
       ctas,
       ugcScript,
+      credits: remainingCredits,
+      unlimited: userCredits.unlimited,
     });
   } catch (error) {
     console.error("OpenAI Error:", error);

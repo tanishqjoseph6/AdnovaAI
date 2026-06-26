@@ -1,7 +1,10 @@
 "use client";
 
-import { useRef } from "react";
+import { useRef, useState } from "react";
 import { useAdGenerator } from "@/hooks/useAdGenerator";
+import { useCredits } from "@/hooks/useCredits";
+import { CREDITS_ERROR_CODE } from "@/lib/credits/constants";
+import UpgradeModal from "@/components/credits/UpgradeModal";
 import ProductUpload from "./ProductUpload";
 import AiOutput from "./AiOutput";
 
@@ -20,8 +23,17 @@ export default function AdGeneratorSection({
   compact = false,
 }: AdGeneratorSectionProps) {
   const outputRef = useRef<HTMLDivElement>(null);
+  const [upgradeOpen, setUpgradeOpen] = useState(false);
+  const { refresh, optimisticDecrement } = useCredits();
+
   const { state, generate, clearError, reset, isLoading, hasOutput, outputData } =
-    useAdGenerator();
+    useAdGenerator({
+      onSuccess: () => {
+        optimisticDecrement();
+        void refresh();
+      },
+      onNoCredits: () => setUpgradeOpen(true),
+    });
 
   const handleGenerate = async ({
     productDescription,
@@ -37,11 +49,13 @@ export default function AdGeneratorSection({
         });
       });
     } catch {
-      // Error state handled in useAdGenerator; ProductUpload shows message via prop
+      // Error state handled in useAdGenerator
     }
   };
 
   const formError = state.status === "error" ? state.message : null;
+  const isNoCredits =
+    state.status === "error" && state.code === CREDITS_ERROR_CODE;
 
   return (
     <div className="w-full min-w-0">
@@ -49,7 +63,7 @@ export default function AdGeneratorSection({
         compact={compact}
         onGenerate={handleGenerate}
         isGenerating={isLoading}
-        externalError={formError}
+        externalError={isNoCredits ? null : formError}
         onClearError={clearError}
       />
 
@@ -62,7 +76,7 @@ export default function AdGeneratorSection({
         </div>
       )}
 
-      {state.status === "error" && !hasOutput && (
+      {state.status === "error" && !hasOutput && !isNoCredits && (
         <div
           role="alert"
           className="mt-6 rounded-2xl border border-red-500/20 bg-red-500/10 p-5"
@@ -78,6 +92,8 @@ export default function AdGeneratorSection({
           </button>
         </div>
       )}
+
+      <UpgradeModal open={upgradeOpen} onClose={() => setUpgradeOpen(false)} />
     </div>
   );
 }

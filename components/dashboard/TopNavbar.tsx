@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import CreditBadge from "@/components/credits/CreditBadge";
 
 type TopNavbarProps = {
   title: string;
@@ -75,6 +76,8 @@ export default function TopNavbar({
             </svg>
             <span className="absolute right-2 top-2 h-2 w-2 rounded-full bg-cyan-400 ring-2 ring-[#030014]" />
           </button>
+
+          <CreditBadge />
 
           <Link
             href="/dashboard/generate"

@@ -1,7 +1,10 @@
+import { CREDITS_ERROR_CODE } from "@/lib/credits/constants";
 import type { GenerateAdsResponse } from "@/lib/validations/generate-ads";
+import { ApiClientError } from "@/lib/api/credits-client";
 
 type ApiErrorPayload = {
   error: string;
+  code?: string;
   details?: unknown;
 };
 
@@ -13,6 +16,8 @@ type RawGenerateAdsPayload = {
   ctas?: string[];
   ugcScript?: string;
   ugc_script?: string;
+  credits?: number | null;
+  unlimited?: boolean;
 };
 
 function normalizeGenerateAdsResponse(
@@ -25,6 +30,9 @@ function normalizeGenerateAdsResponse(
     ugcScript: payload.ugcScript ?? payload.ugc_script ?? "",
   };
 }
+
+export { isNoCreditsError } from "@/lib/api/credits-client";
+export { CREDITS_ERROR_CODE } from "@/lib/credits/constants";
 
 export async function fetchGeneratedAds(
   productDescription: string
@@ -40,7 +48,10 @@ export async function fetchGeneratedAds(
   try {
     payload = await response.json();
   } catch {
-    throw new Error("Server returned an invalid response. Please try again.");
+    throw new ApiClientError(
+      "Server returned an invalid response. Please try again.",
+      0
+    );
   }
 
   if (!response.ok) {
@@ -48,7 +59,16 @@ export async function fetchGeneratedAds(
       "error" in payload && typeof payload.error === "string"
         ? payload.error
         : "Failed to generate ads";
-    throw new Error(message);
+    const code =
+      "code" in payload && typeof payload.code === "string"
+        ? payload.code
+        : undefined;
+
+    if (response.status === 401) {
+      throw new ApiClientError("Session expired. Please log in again.", 401);
+    }
+
+    throw new ApiClientError(message, response.status, code);
   }
 
   return normalizeGenerateAdsResponse(payload as RawGenerateAdsPayload);

@@ -11,6 +11,14 @@ function requireEnv(name: string): string {
   return value;
 }
 
+function secureCompare(a: string, b: string): boolean {
+  if (a.length !== b.length) {
+    return false;
+  }
+
+  return crypto.timingSafeEqual(Buffer.from(a), Buffer.from(b));
+}
+
 export function getRazorpayKeyId(): string {
   return requireEnv("RAZORPAY_KEY_ID");
 }
@@ -39,7 +47,7 @@ export function verifyPaymentSignature(
     .update(`${orderId}|${paymentId}`)
     .digest("hex");
 
-  return expected === signature;
+  return secureCompare(expected, signature);
 }
 
 export function verifyWebhookSignature(rawBody: string, signature: string): boolean {
@@ -53,7 +61,7 @@ export function verifyWebhookSignature(rawBody: string, signature: string): bool
     .update(rawBody)
     .digest("hex");
 
-  return expected === signature;
+  return secureCompare(expected, signature);
 }
 
 export async function createPlanOrder(

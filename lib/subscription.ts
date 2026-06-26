@@ -1,5 +1,6 @@
-import type { PlanId, SubscriptionStatus } from "@/lib/billing/plans";
+import type { PlanId, SubscriptionStatus, PaidPlanId } from "@/lib/billing/plans";
 import { PLANS } from "@/lib/billing/plans";
+import { syncCreditsWithProfilePlan } from "@/lib/credits/server";
 import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import type { SupabaseClient } from "@supabase/supabase-js";
@@ -235,41 +236,104 @@ export function isSubscriptionActive(subscription: UserSubscription): boolean {
   );
 }
 
-type ActivateSubscriptionInput = {
-  userId: string;
-  email?: string | null;
+export type SubscriptionActivationResult = {
+  activated: boolean;
+  alreadyProcessed: boolean;
   plan: PlanId;
-  paymentId: string;
+  userId: string;
+  purchaseDate: string;
 };
 
-export async function activateSubscription({
+type ActivationRpcResult = {
+  activated: boolean;
+  already_processed: boolean;
+  plan: string;
+  user_id: string;
+};
+
+function parseActivationResult(
+  data: ActivationRpcResult,
+  purchaseDate: string
+): SubscriptionActivationResult {
+  return {
+    activated: Boolean(data.activated),
+    alreadyProcessed: Boolean(data.already_processed),
+    plan:
+      typeof data.plan === "string" && data.plan in PLANS
+        ? (data.plan as PlanId)
+        : "free",
+    userId: data.user_id,
+    purchaseDate,
+  };
+}
+
+export type ActivateSubscriptionInput = {
+  userId: string;
+  email?: string | null;
+  plan: PaidPlanId;
+  paymentId: string;
+  orderId: string;
+  purchaseDate?: string;
+};
+
+/**
+ * Upgrades a user profile after Razorpay payment verification.
+ *
+ * All writes run inside the Postgres function `activate_subscription_from_payment`
+ * (row lock + idempotency on payment_id / razorpay_order_id) so duplicate
+ * checkout callbacks and webhooks cannot double-apply a subscription.
+ *
+ * `payment_id` column stores the Razorpay payment id (pay_xxx).
+ */
+export async function activateSubscriptionFromPayment({
   userId,
   email,
   plan,
   paymentId,
-}: ActivateSubscriptionInput) {
+  orderId,
+  purchaseDate = new Date().toISOString(),
+}: ActivateSubscriptionInput): Promise<SubscriptionActivationResult> {
   const admin = createAdminClient();
-  const purchaseDate = new Date().toISOString();
 
-  const { error } = await admin.from("profiles").upsert(
-    {
-      id: userId,
-      email: email ?? null,
-      plan,
-      payment_id: paymentId,
-      subscription_status: "active",
-      purchase_date: purchaseDate,
-      generations_used: 0,
-      updated_at: purchaseDate,
-    },
-    { onConflict: "id" }
-  );
+  const { data, error } = await admin.rpc("activate_subscription_from_payment", {
+    p_user_id: userId,
+    p_email: email ?? null,
+    p_plan: plan,
+    p_payment_id: paymentId,
+    p_order_id: orderId,
+    p_purchase_date: purchaseDate,
+  });
 
   if (error) {
     throw error;
   }
 
-  return purchaseDate;
+  if (!data || typeof data !== "object") {
+    throw new Error("Invalid activation response from database");
+  }
+
+  await syncCreditsWithProfilePlan(userId, plan, "active");
+
+  return parseActivationResult(data as ActivationRpcResult, purchaseDate);
+}
+
+/** @deprecated Use activateSubscriptionFromPayment */
+export async function activateSubscription({
+  userId,
+  email,
+  plan,
+  paymentId,
+  orderId,
+}: ActivateSubscriptionInput) {
+  const result = await activateSubscriptionFromPayment({
+    userId,
+    email,
+    plan,
+    paymentId,
+    orderId,
+  });
+
+  return result.purchaseDate;
 }
 
 export async function hasProcessedPayment(paymentId: string): Promise<boolean> {
@@ -281,8 +345,7 @@ export async function hasProcessedPayment(paymentId: string): Promise<boolean> {
     .maybeSingle();
 
   if (error) {
-    console.error("Failed to check payment idempotency:", error);
-    return false;
+    throw error;
   }
 
   return Boolean(data);

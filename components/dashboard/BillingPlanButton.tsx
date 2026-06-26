@@ -3,7 +3,7 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import type { PaidPlanId } from "@/lib/billing/plans";
-import { MERCHANT_NAME } from "@/lib/billing/plans";
+import { createRazorpayCheckoutOptions } from "@/lib/razorpay/checkout-options";
 
 type RazorpaySuccessResponse = {
   razorpay_order_id: string;
@@ -105,59 +105,55 @@ export default function BillingPlanButton({
         throw new Error("Razorpay checkout failed to load.");
       }
 
-      const razorpay = new window.Razorpay({
-        key: orderPayload.keyId,
-        amount: orderPayload.amount,
-        currency: orderPayload.currency,
-        name: MERCHANT_NAME,
-        description: `${orderPayload.planName} plan — useadvora.com`,
-        order_id: orderPayload.orderId,
-        prefill: orderPayload.prefill,
-        theme: { color: "#7c3aed" },
-        handler: async (response: RazorpaySuccessResponse) => {
-          try {
-            const verifyResponse = await fetch("/api/razorpay/verify", {
-              method: "POST",
-              headers: { "Content-Type": "application/json" },
-              body: JSON.stringify({
-                plan,
-                razorpay_order_id: response.razorpay_order_id,
-                razorpay_payment_id: response.razorpay_payment_id,
-                razorpay_signature: response.razorpay_signature,
-              }),
-            });
+      const razorpay = new window.Razorpay(
+        createRazorpayCheckoutOptions({
+          keyId: orderPayload.keyId,
+          orderId: orderPayload.orderId,
+          planName: orderPayload.planName,
+          prefill: orderPayload.prefill,
+          handler: async (response: RazorpaySuccessResponse) => {
+            try {
+              const verifyResponse = await fetch("/api/razorpay/verify", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({
+                  plan,
+                  razorpay_order_id: response.razorpay_order_id,
+                  razorpay_payment_id: response.razorpay_payment_id,
+                  razorpay_signature: response.razorpay_signature,
+                }),
+              });
 
-            const verifyPayload = await verifyResponse.json();
+              const verifyPayload = await verifyResponse.json();
 
-            if (!verifyResponse.ok) {
-              throw new Error(
-                verifyPayload.error ??
-                  "Payment verification failed. Please contact support."
+              if (!verifyResponse.ok) {
+                throw new Error(
+                  verifyPayload.error ??
+                    "Payment verification failed. Please contact support."
+                );
+              }
+
+              router.refresh();
+              router.push("/dashboard/billing?payment=success");
+            } catch (error) {
+              const message =
+                error instanceof Error
+                  ? error.message
+                  : "Payment verification failed.";
+              onError?.(message);
+              router.push(
+                `/dashboard/billing?payment=error&message=${encodeURIComponent(message)}`
               );
             }
-
-            router.refresh();
-            router.push("/dashboard/billing?payment=success");
-          } catch (error) {
-            const message =
-              error instanceof Error
-                ? error.message
-                : "Payment verification failed.";
-            onError?.(message);
-            router.push(
-              `/dashboard/billing?payment=error&message=${encodeURIComponent(message)}`
-            );
-          }
-        },
-        modal: {
-          ondismiss: () => {
+          },
+          onDismiss: () => {
             onError?.("Payment was cancelled. You can try again anytime.");
             router.push(
               "/dashboard/billing?payment=cancelled&message=Payment%20was%20cancelled"
             );
           },
-        },
-      });
+        })
+      );
 
       razorpay.open();
     } catch (error) {

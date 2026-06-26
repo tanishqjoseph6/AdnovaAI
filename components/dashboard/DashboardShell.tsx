@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useState, startTransition } from "react";
 import { usePathname } from "next/navigation";
+import { CreditsProvider } from "@/hooks/useCredits";
 import Sidebar from "./Sidebar";
 import TopNavbar from "./TopNavbar";
 
@@ -43,7 +44,8 @@ export default function DashboardShell({
   }, [sidebarOpen, closeSidebar]);
 
   return (
-    <div className="flex min-h-screen min-h-[100dvh] bg-[#030014] text-zinc-100">
+    <CreditsProvider>
+      <div className="flex min-h-screen min-h-[100dvh] bg-[#030014] text-zinc-100">
       <div className="pointer-events-none fixed inset-0 overflow-hidden">
         <div className="absolute -left-32 top-0 h-96 w-96 rounded-full bg-cyan-600/10 blur-[100px]" />
         <div className="absolute -right-32 top-1/3 h-96 w-96 rounded-full bg-violet-600/10 blur-[100px]" />
@@ -63,6 +65,7 @@ export default function DashboardShell({
           <div className="mx-auto w-full max-w-7xl">{children}</div>
         </main>
       </div>
-    </div>
+      </div>
+    </CreditsProvider>
   );
 }
