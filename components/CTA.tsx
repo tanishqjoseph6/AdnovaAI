@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { FREE_PLAN_CREDITS } from "@/lib/credits/constants";
 
 export default function CTA() {
   return (
@@ -17,7 +18,7 @@ export default function CTA() {
             </h2>
             <p className="mx-auto mt-4 max-w-xl text-base leading-relaxed text-zinc-300 sm:text-lg">
               Join thousands of marketers shipping scroll-stopping creative with
-              Advora AI. 5 free credits to get started — no card required.
+              Advora AI. {FREE_PLAN_CREDITS} free credits to get started — no card required.
             </p>
 
             <div className="mt-8 flex flex-col items-center justify-center gap-4 sm:flex-row">

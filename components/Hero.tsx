@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { motion } from "framer-motion";
+import { FREE_PLAN_CREDITS } from "@/lib/credits/constants";
 
 function FloatingChip({
   children,
@@ -29,6 +30,8 @@ function FloatingChip({
 }
 
 export default function Hero() {
+  const demoCreditsRemaining = Math.max(1, FREE_PLAN_CREDITS - 2);
+
   return (
     <section className="relative overflow-hidden pt-28 pb-16 md:pt-36 md:pb-24">
       <div className="pointer-events-none absolute inset-0 grid-bg" />
@@ -105,7 +108,7 @@ export default function Hero() {
           </motion.div>
 
           <p className="mt-5 text-sm text-zinc-500">
-            5 free credits · No credit card required
+            {FREE_PLAN_CREDITS} free credits · No credit card required
           </p>
         </div>
 
@@ -123,7 +126,7 @@ export default function Hero() {
             📈 4.8% avg CTR
           </FloatingChip>
           <FloatingChip className="bottom-12 -left-4" delay={1}>
-            💳 3 credits left
+            💳 {demoCreditsRemaining} credits left
           </FloatingChip>
           <FloatingChip className="right-0 bottom-20" delay={1.5}>
             ⚡ Generated in 28s
@@ -152,7 +155,7 @@ export default function Hero() {
                     <div className="mt-4 grid grid-cols-2 gap-3 sm:grid-cols-4">
                       {[
                         { label: "Plan", value: "Free" },
-                        { label: "Credits", value: "5" },
+                        { label: "Credits", value: String(FREE_PLAN_CREDITS) },
                         { label: "This month", value: "12" },
                         { label: "Success", value: "100%" },
                       ].map((stat) => (

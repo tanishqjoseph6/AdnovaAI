@@ -1,7 +1,7 @@
+import { FREE_PLAN_CREDITS, STARTER_PLAN_CREDITS } from "@/lib/credits/constants";
 import {
-  FREE_PLAN_CREDITS,
-  STARTER_PLAN_CREDITS,
-} from "@/lib/credits/constants";
+  resolveMaxCreditsForProfile,
+} from "@/lib/credits/plan-config";
 import type {
   CreditsPlan,
   DeductCreditResult,
@@ -24,19 +24,6 @@ function isUnlimitedPlan(plan: CreditsPlan): boolean {
   return plan === "pro";
 }
 
-function resolveMaxCredits(
-  creditsPlan: CreditsPlan,
-  profilesPlan?: PlanId
-): number | null {
-  if (isUnlimitedPlan(creditsPlan)) {
-    return null;
-  }
-  if (profilesPlan === "starter") {
-    return STARTER_PLAN_CREDITS;
-  }
-  return FREE_PLAN_CREDITS;
-}
-
 function normalizeCreditsRow(
   row: Record<string, unknown> | null,
   profilesPlan?: PlanId
@@ -52,7 +39,7 @@ function normalizeCreditsRow(
     credits,
     plan,
     unlimited,
-    maxCredits: resolveMaxCredits(plan, profilesPlan),
+    maxCredits: resolveMaxCreditsForProfile(plan, profilesPlan),
     updatedAt:
       typeof row?.updated_at === "string"
         ? row.updated_at
@@ -169,37 +156,75 @@ export async function getUserCredits(
   return normalizeCreditsRow(data, profilesPlan);
 }
 
-export async function getUserCreditsForUser(
+async function readBillingProfile(
   userId: string,
   supabase?: SupabaseClient
-): Promise<UserCredits> {
-  let profilesPlan: PlanId | undefined;
-
-  if (hasAdminCredentials()) {
-    const admin = createAdminClient();
-    const { data: profile, error: profileError } = await admin
+): Promise<{ plan: PlanId; subscriptionStatus: string } | null> {
+  if (supabase) {
+    const { data: profile, error } = await supabase
       .from("profiles")
       .select("plan, subscription_status")
       .eq("id", userId)
       .maybeSingle();
 
-    if (profileError) {
-      throw profileError;
+    if (error) {
+      throw error;
     }
 
     if (profile && typeof profile.plan === "string") {
-      profilesPlan = profile.plan as PlanId;
-      if (typeof profile.subscription_status === "string") {
-        await ensureProCreditsIfSubscribed(
-          userId,
-          profilesPlan,
-          profile.subscription_status
-        );
-      }
+      return {
+        plan: profile.plan as PlanId,
+        subscriptionStatus:
+          typeof profile.subscription_status === "string"
+            ? profile.subscription_status
+            : "inactive",
+      };
     }
   }
 
-  return getUserCredits(userId, supabase, profilesPlan);
+  if (!hasAdminCredentials()) {
+    return null;
+  }
+
+  const admin = createAdminClient();
+  const { data: profile, error: profileError } = await admin
+    .from("profiles")
+    .select("plan, subscription_status")
+    .eq("id", userId)
+    .maybeSingle();
+
+  if (profileError) {
+    throw profileError;
+  }
+
+  if (!profile || typeof profile.plan !== "string") {
+    return null;
+  }
+
+  return {
+    plan: profile.plan as PlanId,
+    subscriptionStatus:
+      typeof profile.subscription_status === "string"
+        ? profile.subscription_status
+        : "inactive",
+  };
+}
+
+export async function getUserCreditsForUser(
+  userId: string,
+  supabase?: SupabaseClient
+): Promise<UserCredits> {
+  const billingProfile = await readBillingProfile(userId, supabase);
+
+  if (billingProfile && hasAdminCredentials()) {
+    await ensureProCreditsIfSubscribed(
+      userId,
+      billingProfile.plan,
+      billingProfile.subscriptionStatus
+    );
+  }
+
+  return getUserCredits(userId, supabase, billingProfile?.plan);
 }
 
 export function canUseCredits(credits: UserCredits): boolean {
@@ -302,7 +327,7 @@ export async function deductUserCredit(
 
 /**
  * Called after Razorpay activates a paid plan on profiles.
- * Resets or upgrades the parallel user_credits row.
+ * Syncs user_credits when a paid billing plan activates.
  */
 export async function syncCreditsWithProfilePlan(
   userId: string,

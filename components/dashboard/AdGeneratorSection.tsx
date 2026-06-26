@@ -24,12 +24,11 @@ export default function AdGeneratorSection({
 }: AdGeneratorSectionProps) {
   const outputRef = useRef<HTMLDivElement>(null);
   const [upgradeOpen, setUpgradeOpen] = useState(false);
-  const { refresh, optimisticDecrement } = useCredits();
+  const { refresh } = useCredits();
 
   const { state, generate, clearError, reset, isLoading, hasOutput, outputData } =
     useAdGenerator({
       onSuccess: () => {
-        optimisticDecrement();
         void refresh();
       },
       onNoCredits: () => setUpgradeOpen(true),

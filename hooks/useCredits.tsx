@@ -17,15 +17,13 @@ type CreditsContextValue = {
   credits: CreditsApiResponse | null;
   isLoading: boolean;
   error: string | null;
+  /** Always fetches the latest balance from GET /api/credits. */
   refresh: () => Promise<void>;
-  optimisticDecrement: () => void;
 };
 
 const CreditsContext = createContext<CreditsContextValue | null>(null);
 
 let cachedCredits: CreditsApiResponse | null = null;
-let cacheTimestamp = 0;
-const CACHE_TTL_MS = 30_000;
 
 export function CreditsProvider({ children }: { children: ReactNode }) {
   const [credits, setCredits] = useState<CreditsApiResponse | null>(cachedCredits);
@@ -33,17 +31,7 @@ export function CreditsProvider({ children }: { children: ReactNode }) {
   const [error, setError] = useState<string | null>(null);
   const inflight = useRef<Promise<void> | null>(null);
 
-  const refresh = useCallback(async (force = false) => {
-    if (
-      !force &&
-      cachedCredits &&
-      Date.now() - cacheTimestamp < CACHE_TTL_MS
-    ) {
-      setCredits(cachedCredits);
-      setIsLoading(false);
-      return;
-    }
-
+  const refresh = useCallback(async () => {
     if (inflight.current) {
       await inflight.current;
       return;
@@ -55,7 +43,6 @@ export function CreditsProvider({ children }: { children: ReactNode }) {
       try {
         const data = await fetchCredits();
         cachedCredits = data;
-        cacheTimestamp = Date.now();
         setCredits(data);
       } catch (err) {
         const message =
@@ -71,22 +58,6 @@ export function CreditsProvider({ children }: { children: ReactNode }) {
     await task;
   }, []);
 
-  const optimisticDecrement = useCallback(() => {
-    setCredits((current) => {
-      if (!current || current.unlimited) {
-        return current;
-      }
-
-      const next = {
-        ...current,
-        credits: Math.max(0, current.credits - 1),
-      };
-      cachedCredits = next;
-      cacheTimestamp = Date.now();
-      return next;
-    });
-  }, []);
-
   useEffect(() => {
     void refresh();
   }, [refresh]);
@@ -96,10 +67,9 @@ export function CreditsProvider({ children }: { children: ReactNode }) {
       credits,
       isLoading,
       error,
-      refresh: () => refresh(true),
-      optimisticDecrement,
+      refresh,
     }),
-    [credits, isLoading, error, refresh, optimisticDecrement]
+    [credits, isLoading, error, refresh]
   );
 
   return (
@@ -117,5 +87,4 @@ export function useCredits() {
 
 export function invalidateCreditsCache() {
   cachedCredits = null;
-  cacheTimestamp = 0;
 }

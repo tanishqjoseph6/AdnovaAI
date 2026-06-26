@@ -1,7 +1,8 @@
 "use client";
 
-import { useCredits } from "@/hooks/useCredits";
 import StatCard from "@/components/dashboard/StatCard";
+import { useCredits } from "@/hooks/useCredits";
+import { resolveCreditsMax } from "@/lib/credits/display";
 
 export default function CreditsStatCard() {
   const { credits, isLoading } = useCredits();
@@ -15,7 +16,7 @@ export default function CreditsStatCard() {
   const change = credits?.unlimited
     ? "Pro"
     : credits
-      ? `${credits.maxCredits ?? 5} max`
+      ? `${resolveCreditsMax(credits.maxCredits, credits.credits)} max`
       : "";
 
   return (

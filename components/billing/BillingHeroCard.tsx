@@ -1,15 +1,14 @@
 import BillingPlanButton from "@/components/dashboard/BillingPlanButton";
-import BillingCreditsProgress from "@/components/billing/BillingCreditsProgress";
+import BillingCreditsLive from "@/components/billing/BillingCreditsLive";
 import { getPlanHeroDescription } from "@/lib/billing/comparison";
 import { PLANS } from "@/lib/billing/plans";
 import { formatBillingPlanLabel } from "@/lib/billing/invoices";
 import type { UserSubscription } from "@/lib/subscription";
 import { isSubscriptionActive } from "@/lib/subscription";
-import type { UserCredits } from "@/lib/credits/types";
+import { Suspense } from "react";
 
 type BillingHeroCardProps = {
   subscription: UserSubscription;
-  credits: UserCredits;
 };
 
 function StatusBadge({
@@ -45,7 +44,6 @@ function StatusBadge({
 
 export default function BillingHeroCard({
   subscription,
-  credits,
 }: BillingHeroCardProps) {
   const currentPlan = PLANS[subscription.plan];
   const displayName = formatBillingPlanLabel(subscription.plan);
@@ -145,23 +143,17 @@ export default function BillingHeroCard({
           <div className="pointer-events-none absolute inset-0 bg-gradient-to-br from-cyan-500/[0.06] via-transparent to-violet-600/[0.06]" />
 
           <div className="relative flex flex-1 flex-col">
-            <BillingCreditsProgress
-              credits={credits.credits}
-              maxCredits={credits.maxCredits}
-              unlimited={credits.unlimited}
-              embedded
-            />
-
-            <div className="mt-auto border-t border-white/[0.06] pt-6">
-              <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-zinc-500">
-                Usage tip
-              </p>
-              <p className="mt-2 text-sm leading-relaxed text-zinc-400">
-                {credits.unlimited
-                  ? "Your Pro plan includes unlimited generations — create as many ads as you need."
-                  : "Upgrade anytime to unlock more credits and faster generation speeds."}
-              </p>
-            </div>
+            <Suspense
+              fallback={
+                <div className="animate-pulse space-y-4">
+                  <div className="h-4 w-32 rounded bg-white/10" />
+                  <div className="h-10 w-24 rounded bg-white/10" />
+                  <div className="h-2.5 rounded-full bg-white/10" />
+                </div>
+              }
+            >
+              <BillingCreditsLive embedded />
+            </Suspense>
           </div>
         </article>
       </div>

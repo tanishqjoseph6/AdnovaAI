@@ -2,6 +2,8 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import { useCredits } from "@/hooks/useCredits";
+import { creditsProgressPercent } from "@/lib/credits/display";
 import { dashboardNav } from "@/lib/dashboard-nav";
 import NavIcon from "./NavIcon";
 
@@ -15,8 +17,67 @@ function isActive(pathname: string, href: string) {
   return pathname.startsWith(href);
 }
 
+function SidebarCredits({ onClose }: { onClose: () => void }) {
+  const { credits, isLoading } = useCredits();
+
+  if (isLoading && !credits) {
+    return (
+      <div className="rounded-xl border border-violet-500/20 bg-gradient-to-br from-violet-500/10 to-cyan-500/5 p-4">
+        <div className="h-3 w-16 animate-pulse rounded bg-white/10" />
+        <div className="mt-3 h-1.5 animate-pulse rounded-full bg-white/10" />
+      </div>
+    );
+  }
+
+  if (!credits) {
+    return null;
+  }
+
+  const progress = creditsProgressPercent(
+    credits.credits,
+    credits.maxCredits,
+    credits.unlimited
+  );
+  const remainingLabel = credits.unlimited
+    ? "Unlimited"
+    : `${credits.credits} left`;
+
+  return (
+    <div className="rounded-xl border border-violet-500/20 bg-gradient-to-br from-violet-500/10 to-cyan-500/5 p-4">
+      <div className="flex items-center justify-between text-xs">
+        <span className="text-zinc-400">Credits</span>
+        <span className="font-medium text-cyan-400">{remainingLabel}</span>
+      </div>
+      <div className="mt-2 h-1.5 overflow-hidden rounded-full bg-white/10">
+        <div
+          className="h-full rounded-full bg-gradient-to-r from-cyan-400 to-violet-500 transition-all duration-500"
+          style={{ width: `${progress}%` }}
+          role="progressbar"
+          aria-valuenow={credits.unlimited ? 100 : credits.credits}
+          aria-valuemin={0}
+          aria-valuemax={credits.unlimited ? 100 : (credits.maxCredits ?? credits.credits)}
+          aria-label="Credits remaining"
+        />
+      </div>
+      {!credits.unlimited && (
+        <Link
+          href="/dashboard/billing"
+          onClick={onClose}
+          className="mt-3 block text-center text-xs font-medium text-violet-300 hover:text-violet-200"
+        >
+          Upgrade plan →
+        </Link>
+      )}
+    </div>
+  );
+}
+
 export default function Sidebar({ open, onClose }: SidebarProps) {
   const pathname = usePathname();
+  const { credits } = useCredits();
+  const workspaceLabel = credits?.displayPlan
+    ? `${credits.displayPlan} workspace`
+    : "Workspace";
 
   return (
     <>
@@ -44,7 +105,7 @@ export default function Sidebar({ open, onClose }: SidebarProps) {
               <p className="truncate text-sm font-semibold text-white">
                 Advora<span className="text-cyan-400">AI</span>
               </p>
-              <p className="truncate text-xs text-zinc-500">Pro workspace</p>
+              <p className="truncate text-xs text-zinc-500">{workspaceLabel}</p>
             </div>
           </Link>
           <button
@@ -96,25 +157,7 @@ export default function Sidebar({ open, onClose }: SidebarProps) {
         </nav>
 
         <div className="border-t border-white/[0.06] p-4 pb-[max(1rem,env(safe-area-inset-bottom))]">
-          <div className="rounded-xl border border-violet-500/20 bg-gradient-to-br from-violet-500/10 to-cyan-500/5 p-4">
-            <div className="flex items-center justify-between text-xs">
-              <span className="text-zinc-400">Credits</span>
-              <span className="font-medium text-cyan-400">342 left</span>
-            </div>
-            <div className="mt-2 h-1.5 overflow-hidden rounded-full bg-white/10">
-              <div
-                className="h-full rounded-full bg-gradient-to-r from-cyan-400 to-violet-500"
-                style={{ width: "68%" }}
-              />
-            </div>
-            <Link
-              href="/dashboard/billing"
-              onClick={onClose}
-              className="mt-3 block text-center text-xs font-medium text-violet-300 hover:text-violet-200"
-            >
-              Upgrade plan →
-            </Link>
-          </div>
+          <SidebarCredits onClose={onClose} />
         </div>
       </aside>
     </>

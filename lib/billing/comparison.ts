@@ -1,4 +1,9 @@
 import type { PlanId } from "./plans";
+import {
+  formatMonthlyGenerationsLabel,
+  FREE_PLAN_CREDITS,
+  STARTER_PLAN_CREDITS,
+} from "@/lib/credits/plan-config";
 
 export type ComparisonValue = boolean | string;
 
@@ -11,10 +16,10 @@ export const BILLING_COMPARISON_FEATURES: ComparisonFeature[] = [
   {
     label: "Monthly AI generations",
     values: {
-      free: "5",
-      starter: "100",
-      pro: "Unlimited",
-      custom: "Unlimited",
+      free: formatMonthlyGenerationsLabel("free"),
+      starter: formatMonthlyGenerationsLabel("starter"),
+      pro: formatMonthlyGenerationsLabel("pro"),
+      custom: formatMonthlyGenerationsLabel("custom"),
     },
   },
   {
@@ -103,7 +108,7 @@ export const PRICING_TIERS: PricingTierConfig[] = [
     displayName: "Free",
     subtitle: "Perfect for trying Advora AI",
     priceDisplay: "Free",
-    features: ["5 generations/month", "Basic AI ad generation"],
+    features: [`${FREE_PLAN_CREDITS} generations/month`, "Basic AI ad generation"],
     ctaLabel: "Current Plan",
     ctaType: "current",
     variant: "free",
@@ -117,7 +122,7 @@ export const PRICING_TIERS: PricingTierConfig[] = [
     priceDisplay: "₹999",
     priceSuffix: "/month",
     features: [
-      "100 AI generations/month",
+      `${STARTER_PLAN_CREDITS} AI generations/month`,
       "Hooks, Captions and UGC scripts",
       "Faster generation",
       "Priority email support",

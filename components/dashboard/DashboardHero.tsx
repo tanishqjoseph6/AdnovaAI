@@ -6,6 +6,7 @@ import {
   formatGenerationDate,
   formatGenerationDateLocal,
 } from "@/lib/history/utils";
+import { useCredits } from "@/hooks/useCredits";
 import type { DashboardMetrics } from "@/lib/dashboard/metrics";
 
 type DashboardHeroProps = {
@@ -72,9 +73,14 @@ export default function DashboardHero({
   userName,
   metrics,
 }: DashboardHeroProps) {
-  const creditsDisplay = metrics.unlimited
-    ? "Unlimited"
-    : String(metrics.creditsRemaining ?? 0);
+  const { credits, isLoading } = useCredits();
+
+  const planName = credits?.displayPlan ?? metrics.planName;
+  const creditsDisplay = isLoading && !credits
+    ? "—"
+    : credits?.unlimited
+      ? "Unlimited"
+      : String(credits?.credits ?? 0);
 
   return (
     <section className="space-y-6">
@@ -106,7 +112,7 @@ export default function DashboardHero({
           <HeroMetric
             accent="violet"
             label="Current plan"
-            value={metrics.planName}
+            value={planName}
             icon={
               <svg
                 className="h-5 w-5"

@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
+import { invalidateCreditsCache } from "@/hooks/useCredits";
 import type { PaidPlanId } from "@/lib/billing/plans";
 import { createRazorpayCheckoutOptions } from "@/lib/razorpay/checkout-options";
 
@@ -133,6 +134,7 @@ export default function BillingPlanButton({
                 );
               }
 
+              invalidateCreditsCache();
               router.refresh();
               router.push("/dashboard/billing?payment=success");
             } catch (error) {

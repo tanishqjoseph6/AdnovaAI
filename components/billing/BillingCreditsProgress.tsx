@@ -1,6 +1,10 @@
 "use client";
 
 import { motion } from "framer-motion";
+import {
+  creditsProgressPercent,
+  resolveCreditsMax,
+} from "@/lib/credits/display";
 
 type BillingCreditsProgressProps = {
   credits: number;
@@ -16,12 +20,8 @@ export default function BillingCreditsProgress({
   unlimited,
   embedded = false,
 }: BillingCreditsProgressProps) {
-  const max = maxCredits ?? credits;
-  const progress = unlimited
-    ? 100
-    : max > 0
-      ? Math.round((credits / max) * 100)
-      : 0;
+  const max = resolveCreditsMax(maxCredits, credits);
+  const progress = creditsProgressPercent(credits, maxCredits, unlimited);
 
   const remainingLabel = unlimited ? "Unlimited" : `${credits} / ${max}`;
 

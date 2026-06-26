@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { useEffect } from "react";
+import { FREE_PLAN_CREDITS } from "@/lib/credits/constants";
 
 type UpgradeModalProps = {
   open: boolean;
@@ -62,7 +63,7 @@ export default function UpgradeModal({ open, onClose }: UpgradeModalProps) {
             You&apos;re out of credits
           </h2>
           <p className="mt-3 text-center text-sm leading-relaxed text-zinc-400">
-            Free plans include 5 AI generations. Upgrade to{" "}
+            Free plans include {FREE_PLAN_CREDITS} AI generations. Upgrade to{" "}
             <span className="font-medium text-violet-300">Pro</span> for unlimited
             ad hooks, captions, CTAs, and UGC scripts.
           </p>

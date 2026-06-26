@@ -3,13 +3,12 @@
 import Link from "next/link";
 import { motion } from "framer-motion";
 import GenerationDate from "@/components/history/GenerationDate";
+import { useCredits } from "@/hooks/useCredits";
 import type { GenerationRecord } from "@/lib/history/types";
 import { getGenerationStatus } from "@/lib/history/utils";
-import type { DashboardMetrics } from "@/lib/dashboard/metrics";
 
 type RecentGenerationsProps = {
   generations: GenerationRecord[];
-  metrics: DashboardMetrics;
 };
 
 function StatusBadge({ status }: { status: "Completed" | "Failed" }) {
@@ -29,9 +28,9 @@ function StatusBadge({ status }: { status: "Completed" | "Failed" }) {
 
 export default function RecentGenerations({
   generations,
-  metrics,
 }: RecentGenerationsProps) {
-  const creditsLabel = metrics.unlimited ? "0" : "1";
+  const { credits } = useCredits();
+  const creditsLabel = credits?.unlimited ? "0" : "1";
 
   return (
     <section className="glass overflow-hidden rounded-2xl border border-white/[0.08]">

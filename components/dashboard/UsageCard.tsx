@@ -1,6 +1,11 @@
 "use client";
 
 import { motion } from "framer-motion";
+import { useCredits } from "@/hooks/useCredits";
+import {
+  creditsProgressPercent,
+  resolveCreditsMax,
+} from "@/lib/credits/display";
 import type { DashboardMetrics } from "@/lib/dashboard/metrics";
 
 type UsageCardProps = {
@@ -8,20 +13,22 @@ type UsageCardProps = {
 };
 
 export default function UsageCard({ metrics }: UsageCardProps) {
-  const max = metrics.creditsMax ?? (metrics.adsThisMonth || 1);
-  const used = metrics.unlimited
-    ? metrics.adsThisMonth
-    : metrics.creditsUsed;
-  const displayMax = metrics.unlimited ? "∞" : String(max);
-  const progress = metrics.unlimited
-    ? Math.min((metrics.adsThisMonth / 100) * 100, 100)
-    : max > 0
-      ? Math.round((used / max) * 100)
-      : 0;
+  const { credits, isLoading } = useCredits();
 
-  const usageLabel = metrics.unlimited
+  const unlimited = credits?.unlimited ?? false;
+  const max = resolveCreditsMax(credits?.maxCredits, credits?.credits);
+  const remaining = credits?.credits ?? 0;
+  const used = unlimited ? metrics.adsThisMonth : Math.max(0, max - remaining);
+  const displayMax = unlimited ? "∞" : String(max);
+  const progress = unlimited
+    ? Math.min((metrics.adsThisMonth / 100) * 100, 100)
+    : creditsProgressPercent(remaining, credits?.maxCredits, false);
+
+  const usageLabel = unlimited
     ? `${metrics.adsThisMonth} generations this month`
-    : `${used} / ${max} Credits Used`;
+    : isLoading && !credits
+      ? "Loading credits..."
+      : `${used} / ${max} Credits Used`;
 
   return (
     <section className="glass relative overflow-hidden rounded-2xl border border-white/[0.08] p-6 sm:p-7">
@@ -37,7 +44,7 @@ export default function UsageCard({ metrics }: UsageCardProps) {
           <p className="text-2xl font-bold tracking-tight text-white sm:text-3xl">
             {usageLabel}
           </p>
-          {!metrics.unlimited && (
+          {!unlimited && (
             <span className="text-sm text-zinc-500">{displayMax} limit</span>
           )}
         </div>
@@ -51,13 +58,13 @@ export default function UsageCard({ metrics }: UsageCardProps) {
             role="progressbar"
             aria-valuenow={used}
             aria-valuemin={0}
-            aria-valuemax={metrics.unlimited ? 100 : max}
+            aria-valuemax={unlimited ? 100 : max}
             aria-label="Monthly credit usage"
           />
         </div>
 
         <p className="mt-3 text-sm text-zinc-500">
-          {metrics.unlimited
+          {unlimited
             ? "Pro plan includes unlimited AI generations."
             : "Each successful generation uses 1 credit from your monthly allowance."}
         </p>

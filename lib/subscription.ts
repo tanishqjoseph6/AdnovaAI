@@ -16,7 +16,6 @@ export type UserSubscription = {
   payment_id: string | null;
   subscription_status: SubscriptionStatus;
   purchase_date: string | null;
-  generations_used: number;
 };
 
 const DEFAULT_SUBSCRIPTION: UserSubscription = {
@@ -24,7 +23,6 @@ const DEFAULT_SUBSCRIPTION: UserSubscription = {
   payment_id: null,
   subscription_status: "inactive",
   purchase_date: null,
-  generations_used: 0,
 };
 
 function normalizeSubscription(
@@ -50,13 +48,11 @@ function normalizeSubscription(
     subscription_status,
     purchase_date:
       typeof row.purchase_date === "string" ? row.purchase_date : null,
-    generations_used:
-      typeof row.generations_used === "number" ? row.generations_used : 0,
   };
 }
 
 const PROFILE_COLUMNS =
-  "plan, payment_id, subscription_status, purchase_date, generations_used";
+  "plan, payment_id, subscription_status, purchase_date";
 
 async function fetchUserProfileAdmin(
   userId: string
@@ -86,7 +82,6 @@ export async function ensureUserProfile(
     email: email ?? null,
     plan: "free",
     subscription_status: "inactive",
-    generations_used: 0,
     updated_at: now,
   };
 
@@ -158,77 +153,6 @@ export async function getUserSubscription(
   return normalizeSubscription(data);
 }
 
-export function getGenerationLimit(subscription: UserSubscription): number | null {
-  const plan = PLANS[subscription.plan];
-  return plan.generationLimit;
-}
-
-export function isGenerationLimitReached(
-  subscription: UserSubscription
-): boolean {
-  const limit = getGenerationLimit(subscription);
-  return limit !== null && subscription.generations_used >= limit;
-}
-
-const GENERATION_INCREMENT_MAX_RETRIES = 5;
-
-export async function incrementGenerationsUsedAtomically(
-  userId: string
-): Promise<boolean> {
-  if (!hasAdminCredentials()) {
-    throw new Error("Missing SUPABASE_SERVICE_ROLE_KEY");
-  }
-
-  const admin = createAdminClient();
-
-  for (let attempt = 0; attempt < GENERATION_INCREMENT_MAX_RETRIES; attempt++) {
-    const { data: row, error } = await admin
-      .from("profiles")
-      .select("generations_used, plan")
-      .eq("id", userId)
-      .maybeSingle();
-
-    if (error) {
-      throw error;
-    }
-
-    if (!row) {
-      return false;
-    }
-
-    const planId =
-      typeof row.plan === "string" && row.plan in PLANS
-        ? (row.plan as PlanId)
-        : "free";
-    const limit = PLANS[planId].generationLimit;
-
-    if (limit !== null && row.generations_used >= limit) {
-      return false;
-    }
-
-    const { data: updated, error: updateError } = await admin
-      .from("profiles")
-      .update({
-        generations_used: row.generations_used + 1,
-        updated_at: new Date().toISOString(),
-      })
-      .eq("id", userId)
-      .eq("generations_used", row.generations_used)
-      .select("id")
-      .maybeSingle();
-
-    if (updateError) {
-      throw updateError;
-    }
-
-    if (updated) {
-      return true;
-    }
-  }
-
-  return false;
-}
-
 export function isSubscriptionActive(subscription: UserSubscription): boolean {
   return (
     subscription.subscription_status === "active" &&
@@ -278,12 +202,7 @@ export type ActivateSubscriptionInput = {
 
 /**
  * Upgrades a user profile after Razorpay payment verification.
- *
- * All writes run inside the Postgres function `activate_subscription_from_payment`
- * (row lock + idempotency on payment_id / razorpay_order_id) so duplicate
- * checkout callbacks and webhooks cannot double-apply a subscription.
- *
- * `payment_id` column stores the Razorpay payment id (pay_xxx).
+ * Credit grants run via syncCreditsWithProfilePlan → user_credits only.
  */
 export async function activateSubscriptionFromPayment({
   userId,

@@ -2,15 +2,10 @@ import type { GenerationRecord } from "@/lib/history/types";
 import { getGenerationStatus } from "@/lib/history/utils";
 import { formatBillingPlanLabel } from "@/lib/billing/invoices";
 import type { PlanId } from "@/lib/billing/plans";
-import type { UserCredits } from "@/lib/credits/types";
 
 export type DashboardMetrics = {
   planName: string;
   planId: PlanId;
-  creditsRemaining: number | null;
-  creditsMax: number | null;
-  creditsUsed: number;
-  unlimited: boolean;
   adsThisMonth: number;
   totalAds: number;
   lastGenerationIso: string | null;
@@ -23,7 +18,6 @@ function startOfMonth(date: Date): Date {
 
 export function computeDashboardMetrics(
   generations: GenerationRecord[],
-  credits: UserCredits,
   planId: PlanId
 ): DashboardMetrics {
   const now = new Date();
@@ -42,19 +36,9 @@ export function computeDashboardMetrics(
       ? Math.round((completed / generations.length) * 100)
       : 0;
 
-  const max = credits.maxCredits;
-  const creditsUsed =
-    credits.unlimited || max === null
-      ? adsThisMonth
-      : Math.max(0, max - credits.credits);
-
   return {
     planName: formatBillingPlanLabel(planId),
     planId,
-    creditsRemaining: credits.unlimited ? null : credits.credits,
-    creditsMax: credits.unlimited ? null : max,
-    creditsUsed,
-    unlimited: credits.unlimited,
     adsThisMonth,
     totalAds: generations.length,
     lastGenerationIso: generations[0]?.created_at ?? null,

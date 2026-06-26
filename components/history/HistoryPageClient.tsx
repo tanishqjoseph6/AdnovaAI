@@ -5,6 +5,7 @@ import { AnimatePresence, motion } from "framer-motion";
 import { createClient } from "@/lib/supabase/client";
 import GenerationCard from "@/components/history/GenerationCard";
 import HistoryEmptyState from "@/components/history/HistoryEmptyState";
+import { useCredits } from "@/hooks/useCredits";
 import type {
   GenerationRecord,
   HistoryFilter,
@@ -19,7 +20,6 @@ import {
 
 type HistoryPageClientProps = {
   initialGenerations: GenerationRecord[];
-  planBadge: PlanBadge;
 };
 
 const FILTERS: { id: HistoryFilter; label: string }[] = [
@@ -31,8 +31,10 @@ const FILTERS: { id: HistoryFilter; label: string }[] = [
 
 export default function HistoryPageClient({
   initialGenerations,
-  planBadge,
 }: HistoryPageClientProps) {
+  const { credits } = useCredits();
+  const planBadge: PlanBadge = credits?.unlimited ? "Pro" : "Free";
+
   const [generations, setGenerations] =
     useState<GenerationRecord[]>(initialGenerations);
   const [search, setSearch] = useState("");

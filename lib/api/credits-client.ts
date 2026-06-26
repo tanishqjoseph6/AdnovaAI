@@ -1,6 +1,5 @@
-import { CREDITS_ERROR_CODE } from "@/lib/credits/constants";
 import type { CreditsApiResponse } from "@/lib/credits/types";
-import type { UserCredits } from "@/lib/credits/types";
+import { CREDITS_ERROR_CODE } from "@/lib/credits/constants";
 
 export class ApiClientError extends Error {
   readonly code?: string;
@@ -48,31 +47,4 @@ export async function fetchCredits(): Promise<CreditsApiResponse> {
   }
 
   return payload as CreditsApiResponse;
-}
-
-export async function useCredit(): Promise<UserCredits & { deducted: boolean }> {
-  const response = await fetch("/api/credits/use", {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-  });
-
-  let payload: Record<string, unknown> & { error?: string; code?: string };
-
-  try {
-    payload = await response.json();
-  } catch {
-    throw new ApiClientError("Network error. Could not use credit.", 0);
-  }
-
-  if (!response.ok) {
-    throw new ApiClientError(
-      typeof payload.error === "string"
-        ? payload.error
-        : "Failed to use credit",
-      response.status,
-      typeof payload.code === "string" ? payload.code : undefined
-    );
-  }
-
-  return payload as UserCredits & { deducted: boolean };
 }

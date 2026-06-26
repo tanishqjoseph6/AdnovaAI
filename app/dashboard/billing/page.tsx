@@ -6,9 +6,6 @@ import PaymentNotice from "@/components/billing/PaymentNotice";
 import PricingPlanCards from "@/components/billing/PricingPlanCards";
 import UpgradeProCta from "@/components/billing/UpgradeProCta";
 import { buildBillingInvoices } from "@/lib/billing/invoices";
-import { FREE_PLAN_CREDITS } from "@/lib/credits/constants";
-import { getUserCreditsForUser } from "@/lib/credits/server";
-import type { UserCredits } from "@/lib/credits/types";
 import {
   ensureUserProfile,
   getUserSubscription,
@@ -20,14 +17,6 @@ type BillingPageProps = {
     payment?: string;
     message?: string;
   }>;
-};
-
-const DEFAULT_CREDITS: UserCredits = {
-  credits: FREE_PLAN_CREDITS,
-  plan: "free",
-  unlimited: false,
-  maxCredits: FREE_PLAN_CREDITS,
-  updatedAt: "1970-01-01T00:00:00.000Z",
 };
 
 export default async function BillingPage({ searchParams }: BillingPageProps) {
@@ -46,17 +35,7 @@ export default async function BillingPage({ searchParams }: BillingPageProps) {
         payment_id: null,
         subscription_status: "inactive" as const,
         purchase_date: null,
-        generations_used: 0,
       };
-
-  let credits: UserCredits = DEFAULT_CREDITS;
-  if (user) {
-    try {
-      credits = await getUserCreditsForUser(user.id, supabase);
-    } catch {
-      credits = DEFAULT_CREDITS;
-    }
-  }
 
   const invoices = buildBillingInvoices(subscription);
 
@@ -68,7 +47,7 @@ export default async function BillingPage({ searchParams }: BillingPageProps) {
       <div className="space-y-10">
         <PaymentNotice payment={params.payment} message={params.message} />
 
-        <BillingHeroCard subscription={subscription} credits={credits} />
+        <BillingHeroCard subscription={subscription} />
 
         <PricingPlanCards currentPlanId={subscription.plan} />
 

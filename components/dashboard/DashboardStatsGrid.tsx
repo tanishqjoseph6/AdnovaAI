@@ -2,6 +2,8 @@
 
 import { motion } from "framer-motion";
 import AnimatedCounter from "@/components/dashboard/AnimatedCounter";
+import { useCredits } from "@/hooks/useCredits";
+import { resolveCreditsMax } from "@/lib/credits/display";
 import type { DashboardMetrics } from "@/lib/dashboard/metrics";
 
 type DashboardStatsGridProps = {
@@ -27,15 +29,21 @@ const accentMap = {
 export default function DashboardStatsGrid({
   metrics,
 }: DashboardStatsGridProps) {
+  const { credits, isLoading } = useCredits();
+  const maxCredits = resolveCreditsMax(credits?.maxCredits, credits?.credits);
+
   const stats: StatItem[] = [
     {
       label: "Credits remaining",
-      value: metrics.unlimited ? (
-        "∞"
-      ) : (
-        <AnimatedCounter value={metrics.creditsRemaining ?? 0} />
-      ),
-      sub: metrics.unlimited ? "Pro unlimited" : `of ${metrics.creditsMax ?? 0} max`,
+      value:
+        isLoading && !credits ? (
+          "—"
+        ) : credits?.unlimited ? (
+          "∞"
+        ) : (
+          <AnimatedCounter value={credits?.credits ?? 0} />
+        ),
+      sub: credits?.unlimited ? "Pro unlimited" : `of ${maxCredits} max`,
       accent: "emerald",
       icon: (
         <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -45,7 +53,7 @@ export default function DashboardStatsGrid({
     },
     {
       label: "Current plan",
-      value: metrics.planName,
+      value: credits?.displayPlan ?? metrics.planName,
       accent: "violet",
       icon: (
         <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">

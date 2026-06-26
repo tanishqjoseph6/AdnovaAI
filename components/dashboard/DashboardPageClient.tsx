@@ -7,6 +7,7 @@ import QuickActionCards from "@/components/dashboard/QuickActionCards";
 import RecentGenerations from "@/components/dashboard/RecentGenerations";
 import UpgradeCard from "@/components/dashboard/UpgradeCard";
 import UsageCard from "@/components/dashboard/UsageCard";
+import { useCredits } from "@/hooks/useCredits";
 import type { DashboardMetrics } from "@/lib/dashboard/metrics";
 import type { GenerationRecord } from "@/lib/history/types";
 
@@ -21,8 +22,9 @@ export default function DashboardPageClient({
   metrics,
   recentGenerations,
 }: DashboardPageClientProps) {
+  const { credits } = useCredits();
   const hasGenerations = metrics.totalAds > 0;
-  const showUpgrade = !metrics.unlimited && metrics.planId !== "pro";
+  const showUpgrade = !credits?.unlimited && credits?.billingPlan !== "pro";
 
   return (
     <div className="space-y-10">
@@ -33,10 +35,7 @@ export default function DashboardPageClient({
       <DashboardStatsGrid metrics={metrics} />
 
       {hasGenerations ? (
-        <RecentGenerations
-          generations={recentGenerations}
-          metrics={metrics}
-        />
+        <RecentGenerations generations={recentGenerations} />
       ) : (
         <DashboardEmptyState />
       )}

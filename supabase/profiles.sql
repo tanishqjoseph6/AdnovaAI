@@ -9,7 +9,6 @@ create table if not exists public.profiles (
     subscription_status in ('active', 'inactive', 'cancelled', 'past_due')
   ),
   purchase_date timestamptz,
-  generations_used integer not null default 0,
   updated_at timestamptz not null default now()
 );
 

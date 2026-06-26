@@ -1,6 +1,7 @@
 "use client";
 
 import { motion } from "framer-motion";
+import { FREE_PLAN_CREDITS } from "@/lib/credits/constants";
 
 const features = [
   {
@@ -41,8 +42,7 @@ const features = [
       />
     ),
     title: "Credits & billing",
-    description:
-      "Start free with 5 credits. Upgrade to Starter or Pro when you're ready to scale output.",
+    description: `Start free with ${FREE_PLAN_CREDITS} credits. Upgrade to Starter or Pro when you're ready to scale output.`,
     accent: "from-fuchsia-500/20 to-fuchsia-500/5 text-fuchsia-400",
   },
   {

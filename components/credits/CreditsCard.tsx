@@ -2,6 +2,10 @@
 
 import Link from "next/link";
 import { useCredits } from "@/hooks/useCredits";
+import {
+  creditsProgressPercent,
+  resolveCreditsMax,
+} from "@/lib/credits/display";
 
 export default function CreditsCard() {
   const { credits, isLoading, error, refresh } = useCredits();
@@ -35,12 +39,12 @@ export default function CreditsCard() {
     return null;
   }
 
-  const max = credits.maxCredits ?? credits.credits;
-  const progress = credits.unlimited
-    ? 100
-    : max > 0
-      ? Math.round((credits.credits / max) * 100)
-      : 0;
+  const max = resolveCreditsMax(credits.maxCredits, credits.credits);
+  const progress = creditsProgressPercent(
+    credits.credits,
+    credits.maxCredits,
+    credits.unlimited
+  );
 
   const remainingLabel = credits.unlimited
     ? "Unlimited"
