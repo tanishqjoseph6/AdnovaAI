@@ -3,9 +3,9 @@ import Link from "next/link";
 const footerLinks = {
   Product: [
     { label: "Features", href: "#features" },
-    { label: "Pricing", href: "#pricing" },
-    { label: "Integrations", href: "#" },
-    { label: "Changelog", href: "#" },
+    { label: "How it works", href: "#how-it-works" },
+    { label: "Why Advora", href: "#why-advora" },
+    { label: "Get started", href: "#cta" },
   ],
   Company: [
     { label: "About", href: "#" },
@@ -23,7 +23,7 @@ const footerLinks = {
 export default function Footer() {
   return (
     <footer className="border-t border-white/5 bg-[#020010]">
-      <div className="mx-auto max-w-6xl px-6 py-16">
+      <div className="mx-auto max-w-6xl px-4 py-16 sm:px-6">
         <div className="grid gap-12 md:grid-cols-2 lg:grid-cols-5">
           <div className="lg:col-span-2">
             <Link href="/" className="flex items-center gap-2">
@@ -38,7 +38,7 @@ export default function Footer() {
               The AI ad generator built for modern growth teams. Ship
               scroll-stopping creative at the speed of your ambition.
             </p>
-            <div className="mt-6 flex gap-4">
+            <div className="mt-6 flex gap-3">
               {["X", "LinkedIn", "GitHub"].map((social) => (
                 <a
                   key={social}
@@ -76,7 +76,7 @@ export default function Footer() {
             © {new Date().getFullYear()} Advora AI. All rights reserved.
           </p>
           <p className="text-sm text-zinc-600">
-            Built with Next.js & Tailwind CSS
+            Built for marketers who move fast
           </p>
         </div>
       </div>

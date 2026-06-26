@@ -1,7 +1,10 @@
 import Navbar from "@/components/Navbar";
 import Hero from "@/components/Hero";
+import HowItWorks from "@/components/landing/HowItWorks";
+import WhyAdvora from "@/components/landing/WhyAdvora";
 import Features from "@/components/Features";
-import Pricing from "@/components/Pricing";
+import BeforeAfter from "@/components/landing/BeforeAfter";
+import Testimonials from "@/components/landing/Testimonials";
 import CTA from "@/components/CTA";
 import Footer from "@/components/Footer";
 
@@ -11,8 +14,11 @@ export default function Home() {
       <Navbar />
       <main>
         <Hero />
+        <HowItWorks />
+        <WhyAdvora />
         <Features />
-        <Pricing />
+        <BeforeAfter />
+        <Testimonials />
         <CTA />
       </main>
       <Footer />

@@ -1,38 +1,87 @@
+"use client";
+
+import Link from "next/link";
+import { motion } from "framer-motion";
+
+function FloatingChip({
+  children,
+  className,
+  delay = 0,
+}: {
+  children: React.ReactNode;
+  className: string;
+  delay?: number;
+}) {
+  return (
+    <motion.div
+      initial={{ opacity: 0, scale: 0.9 }}
+      animate={{ opacity: 1, scale: 1, y: [0, -8, 0] }}
+      transition={{
+        opacity: { duration: 0.5, delay },
+        scale: { duration: 0.5, delay },
+        y: { duration: 4, repeat: Infinity, ease: "easeInOut", delay },
+      }}
+      className={`absolute hidden rounded-xl border border-white/10 bg-[#0a0618]/90 px-3 py-2 text-xs font-medium text-zinc-300 shadow-lg shadow-violet-500/10 backdrop-blur-md lg:block ${className}`}
+    >
+      {children}
+    </motion.div>
+  );
+}
+
 export default function Hero() {
   return (
-    <section className="relative overflow-hidden pt-32 pb-20 md:pt-40 md:pb-28">
+    <section className="relative overflow-hidden pt-28 pb-16 md:pt-36 md:pb-24">
       <div className="pointer-events-none absolute inset-0 grid-bg" />
-      <div className="pointer-events-none absolute -top-40 left-1/2 h-[500px] w-[800px] -translate-x-1/2 rounded-full bg-cyan-500/20 blur-[120px] animate-pulse-glow" />
-      <div className="pointer-events-none absolute top-20 right-0 h-[400px] w-[400px] rounded-full bg-violet-600/20 blur-[100px]" />
-      <div className="pointer-events-none absolute bottom-0 left-0 h-[300px] w-[300px] rounded-full bg-fuchsia-600/15 blur-[80px]" />
+      <div className="pointer-events-none absolute -top-32 left-1/2 h-[560px] w-[900px] -translate-x-1/2 rounded-full bg-cyan-500/20 blur-[130px] animate-pulse-glow" />
+      <div className="pointer-events-none absolute top-24 -right-20 h-[420px] w-[420px] rounded-full bg-violet-600/25 blur-[110px]" />
+      <div className="pointer-events-none absolute bottom-0 -left-16 h-[320px] w-[320px] rounded-full bg-fuchsia-600/15 blur-[90px]" />
 
-      <div className="relative mx-auto max-w-6xl px-6">
-        <div className="mx-auto max-w-3xl text-center">
-          <div className="mb-6 inline-flex items-center gap-2 rounded-full border border-white/10 bg-white/5 px-4 py-1.5 text-sm text-zinc-300 backdrop-blur-sm">
+      <div className="relative mx-auto max-w-6xl px-4 sm:px-6">
+        <div className="mx-auto max-w-4xl text-center">
+          <motion.div
+            initial={{ opacity: 0, y: 12 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.45 }}
+            className="mb-8 inline-flex items-center gap-2 rounded-full border border-white/10 bg-white/[0.05] px-4 py-1.5 text-sm text-zinc-300 backdrop-blur-sm"
+          >
             <span className="relative flex h-2 w-2">
               <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-cyan-400 opacity-75" />
               <span className="relative inline-flex h-2 w-2 rounded-full bg-cyan-400" />
             </span>
-            Now generating 10M+ ad variants monthly
-          </div>
+            AI creative platform for modern growth teams
+          </motion.div>
 
-          <h1 className="text-4xl font-bold leading-tight tracking-tight text-white sm:text-5xl md:text-6xl md:leading-[1.1]">
+          <motion.h1
+            initial={{ opacity: 0, y: 16 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.5, delay: 0.05 }}
+            className="text-4xl font-semibold leading-[1.08] tracking-tight text-white sm:text-5xl md:text-6xl lg:text-7xl"
+          >
             Create high-converting ads{" "}
             <span className="gradient-text">in seconds</span>, not weeks
-          </h1>
+          </motion.h1>
 
-          <p className="mx-auto mt-6 max-w-2xl text-lg leading-relaxed text-zinc-400 md:text-xl">
-            Advora AI turns your product URL into scroll-stopping copy, visuals,
-            and multi-channel campaigns—optimized by machine learning for every
-            platform.
-          </p>
+          <motion.p
+            initial={{ opacity: 0, y: 16 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.5, delay: 0.1 }}
+            className="mx-auto mt-6 max-w-2xl text-base leading-relaxed text-zinc-400 sm:text-lg md:text-xl"
+          >
+            Advora AI turns your product into scroll-stopping hooks, captions,
+            UGC scripts and CTAs — optimized for every major ad platform.
+          </motion.p>
 
-          <div className="mt-10 flex flex-col items-center justify-center gap-4 sm:flex-row">
-            <a
-              href="#cta"
-              className="group flex w-full items-center justify-center gap-2 rounded-full bg-gradient-to-r from-cyan-400 via-violet-500 to-fuchsia-500 px-8 py-4 text-base font-semibold text-white shadow-xl shadow-violet-500/25 transition hover:scale-[1.02] hover:opacity-95 sm:w-auto"
+          <motion.div
+            initial={{ opacity: 0, y: 16 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.5, delay: 0.15 }}
+            className="mt-10 flex flex-col items-center justify-center gap-4 sm:flex-row"
+          >
+            <Link
+              href="/signup"
+              className="group flex w-full items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-cyan-400 via-violet-500 to-fuchsia-500 px-8 py-4 text-base font-semibold text-white shadow-xl shadow-violet-500/25 transition hover:opacity-90 sm:w-auto"
             >
-              Generate your first ad
+              Start generating free
               <svg
                 className="h-4 w-4 transition group-hover:translate-x-0.5"
                 fill="none"
@@ -46,29 +95,41 @@ export default function Hero() {
                   d="M13 7l5 5m0 0l-5 5m5-5H6"
                 />
               </svg>
-            </a>
+            </Link>
             <a
-              href="#features"
-              className="flex w-full items-center justify-center gap-2 rounded-full border border-white/15 bg-white/5 px-8 py-4 text-base font-medium text-zinc-200 backdrop-blur-sm transition hover:bg-white/10 sm:w-auto"
+              href="#how-it-works"
+              className="flex w-full items-center justify-center gap-2 rounded-xl border border-white/15 bg-white/[0.04] px-8 py-4 text-base font-medium text-zinc-200 backdrop-blur-sm transition hover:bg-white/[0.08] sm:w-auto"
             >
-              <svg
-                className="h-5 w-5 text-cyan-400"
-                fill="currentColor"
-                viewBox="0 0 24 24"
-              >
-                <path d="M8 5v14l11-7z" />
-              </svg>
-              Watch demo
+              See how it works
             </a>
-          </div>
+          </motion.div>
 
-          <p className="mt-4 text-sm text-zinc-500">
-            No credit card required · 14-day free trial
+          <p className="mt-5 text-sm text-zinc-500">
+            5 free credits · No credit card required
           </p>
         </div>
 
-        <div className="relative mx-auto mt-16 max-w-4xl animate-float">
-          <div className="gradient-border overflow-hidden rounded-2xl shadow-2xl shadow-violet-500/10">
+        {/* Dashboard preview */}
+        <motion.div
+          initial={{ opacity: 0, y: 24 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.6, delay: 0.2 }}
+          className="relative mx-auto mt-14 max-w-5xl sm:mt-20"
+        >
+          <FloatingChip className="-left-2 top-8" delay={0}>
+            ✨ 5 hooks generated
+          </FloatingChip>
+          <FloatingChip className="-right-2 top-16" delay={0.5}>
+            📈 4.8% avg CTR
+          </FloatingChip>
+          <FloatingChip className="bottom-12 -left-4" delay={1}>
+            💳 3 credits left
+          </FloatingChip>
+          <FloatingChip className="right-0 bottom-20" delay={1.5}>
+            ⚡ Generated in 28s
+          </FloatingChip>
+
+          <div className="gradient-border animate-float overflow-hidden rounded-2xl shadow-2xl shadow-violet-500/15">
             <div className="glass p-1">
               <div className="overflow-hidden rounded-xl bg-[#0a0618]">
                 <div className="flex items-center gap-2 border-b border-white/5 px-4 py-3">
@@ -76,39 +137,55 @@ export default function Hero() {
                   <span className="h-3 w-3 rounded-full bg-yellow-500/80" />
                   <span className="h-3 w-3 rounded-full bg-green-500/80" />
                   <span className="ml-4 text-xs text-zinc-500">
-                    Advora.ai/studio
+                    app.advora.ai/dashboard
                   </span>
                 </div>
-                <div className="grid gap-4 p-6 md:grid-cols-2">
-                  <div className="space-y-3">
-                    <p className="text-xs font-medium uppercase tracking-wider text-cyan-400">
-                      Input
+
+                <div className="grid gap-4 p-4 sm:p-6 lg:grid-cols-3">
+                  <div className="rounded-xl border border-white/[0.06] bg-white/[0.02] p-4 lg:col-span-2">
+                    <p className="text-[10px] font-semibold uppercase tracking-wider text-cyan-400">
+                      Welcome back
                     </p>
-                    <div className="rounded-lg border border-white/10 bg-white/5 p-4 text-sm text-zinc-400">
-                      Product: Premium wireless earbuds
-                      <br />
-                      Audience: Gen Z fitness enthusiasts
-                      <br />
-                      Goal: Drive trial signups
+                    <p className="mt-2 text-lg font-semibold text-white">
+                      Your creative command center
+                    </p>
+                    <div className="mt-4 grid grid-cols-2 gap-3 sm:grid-cols-4">
+                      {[
+                        { label: "Plan", value: "Free" },
+                        { label: "Credits", value: "5" },
+                        { label: "This month", value: "12" },
+                        { label: "Success", value: "100%" },
+                      ].map((stat) => (
+                        <div
+                          key={stat.label}
+                          className="rounded-lg border border-white/[0.06] bg-white/[0.03] p-3"
+                        >
+                          <p className="text-[10px] text-zinc-500">{stat.label}</p>
+                          <p className="mt-1 text-sm font-semibold text-white">
+                            {stat.value}
+                          </p>
+                        </div>
+                      ))}
                     </div>
                   </div>
+
                   <div className="space-y-3">
-                    <p className="text-xs font-medium uppercase tracking-wider text-fuchsia-400">
-                      AI Output
+                    <p className="text-[10px] font-semibold uppercase tracking-wider text-fuchsia-400">
+                      Latest output
                     </p>
-                    <div className="rounded-lg border border-violet-500/30 bg-gradient-to-br from-violet-500/10 to-cyan-500/10 p-4">
+                    <div className="rounded-xl border border-violet-500/25 bg-gradient-to-br from-violet-500/10 to-cyan-500/10 p-4">
                       <p className="text-sm font-medium text-white">
-                        Hear every beat. Miss nothing.
+                        &ldquo;Hear every beat. Miss nothing.&rdquo;
                       </p>
                       <p className="mt-2 text-xs text-zinc-400">
-                        12 variants · Meta + TikTok + Google · A/B ready
+                        5 hooks · 3 captions · UGC script
                       </p>
-                      <div className="mt-3 flex gap-2">
-                        <span className="rounded-full bg-cyan-500/20 px-2 py-0.5 text-xs text-cyan-300">
-                          +34% CTR
+                      <div className="mt-3 flex flex-wrap gap-2">
+                        <span className="rounded-full bg-cyan-500/20 px-2 py-0.5 text-[10px] text-cyan-300">
+                          Meta ready
                         </span>
-                        <span className="rounded-full bg-violet-500/20 px-2 py-0.5 text-xs text-violet-300">
-                          Brand-safe
+                        <span className="rounded-full bg-violet-500/20 px-2 py-0.5 text-[10px] text-violet-300">
+                          Completed
                         </span>
                       </div>
                     </div>
@@ -117,17 +194,19 @@ export default function Hero() {
               </div>
             </div>
           </div>
-        </div>
+        </motion.div>
 
-        <div className="mt-16 flex flex-wrap items-center justify-center gap-x-12 gap-y-6 opacity-60">
-          {["Shopify", "Stripe", "Notion", "Linear", "Vercel"].map((brand) => (
-            <span
-              key={brand}
-              className="text-sm font-medium tracking-widest text-zinc-500 uppercase"
-            >
-              {brand}
-            </span>
-          ))}
+        <div className="mt-14 flex flex-wrap items-center justify-center gap-x-10 gap-y-4 opacity-50 sm:mt-16">
+          {["DTC Brands", "Agencies", "SaaS", "Creators", "E-commerce"].map(
+            (brand) => (
+              <span
+                key={brand}
+                className="text-xs font-medium tracking-widest text-zinc-500 uppercase sm:text-sm"
+              >
+                {brand}
+              </span>
+            )
+          )}
         </div>
       </div>
     </section>
