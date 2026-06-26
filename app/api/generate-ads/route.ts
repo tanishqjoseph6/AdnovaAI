@@ -1,7 +1,6 @@
-import { supabase } from "@/lib/supabase"
-import OpenAI from "openai";
 import { NextResponse } from "next/server";
-import { error } from "console";
+import { createClient } from "@/lib/supabase/server";
+import OpenAI from "openai";
 
 const openai = new OpenAI({
   apiKey: process.env.OPENAI_API_KEY,
@@ -71,26 +70,32 @@ Return ONLY valid JSON in this format:
     const content =
       response.choices[0].message.content || "{}";
 
-    const parsed = JSON.parse(content);
-    const { data, error } = await supabase
-  .from("generations")
-  .insert({
+    const parsed = JSON.parse(content) as Record<string, unknown>;
+
+    const hooks = (parsed.hooks ?? parsed.ad_hooks ?? []) as string[];
+    const captions = (parsed.captions ?? parsed.ad_captions ?? []) as string[];
+    const ctas = (parsed.ctas ?? []) as string[];
+    const ugcScript = (parsed.ugcScript ?? parsed.ugc_script ?? "") as string;
+
+    const supabase = await createClient();
+    const { error: insertError } = await supabase.from("generations").insert({
       user_email: "tanishq",
       product_description: productDescription,
-      hooks: parsed.ad_hooks,
-      captions: parsed.ad_captions,
-      ctas: parsed.ctas,
-      ugc_script: parsed.ugc_script,
+      hooks,
+      captions,
+      ctas,
+      ugc_script: ugcScript,
     });
 
-    console.log("SUPABASE DATA:",data);
-    console.log("SUPABASE ERROR:",error)
+    if (insertError) {
+      console.error("Supabase insert error:", insertError);
+    }
 
     return NextResponse.json({
-      hooks: parsed.ad_hooks || [],
-      captions: parsed.ad_captions || [],
-      ctas: parsed.ctas || [],
-      ugcScript: parsed.ugc_script || "",
+      hooks,
+      captions,
+      ctas,
+      ugcScript,
     });
   } catch (error) {
     console.error("OpenAI Error:", error);

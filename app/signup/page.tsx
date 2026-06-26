@@ -1,9 +1,11 @@
 "use client";
 
 import { useState } from "react";
+import { useRouter } from "next/navigation";
 import { supabase } from "@/lib/supabase";
 
 export default function SignupPage() {
+  const router = useRouter();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
 
@@ -13,14 +15,19 @@ export default function SignupPage() {
       password,
     });
 
-    console.log("DATA:", data);
-    console.log("ERROR:", error);
-
     if (error) {
       alert(error.message);
-    } else {
-      alert("Signup Success");
+      return;
     }
+
+    if (data.session) {
+      router.refresh();
+      router.push("/dashboard");
+      return;
+    }
+
+    alert("Check your email to confirm your account before signing in.");
+    router.push("/login");
   }
 
   return (

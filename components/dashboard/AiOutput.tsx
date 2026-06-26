@@ -21,12 +21,6 @@ export default function AiOutput({
   const ctas = data?.ctas || [];
   const ugcScript = data?.ugcScript || "";
 
-  console.log({
-    hooks,
-    captions,
-    ctas,
-    ugcScript
-  })
   if (isLoading) {
     return (
       <div className="rounded-2xl border border-white/10 bg-black/20 p-6 text-white">

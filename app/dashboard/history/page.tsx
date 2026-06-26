@@ -1,6 +1,7 @@
-import { supabase } from "@/lib/supabase";
+import { createClient } from "@/lib/supabase/server";
 
 export default async function HistoryPage() {
+  const supabase = await createClient();
   const result = await supabase
     .from("generations")
     .select("*")

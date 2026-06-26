@@ -12,6 +12,7 @@ type AdGeneratorSectionProps = {
 const emptyOutput = {
   hooks: [] as string[],
   captions: [] as string[],
+  ctas: [] as string[],
   ugcScript: "",
 };
 
@@ -19,7 +20,8 @@ export default function AdGeneratorSection({
   compact = false,
 }: AdGeneratorSectionProps) {
   const outputRef = useRef<HTMLDivElement>(null);
-  const { state, generate, reset, isLoading, hasOutput } = useAdGenerator();
+  const { state, generate, clearError, reset, isLoading, hasOutput, outputData } =
+    useAdGenerator();
 
   const handleGenerate = async ({
     productDescription,
@@ -39,14 +41,6 @@ export default function AdGeneratorSection({
     }
   };
 
-  const outputData =
-    state.status === "success"
-      ? state.data
-      : emptyOutput;
-    
-      console.log("STATE:", state)
-      console.log("OUTPUT DATA:", outputData)
-
   const formError = state.status === "error" ? state.message : null;
 
   return (
@@ -56,15 +50,14 @@ export default function AdGeneratorSection({
         onGenerate={handleGenerate}
         isGenerating={isLoading}
         externalError={formError}
-        onClearError={reset}
+        onClearError={clearError}
       />
 
       {hasOutput && (
         <div ref={outputRef} className="scroll-mt-24">
           <AiOutput
-            data={outputData}
+            data={outputData ?? emptyOutput}
             isLoading={isLoading}
-            
           />
         </div>
       )}
