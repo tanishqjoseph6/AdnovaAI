@@ -1,19 +1,26 @@
 "use client";
 
 import { BillingPricingProvider } from "@/components/billing/BillingPricingContext";
-import PricingToggles from "@/components/billing/PricingToggles";
+import { BillingToastProvider } from "@/components/billing/BillingToast";
+import BillingPaymentToasts from "@/components/billing/BillingPaymentToasts";
+
+type BillingPricingShellProps = {
+  children: React.ReactNode;
+  payment?: string;
+  message?: string;
+};
 
 export default function BillingPricingShell({
   children,
-}: {
-  children: React.ReactNode;
-}) {
+  payment,
+  message,
+}: BillingPricingShellProps) {
   return (
-    <BillingPricingProvider>
-      <div className="space-y-8">
-        <PricingToggles />
-        {children}
-      </div>
-    </BillingPricingProvider>
+    <BillingToastProvider>
+      <BillingPricingProvider>
+        <BillingPaymentToasts payment={payment} message={message} />
+        <div className="space-y-10">{children}</div>
+      </BillingPricingProvider>
+    </BillingToastProvider>
   );
 }

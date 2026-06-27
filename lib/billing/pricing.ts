@@ -51,9 +51,21 @@ export type PlanPriceQuote = {
   /** Paise (INR) or cents (USD) for payment providers. */
   amountMinor: number;
   displayAmount: string;
+  /** Full annual list price before discount (yearly only). */
+  originalDisplayAmount?: string;
   priceSuffix: string;
   showSaveBadge: boolean;
 };
+
+function getYearlyOriginalDisplay(
+  plan: PaidPlanId,
+  currency: BillingCurrency
+): string {
+  if (currency === "INR") {
+    return formatInr(MONTHLY_INR[plan] * 12);
+  }
+  return formatUsd(MONTHLY_USD[plan] * 12);
+}
 
 export function getPlanPriceQuote(
   plan: PaidPlanId,
@@ -81,6 +93,7 @@ export function getPlanPriceQuote(
       currency,
       amountMinor: amount * 100,
       displayAmount: formatInr(amount),
+      originalDisplayAmount: getYearlyOriginalDisplay(plan, currency),
       priceSuffix: "/year",
       showSaveBadge: true,
     };
@@ -106,6 +119,7 @@ export function getPlanPriceQuote(
     currency,
     amountMinor: amount * 100,
     displayAmount: formatUsd(amount),
+    originalDisplayAmount: getYearlyOriginalDisplay(plan, currency),
     priceSuffix: "/year",
     showSaveBadge: true,
   };

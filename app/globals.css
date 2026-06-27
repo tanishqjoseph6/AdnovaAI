@@ -30,6 +30,16 @@ body {
     background-clip: padding-box, border-box;
   }
 
+  .billing-pro-card {
+    background-image: linear-gradient(#0a0618, #0a0618),
+      linear-gradient(
+        135deg,
+        rgba(34, 211, 238, 0.65),
+        rgba(139, 92, 246, 0.75),
+        rgba(217, 70, 239, 0.65)
+      );
+  }
+
   .grid-bg {
     background-image: linear-gradient(
         rgba(255, 255, 255, 0.03) 1px,

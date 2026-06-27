@@ -5,6 +5,8 @@ import BillingPricingShell from "@/components/billing/BillingPricingShell";
 import FeatureComparison from "@/components/billing/FeatureComparison";
 import PaymentNotice from "@/components/billing/PaymentNotice";
 import PricingPlanCards from "@/components/billing/PricingPlanCards";
+import BillingTrustSection from "@/components/billing/BillingTrustSection";
+import BillingFaq from "@/components/billing/BillingFaq";
 import UpgradeProCta from "@/components/billing/UpgradeProCta";
 import { buildBillingInvoices } from "@/lib/billing/invoices";
 import {
@@ -48,10 +50,17 @@ export default async function BillingPage({ searchParams }: BillingPageProps) {
       <div className="space-y-10">
         <PaymentNotice payment={params.payment} message={params.message} />
 
-        <BillingPricingShell>
+        <BillingPricingShell
+          payment={params.payment}
+          message={params.message}
+        >
           <BillingHeroCard subscription={subscription} />
 
           <PricingPlanCards currentPlanId={subscription.plan} />
+
+          <BillingTrustSection />
+
+          <BillingFaq />
 
           <UpgradeProCta currentPlanId={subscription.plan} />
         </BillingPricingShell>

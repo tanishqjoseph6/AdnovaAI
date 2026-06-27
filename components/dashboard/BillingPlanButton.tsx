@@ -1,7 +1,9 @@
 "use client";
 
-import { useState } from "react";
+import { useRef, useState } from "react";
 import { useRouter } from "next/navigation";
+import { Loader2 } from "lucide-react";
+import { useBillingToast } from "@/components/billing/BillingToast";
 import { invalidateCreditsCache } from "@/hooks/useCredits";
 import type { PaidPlanId } from "@/lib/billing/plans";
 import type { BillingCurrency, BillingInterval } from "@/lib/billing/pricing";
@@ -77,13 +79,16 @@ export default function BillingPlanButton({
   onError,
 }: BillingPlanButtonProps) {
   const router = useRouter();
+  const { showToast } = useBillingToast();
   const [isLoading, setIsLoading] = useState(false);
+  const checkoutStartedRef = useRef(false);
 
   const handleClick = async () => {
-    if (disabled || isLoading) {
+    if (disabled || isLoading || checkoutStartedRef.current) {
       return;
     }
 
+    checkoutStartedRef.current = true;
     setIsLoading(true);
 
     try {
@@ -104,6 +109,7 @@ export default function BillingPlanButton({
         }
 
         if (typeof checkoutPayload.url === "string") {
+          showToast("Redirecting to secure Stripe checkout…", "info");
           window.location.href = checkoutPayload.url;
           return;
         }
@@ -142,6 +148,7 @@ export default function BillingPlanButton({
           planName: orderPayload.planName,
           prefill: orderPayload.prefill,
           handler: async (response: RazorpaySuccessResponse) => {
+            setIsLoading(true);
             try {
               const verifyResponse = await fetch("/api/razorpay/verify", {
                 method: "POST",
@@ -164,6 +171,10 @@ export default function BillingPlanButton({
               }
 
               invalidateCreditsCache();
+              showToast(
+                "Payment successful. Your subscription is now active.",
+                "success"
+              );
               router.refresh();
               router.push("/dashboard/billing?payment=success");
             } catch (error) {
@@ -172,13 +183,22 @@ export default function BillingPlanButton({
                   ? error.message
                   : "Payment verification failed.";
               onError?.(message);
+              showToast(message, "error");
               router.push(
                 `/dashboard/billing?payment=error&message=${encodeURIComponent(message)}`
               );
+            } finally {
+              checkoutStartedRef.current = false;
+              setIsLoading(false);
             }
           },
           onDismiss: () => {
-            onError?.("Payment was cancelled. You can try again anytime.");
+            checkoutStartedRef.current = false;
+            setIsLoading(false);
+            const cancelMessage =
+              "Payment was cancelled. You can try again anytime.";
+            onError?.(cancelMessage);
+            showToast(cancelMessage, "info");
             router.push(
               "/dashboard/billing?payment=cancelled&message=Payment%20was%20cancelled"
             );
@@ -186,6 +206,7 @@ export default function BillingPlanButton({
         })
       );
 
+      setIsLoading(false);
       razorpay.open();
     } catch (error) {
       const message =
@@ -193,10 +214,11 @@ export default function BillingPlanButton({
           ? error.message
           : "Payment could not be started. Please try again.";
       onError?.(message);
+      showToast(message, "error");
       router.push(
         `/dashboard/billing?payment=error&message=${encodeURIComponent(message)}`
       );
-    } finally {
+      checkoutStartedRef.current = false;
       setIsLoading(false);
     }
   };
@@ -204,12 +226,21 @@ export default function BillingPlanButton({
   return (
     <button
       type="button"
-      onClick={handleClick}
+      onClick={() => void handleClick()}
       disabled={disabled || isLoading}
-      className={className}
+      className={`${className ?? ""} ${
+        isLoading ? "cursor-wait opacity-80" : ""
+      }`}
       aria-busy={isLoading}
     >
-      {isLoading ? "Opening checkout..." : children}
+      {isLoading ? (
+        <span className="inline-flex items-center justify-center gap-2">
+          <Loader2 className="h-4 w-4 animate-spin" aria-hidden />
+          Opening checkout…
+        </span>
+      ) : (
+        children
+      )}
     </button>
   );
 }

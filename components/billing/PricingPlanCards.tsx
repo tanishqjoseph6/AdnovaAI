@@ -1,8 +1,10 @@
 "use client";
 
-import { motion } from "framer-motion";
+import { motion, AnimatePresence } from "framer-motion";
 import BillingPlanButton from "@/components/dashboard/BillingPlanButton";
 import { useBillingPricing } from "@/components/billing/BillingPricingContext";
+import PricingToggles from "@/components/billing/PricingToggles";
+import { getContactSalesMailtoUrl } from "@/lib/billing/contact-sales";
 import {
   PRICING_TIER_ORDER,
   PRICING_TIERS,
@@ -24,10 +26,10 @@ const TIER_LABELS: Record<PlanId, string> = {
 const VARIANT_CARD_CLASS: Record<PricingTierConfig["variant"], string> = {
   free: "border-white/[0.08] bg-white/[0.02] hover:border-white/[0.14] hover:shadow-lg hover:shadow-white/5",
   starter:
-    "border-cyan-500/25 bg-cyan-500/[0.04] shadow-lg shadow-cyan-500/10 hover:border-cyan-400/40 hover:shadow-cyan-500/20",
-  pro: "gradient-border bg-[#0a0618] shadow-2xl shadow-violet-500/25 hover:shadow-violet-500/35 lg:-translate-y-1",
+    "border-cyan-500/25 bg-cyan-500/[0.04] shadow-lg shadow-cyan-500/10 hover:border-cyan-400/40 hover:shadow-cyan-500/25 hover:-translate-y-0.5",
+  pro: "billing-pro-card gradient-border bg-[#0a0618] shadow-[0_0_48px_rgba(139,92,246,0.22)] hover:shadow-[0_0_64px_rgba(139,92,246,0.32)] xl:min-h-[32rem] xl:-translate-y-2",
   business:
-    "border-white/[0.1] bg-white/[0.02] hover:border-white/[0.16] hover:shadow-lg hover:shadow-black/20",
+    "border-white/[0.1] bg-white/[0.02] hover:border-white/[0.16] hover:shadow-lg hover:shadow-black/25 hover:-translate-y-0.5",
 };
 
 const VARIANT_BADGE_CLASS: Record<PricingTierConfig["variant"], string> = {
@@ -169,16 +171,12 @@ function PlanCta({
 
   return (
     <div>
-      <button
-        type="button"
-        disabled
-        className={`${baseButtonClass} cursor-not-allowed border border-white/20 bg-white/[0.03] text-zinc-200 shadow-[0_0_24px_rgba(255,255,255,0.04)] ring-1 ring-white/10 disabled:opacity-90`}
+      <a
+        href={getContactSalesMailtoUrl()}
+        className={`${baseButtonClass} border border-white/20 bg-white/[0.05] text-zinc-100 shadow-[0_0_24px_rgba(255,255,255,0.06)] ring-1 ring-white/10 transition hover:border-white/30 hover:bg-white/[0.08] hover:shadow-[0_0_32px_rgba(139,92,246,0.15)]`}
       >
         {tier.ctaLabel}
-      </button>
-      <p className="mt-2.5 text-center text-xs text-zinc-500">
-        Talk to Sales
-      </p>
+      </a>
     </div>
   );
 }
@@ -191,6 +189,7 @@ export default function PricingPlanCards({
   function getTierPriceDisplay(tier: PricingTierConfig): {
     priceDisplay: string;
     priceSuffix?: string;
+    originalDisplayAmount?: string;
     showSaveBadge: boolean;
   } {
     if (tier.planId === "starter" || tier.planId === "pro") {
@@ -198,6 +197,7 @@ export default function PricingPlanCards({
       return {
         priceDisplay: quote.displayAmount,
         priceSuffix: quote.priceSuffix,
+        originalDisplayAmount: quote.originalDisplayAmount,
         showSaveBadge: quote.showSaveBadge,
       };
     }
@@ -226,7 +226,9 @@ export default function PricingPlanCards({
 
       <UpgradePath currentPlanId={currentPlanId} />
 
-      <div className="grid items-stretch gap-5 sm:grid-cols-2 xl:grid-cols-4">
+      <PricingToggles />
+
+      <div className="grid items-stretch gap-5 sm:grid-cols-2 xl:grid-cols-4 xl:gap-6">
         {PRICING_TIERS.map((tier, index) => {
           const isCurrent = currentPlanId === tier.planId;
           const isHighlighted = tier.highlighted;
@@ -238,15 +240,20 @@ export default function PricingPlanCards({
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.4, delay: index * 0.07 }}
-              whileHover={{ y: isHighlighted ? -4 : -2 }}
-              className={`glass relative flex h-full flex-col rounded-2xl border p-6 transition duration-300 ${VARIANT_CARD_CLASS[tier.variant]} ${
+              whileHover={{ y: isHighlighted ? -6 : -3 }}
+              className={`glass relative flex h-full flex-col rounded-2xl border transition duration-300 ${
+                tier.variant === "pro" ? "p-7 sm:p-8" : "p-6"
+              } ${VARIANT_CARD_CLASS[tier.variant]} ${
                 isCurrent
                   ? "ring-2 ring-violet-500/35 ring-offset-2 ring-offset-[#030014]"
                   : ""
               }`}
             >
               {tier.variant === "pro" && (
-                <div className="pointer-events-none absolute -right-8 -top-8 h-32 w-32 rounded-full bg-fuchsia-500/20 blur-3xl" />
+                <>
+                  <div className="pointer-events-none absolute -right-10 -top-10 h-40 w-40 rounded-full bg-fuchsia-500/25 blur-3xl" />
+                  <div className="pointer-events-none absolute -bottom-8 -left-8 h-32 w-32 rounded-full bg-cyan-500/15 blur-3xl" />
+                </>
               )}
               {tier.variant === "starter" && (
                 <div className="pointer-events-none absolute -left-6 bottom-0 h-24 w-24 rounded-full bg-cyan-500/15 blur-2xl" />
@@ -279,7 +286,8 @@ export default function PricingPlanCards({
                   </span>
                 )}
                 {pricing.showSaveBadge && (
-                  <span className="inline-flex w-fit rounded-full border border-emerald-500/30 bg-emerald-500/15 px-2.5 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-emerald-300">
+                  <span className="inline-flex w-fit items-center gap-1.5 rounded-full border border-emerald-500/30 bg-emerald-500/15 px-2.5 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-emerald-300">
+                    <span aria-hidden>🟢</span>
                     Save 20%
                   </span>
                 )}
@@ -306,20 +314,42 @@ export default function PricingPlanCards({
                 {tier.subtitle}
               </p>
 
-              <div className="relative mt-5 flex min-h-[3rem] items-baseline gap-1.5">
-                <span
-                  className={`font-bold tracking-tight text-white ${
-                    pricing.priceDisplay === "Free" ||
-                    pricing.priceDisplay === "Custom"
-                      ? "text-3xl"
-                      : "text-3xl sm:text-4xl"
-                  }`}
-                >
-                  {pricing.priceDisplay}
-                </span>
-                {pricing.priceSuffix && (
-                  <span className="text-sm text-zinc-500">{pricing.priceSuffix}</span>
-                )}
+              <div className="relative mt-5 min-h-[4.5rem]">
+                <AnimatePresence mode="wait">
+                  <motion.div
+                    key={`${pricing.priceDisplay}-${pricing.priceSuffix}-${pricing.originalDisplayAmount ?? ""}`}
+                    initial={{ opacity: 0, y: 6 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    exit={{ opacity: 0, y: -6 }}
+                    transition={{ duration: 0.22 }}
+                    className="flex flex-col gap-1"
+                  >
+                    {pricing.originalDisplayAmount && (
+                      <span className="text-base font-medium text-zinc-500 line-through sm:text-lg">
+                        {pricing.originalDisplayAmount}
+                      </span>
+                    )}
+                    <div className="flex flex-wrap items-baseline gap-1.5">
+                      <span
+                        className={`font-bold tracking-tight text-white ${
+                          pricing.priceDisplay === "Free" ||
+                          pricing.priceDisplay === "Custom"
+                            ? "text-3xl"
+                            : tier.variant === "pro"
+                              ? "text-3xl sm:text-[2.5rem]"
+                              : "text-3xl sm:text-4xl"
+                        }`}
+                      >
+                        {pricing.priceDisplay}
+                      </span>
+                      {pricing.priceSuffix && (
+                        <span className="text-sm text-zinc-500">
+                          {pricing.priceSuffix}
+                        </span>
+                      )}
+                    </div>
+                  </motion.div>
+                </AnimatePresence>
               </div>
 
               <ul className="relative mt-6 flex-1 space-y-3">
