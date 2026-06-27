@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { supabase } from "@/lib/supabase";
 import { useRouter } from "next/navigation";
+import PasswordInput from "@/components/auth/PasswordInput";
 
 export default function LoginPage() {
   const router = useRouter();
@@ -36,10 +37,8 @@ export default function LoginPage() {
           onChange={(e) => setEmail(e.target.value)}
         />
 
-        <input
-          className="w-full border p-3 rounded"
+        <PasswordInput
           placeholder="Password"
-          type="password"
           value={password}
           onChange={(e) => setPassword(e.target.value)}
         />

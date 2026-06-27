@@ -1,10 +1,10 @@
 "use client";
 
+import { ImagePlus, X } from "lucide-react";
 import { useCallback, useEffect, useId, useRef, useState } from "react";
 import LoadingSpinner from "./LoadingSpinner";
 
 const ACCEPTED_TYPES = ["image/jpeg", "image/png", "image/webp", "image/gif"];
-const MAX_FILES = 6;
 const MAX_SIZE_MB = 10;
 
 export type GeneratePayload = {
@@ -19,44 +19,10 @@ type ProductUploadProps = {
   onClearError?: () => void;
 };
 
-function PreviewThumbnail({
-  src,
-  index,
-  onRemove,
-}: {
-  src: string;
-  index: number;
-  onRemove: () => void;
-}) {
-  return (
-    <li className="group relative aspect-square">
-      {/* eslint-disable-next-line @next/next/no-img-element */}
-      <img
-        src={src}
-        alt={`Product upload ${index + 1}`}
-        className="h-full w-full rounded-lg object-cover"
-      />
-      <button
-        type="button"
-        onClick={(e) => {
-          e.stopPropagation();
-          onRemove();
-        }}
-        className="absolute -right-1.5 -top-1.5 flex h-7 w-7 items-center justify-center rounded-full bg-[#030014] text-zinc-400 opacity-100 shadow-lg ring-1 ring-white/10 transition hover:bg-red-500/20 hover:text-red-400 sm:opacity-0 sm:group-hover:opacity-100"
-        aria-label={`Remove image ${index + 1}`}
-      >
-        <svg className="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-        </svg>
-      </button>
-    </li>
-  );
-}
-
 function buildProductDescription(
   description: string,
   productUrl: string,
-  fileCount: number
+  hasImage: boolean
 ): string {
   const parts: string[] = [];
 
@@ -70,13 +36,70 @@ function buildProductDescription(
     parts.push(`Product / landing page URL: ${url}`);
   }
 
-  if (fileCount > 0) {
-    parts.push(
-      `The seller provided ${fileCount} product image(s) for visual reference.`
-    );
+  if (hasImage) {
+    parts.push("The seller provided 1 product image for visual reference.");
   }
 
   return parts.join("\n\n");
+}
+
+function ProductImagePreview({
+  src,
+  fileName,
+  onRemove,
+  onReplace,
+  disabled,
+}: {
+  src: string;
+  fileName: string;
+  onRemove: () => void;
+  onReplace: () => void;
+  disabled: boolean;
+}) {
+  return (
+    <div className="glass rounded-xl p-3 sm:p-4">
+      <p className="mb-3 text-xs font-medium uppercase tracking-wider text-zinc-500">
+        Product image
+      </p>
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-start">
+        <div className="relative mx-auto w-full max-w-[140px] shrink-0 sm:mx-0">
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img
+            src={src}
+            alt="Uploaded product preview"
+            className="aspect-square w-full rounded-xl border border-white/10 object-cover"
+          />
+          <button
+            type="button"
+            disabled={disabled}
+            onClick={(e) => {
+              e.stopPropagation();
+              onRemove();
+            }}
+            className="absolute -right-2 -top-2 flex h-8 w-8 items-center justify-center rounded-full border border-white/10 bg-[#030014] text-zinc-400 shadow-lg transition hover:border-red-500/40 hover:bg-red-500/20 hover:text-red-400 disabled:cursor-not-allowed disabled:opacity-50"
+            aria-label="Remove image"
+          >
+            <X className="h-4 w-4" strokeWidth={2} aria-hidden />
+          </button>
+        </div>
+
+        <div className="min-w-0 flex-1 space-y-3">
+          <p className="truncate text-sm font-medium text-zinc-300" title={fileName}>
+            {fileName}
+          </p>
+          <button
+            type="button"
+            disabled={disabled}
+            onClick={onReplace}
+            className="inline-flex w-full items-center justify-center gap-2 rounded-xl border border-cyan-500/30 bg-cyan-500/10 px-4 py-2.5 text-sm font-medium text-cyan-200 transition hover:border-cyan-400/50 hover:bg-cyan-500/15 disabled:cursor-not-allowed disabled:opacity-50 sm:w-auto"
+          >
+            <ImagePlus className="h-4 w-4" strokeWidth={1.75} aria-hidden />
+            Replace image
+          </button>
+        </div>
+      </div>
+    </div>
+  );
 }
 
 export default function ProductUpload({
@@ -88,25 +111,31 @@ export default function ProductUpload({
 }: ProductUploadProps) {
   const urlInputId = useId();
   const descriptionInputId = useId();
+  const fileInputId = useId();
+  const fileInputRef = useRef<HTMLInputElement>(null);
   const dragCounterRef = useRef(0);
-  const previewsRef = useRef<string[]>([]);
+  const previewUrlRef = useRef<string | null>(null);
 
   const [isDragging, setIsDragging] = useState(false);
+  const [isProcessingUpload, setIsProcessingUpload] = useState(false);
   const [productDescription, setProductDescription] = useState("");
   const [productUrl, setProductUrl] = useState("");
-  const [files, setFiles] = useState<File[]>([]);
-  const [previews, setPreviews] = useState<string[]>([]);
+  const [file, setFile] = useState<File | null>(null);
+  const [previewUrl, setPreviewUrl] = useState<string | null>(null);
   const [localError, setLocalError] = useState<string | null>(null);
 
   const displayError = localError ?? externalError;
+  const uploadDisabled = isGenerating || isProcessingUpload;
 
   useEffect(() => {
-    previewsRef.current = previews;
-  }, [previews]);
+    previewUrlRef.current = previewUrl;
+  }, [previewUrl]);
 
   useEffect(() => {
     return () => {
-      previewsRef.current.forEach((url) => URL.revokeObjectURL(url));
+      if (previewUrlRef.current) {
+        URL.revokeObjectURL(previewUrlRef.current);
+      }
     };
   }, []);
 
@@ -115,52 +144,78 @@ export default function ProductUpload({
     onClearError?.();
   }, [onClearError]);
 
-  const addFiles = useCallback((incoming: FileList | File[]) => {
-    clearErrors();
-    const list = Array.from(incoming);
-    const valid: File[] = [];
+  const revokeCurrentPreview = useCallback(() => {
+    setPreviewUrl((current) => {
+      if (current) {
+        URL.revokeObjectURL(current);
+      }
+      return null;
+    });
+  }, []);
 
-    for (const file of list) {
-      if (!ACCEPTED_TYPES.includes(file.type)) {
-        setLocalError("Only JPG, PNG, WebP, and GIF images are supported.");
-        continue;
-      }
-      if (file.size > MAX_SIZE_MB * 1024 * 1024) {
-        setLocalError(`Each file must be under ${MAX_SIZE_MB}MB.`);
-        continue;
-      }
-      valid.push(file);
+  const clearImage = useCallback(() => {
+    revokeCurrentPreview();
+    setFile(null);
+    clearErrors();
+    if (fileInputRef.current) {
+      fileInputRef.current.value = "";
     }
+  }, [clearErrors, revokeCurrentPreview]);
 
-    if (!valid.length) return;
+  const openFilePicker = useCallback(() => {
+    if (uploadDisabled) return;
+    fileInputRef.current?.click();
+  }, [uploadDisabled]);
 
-    setFiles((prev) => {
-      const room = MAX_FILES - prev.length;
-      if (room <= 0) {
-        setLocalError(`Maximum ${MAX_FILES} images allowed.`);
-        return prev;
+  const processFile = useCallback(
+    async (incoming: File) => {
+      clearErrors();
+
+      if (!ACCEPTED_TYPES.includes(incoming.type)) {
+        setLocalError("Only JPG, PNG, WebP, and GIF images are supported.");
+        return;
       }
 
-      const toAdd = valid.slice(0, room);
-      if (valid.length > room) {
-        setLocalError(`Maximum ${MAX_FILES} images allowed.`);
+      if (incoming.size > MAX_SIZE_MB * 1024 * 1024) {
+        setLocalError(`Each file must be under ${MAX_SIZE_MB}MB.`);
+        return;
       }
 
-      const newPreviews = toAdd.map((file) => URL.createObjectURL(file));
-      setPreviews((p) => [...p, ...newPreviews]);
-      return [...prev, ...toAdd];
-    });
-  }, [clearErrors]);
+      setIsProcessingUpload(true);
 
-  const removeFile = (index: number) => {
-    setFiles((prev) => prev.filter((_, i) => i !== index));
-    setPreviews((prev) => {
-      const removed = prev[index];
-      if (removed) URL.revokeObjectURL(removed);
-      return prev.filter((_, i) => i !== index);
-    });
-    clearErrors();
-  };
+      try {
+        await new Promise<void>((resolve) => {
+          window.requestAnimationFrame(() => resolve());
+        });
+
+        const nextPreview = URL.createObjectURL(incoming);
+
+        setPreviewUrl((current) => {
+          if (current) {
+            URL.revokeObjectURL(current);
+          }
+          return nextPreview;
+        });
+        setFile(incoming);
+      } finally {
+        setIsProcessingUpload(false);
+        if (fileInputRef.current) {
+          fileInputRef.current.value = "";
+        }
+      }
+    },
+    [clearErrors]
+  );
+
+  const handleFiles = useCallback(
+    (incoming: FileList | File[]) => {
+      const first = Array.from(incoming)[0];
+      if (first) {
+        void processFile(first);
+      }
+    },
+    [processFile]
+  );
 
   const handleDragEnter = (e: React.DragEvent) => {
     e.preventDefault();
@@ -185,11 +240,14 @@ export default function ProductUpload({
     e.preventDefault();
     dragCounterRef.current = 0;
     setIsDragging(false);
-    if (e.dataTransfer.files.length) addFiles(e.dataTransfer.files);
+    if (uploadDisabled) return;
+    if (e.dataTransfer.files.length) {
+      handleFiles(e.dataTransfer.files);
+    }
   };
 
   const handleGenerate = async () => {
-    if (!productDescription.trim() && !productUrl.trim() && files.length === 0) {
+    if (!productDescription.trim() && !productUrl.trim() && !file) {
       setLocalError("Add a product description, URL, or at least one image.");
       return;
     }
@@ -197,7 +255,7 @@ export default function ProductUpload({
     const fullDescription = buildProductDescription(
       productDescription,
       productUrl,
-      files.length
+      Boolean(file)
     );
 
     if (fullDescription.trim().length < 10) {
@@ -213,7 +271,9 @@ export default function ProductUpload({
       await onGenerate?.({ productDescription: fullDescription });
     } catch (err) {
       setLocalError(
-        err instanceof Error ? err.message : "Failed to generate ads. Please try again."
+        err instanceof Error
+          ? err.message
+          : "Failed to generate ads. Please try again."
       );
     }
   };
@@ -221,7 +281,15 @@ export default function ProductUpload({
   const canGenerate =
     productDescription.trim().length > 0 ||
     productUrl.trim().length > 0 ||
-    files.length > 0;
+    Boolean(file);
+
+  const dropZoneLabel = previewUrl
+    ? isDragging
+      ? "Drop to replace image"
+      : "Drag & drop or tap to replace"
+    : isDragging
+      ? "Drop image here"
+      : "Drag & drop product image";
 
   return (
     <section
@@ -232,12 +300,25 @@ export default function ProductUpload({
         <div className="flex flex-wrap items-center justify-between gap-3">
           <div className="flex min-w-0 items-center gap-3">
             <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-gradient-to-br from-cyan-500/30 via-violet-500/30 to-fuchsia-500/20">
-              <svg className="h-5 w-5 text-cyan-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M3 16.5v2.25A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75V16.5m-13.5-9L12 3m0 0l4.5 4.5M12 3v13.5" />
+              <svg
+                className="h-5 w-5 text-cyan-400"
+                fill="none"
+                viewBox="0 0 24 24"
+                stroke="currentColor"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={1.5}
+                  d="M3 16.5v2.25A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75V16.5m-13.5-9L12 3m0 0l4.5 4.5M12 3v13.5"
+                />
               </svg>
             </span>
             <div className="min-w-0">
-              <h2 id="product-upload-heading" className="text-base font-semibold text-white sm:text-lg">
+              <h2
+                id="product-upload-heading"
+                className="text-base font-semibold text-white sm:text-lg"
+              >
                 Product upload
               </h2>
               <p className="text-sm text-zinc-500">
@@ -252,75 +333,81 @@ export default function ProductUpload({
       </div>
 
       <div
-        className={`grid gap-6 p-4 sm:p-6 ${
-          compact ? "" : "md:grid-cols-2"
-        }`}
+        className={`grid gap-6 p-4 sm:p-6 ${compact ? "" : "md:grid-cols-2"}`}
       >
         <div className="min-w-0 space-y-4">
+          <input
+            ref={fileInputRef}
+            id={fileInputId}
+            type="file"
+            accept={ACCEPTED_TYPES.join(",")}
+            disabled={uploadDisabled}
+            className="sr-only"
+            onChange={(e) => {
+              if (e.target.files?.length) {
+                handleFiles(e.target.files);
+              }
+            }}
+          />
+
+          {previewUrl && file && !isProcessingUpload && (
+            <ProductImagePreview
+              src={previewUrl}
+              fileName={file.name}
+              onRemove={clearImage}
+              onReplace={openFilePicker}
+              disabled={uploadDisabled}
+            />
+          )}
+
           <div
+            role="button"
+            tabIndex={uploadDisabled ? -1 : 0}
             onDragEnter={handleDragEnter}
             onDragOver={handleDragOver}
             onDragLeave={handleDragLeave}
             onDrop={handleDrop}
-            className={`relative flex min-h-[180px] flex-col items-center justify-center rounded-xl border-2 border-dashed p-4 text-center transition sm:min-h-[200px] ${
+            onClick={openFilePicker}
+            onKeyDown={(e) => {
+              if (e.key === "Enter" || e.key === " ") {
+                e.preventDefault();
+                openFilePicker();
+              }
+            }}
+            aria-label={dropZoneLabel}
+            aria-disabled={uploadDisabled}
+            className={`relative flex min-h-[140px] flex-col items-center justify-center rounded-xl border-2 border-dashed p-4 text-center transition outline-none focus-visible:ring-2 focus-visible:ring-cyan-400/40 sm:min-h-[160px] ${
               isDragging
                 ? "border-cyan-400/60 bg-cyan-500/10"
                 : "border-white/10 bg-white/[0.02]"
-            } ${isGenerating ? "pointer-events-none opacity-60" : ""}`}
+            } ${uploadDisabled ? "pointer-events-none opacity-60" : "cursor-pointer hover:border-white/20 hover:bg-white/[0.04]"}`}
           >
-            <input
-              type="file"
-              accept={ACCEPTED_TYPES.join(",")}
-              multiple
-              disabled={isGenerating}
-              className="sr-only"
-              id={`${urlInputId}-file`}
-              onChange={(e) => {
-                if (e.target.files) addFiles(e.target.files);
-                e.target.value = "";
-              }}
-            />
-            <label
-              htmlFor={`${urlInputId}-file`}
-              className={`flex flex-col items-center ${isGenerating ? "cursor-not-allowed" : "cursor-pointer"}`}
-            >
-              <div
-                className={`mb-3 flex h-12 w-12 items-center justify-center rounded-2xl transition ${
-                  isDragging
-                    ? "bg-cyan-500/20 text-cyan-300"
-                    : "bg-gradient-to-br from-violet-500/20 to-cyan-500/20 text-violet-300"
-                }`}
-              >
-                <svg className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
-                </svg>
+            {isProcessingUpload ? (
+              <div className="flex flex-col items-center gap-3 py-2">
+                <LoadingSpinner className="h-8 w-8 text-cyan-400" />
+                <p className="text-sm font-medium text-white">
+                  Processing image...
+                </p>
+                <p className="text-xs text-zinc-500">Validating and preparing preview</p>
               </div>
-              <p className="text-sm font-medium text-white">
-                {isDragging ? "Drop images here" : "Drag & drop product images"}
-              </p>
-              <p className="mt-1 text-xs text-zinc-500">
-                or <span className="text-cyan-400">tap to browse</span>
-              </p>
-            </label>
+            ) : (
+              <>
+                <div
+                  className={`mb-3 flex h-12 w-12 items-center justify-center rounded-2xl transition ${
+                    isDragging
+                      ? "bg-cyan-500/20 text-cyan-300"
+                      : "bg-gradient-to-br from-violet-500/20 to-cyan-500/20 text-violet-300"
+                  }`}
+                >
+                  <ImagePlus className="h-6 w-6" strokeWidth={1.5} aria-hidden />
+                </div>
+                <p className="text-sm font-medium text-white">{dropZoneLabel}</p>
+                <p className="mt-1 text-xs text-zinc-500">
+                  JPG, PNG, WebP, GIF · up to {MAX_SIZE_MB}MB
+                </p>
+              </>
+            )}
           </div>
-
-          {previews.length > 0 && (
-            <div className="glass rounded-xl p-3">
-              <p className="mb-3 text-xs font-medium uppercase tracking-wider text-zinc-500">
-                Uploaded ({previews.length}/{MAX_FILES})
-              </p>
-              <ul className="grid grid-cols-3 gap-2 sm:grid-cols-4">
-                {previews.map((src, i) => (
-                  <PreviewThumbnail
-                    key={src}
-                    src={src}
-                    index={i}
-                    onRemove={() => removeFile(i)}
-                  />
-                ))}
-              </ul>
-            </div>
-          )}
         </div>
 
         <div className="flex min-w-0 flex-col gap-4">
@@ -329,8 +416,18 @@ export default function ProductUpload({
               htmlFor={descriptionInputId}
               className="flex items-center gap-2 text-sm font-medium text-zinc-300"
             >
-              <svg className="h-4 w-4 shrink-0 text-cyan-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M7.5 8.25h9m-9 3H12m-9.75 1.51c0 1.6 1.123 2.994 2.707 3.227 1.087.16 2.185.283 3.293.369V21l4.184-4.183a1.14 1.14 0 01.778-.332 48.294 48.294 0 005.83-.498c1.585-.233 2.708-1.626 2.708-3.228V6.741c0-1.602-1.123-2.995-2.707-3.228A48.394 48.394 0 0012 3c-2.392 0-4.744.175-7.043.513C3.373 3.746 2.25 5.14 2.25 6.741v6.018z" />
+              <svg
+                className="h-4 w-4 shrink-0 text-cyan-400"
+                fill="none"
+                viewBox="0 0 24 24"
+                stroke="currentColor"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={1.5}
+                  d="M7.5 8.25h9m-9 3H12m-9.75 1.51c0 1.6 1.123 2.994 2.707 3.227 1.087.16 2.185.283 3.293.369V21l4.184-4.183a1.14 1.14 0 01.778-.332 48.294 48.294 0 005.83-.498c1.585-.233 2.708-1.626 2.708-3.228V6.741c0-1.602-1.123-2.995-2.707-3.228A48.394 48.394 0 0012 3c-2.392 0-4.744.175-7.043.513C3.373 3.746 2.25 5.14 2.25 6.741v6.018z"
+                />
               </svg>
               Product description
             </label>
@@ -356,8 +453,18 @@ export default function ProductUpload({
               htmlFor={urlInputId}
               className="flex items-center gap-2 text-sm font-medium text-zinc-300"
             >
-              <svg className="h-4 w-4 shrink-0 text-violet-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1" />
+              <svg
+                className="h-4 w-4 shrink-0 text-violet-400"
+                fill="none"
+                viewBox="0 0 24 24"
+                stroke="currentColor"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={1.5}
+                  d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1"
+                />
               </svg>
               Product URL <span className="text-zinc-600">(optional)</span>
             </label>
@@ -396,8 +503,19 @@ export default function ProductUpload({
               <LoadingSpinner label="Generating ads with AI..." />
             ) : (
               <>
-                <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden>
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
+                <svg
+                  className="h-5 w-5"
+                  fill="none"
+                  viewBox="0 0 24 24"
+                  stroke="currentColor"
+                  aria-hidden
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M13 10V3L4 14h7v7l9-11h-7z"
+                  />
                 </svg>
                 Generate Ads
               </>

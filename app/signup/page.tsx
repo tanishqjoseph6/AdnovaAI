@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { supabase } from "@/lib/supabase";
+import PasswordInput from "@/components/auth/PasswordInput";
 
 export default function SignupPage() {
   const router = useRouter();
@@ -42,10 +43,9 @@ export default function SignupPage() {
           onChange={(e) => setEmail(e.target.value)}
         />
 
-        <input
-          className="w-full border p-3 rounded"
+        <PasswordInput
           placeholder="Password"
-          type="password"
+          autoComplete="new-password"
           value={password}
           onChange={(e) => setPassword(e.target.value)}
         />
