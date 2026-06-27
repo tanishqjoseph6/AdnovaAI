@@ -2,12 +2,13 @@
 
 import { motion } from "framer-motion";
 import BillingPlanButton from "@/components/dashboard/BillingPlanButton";
+import { useBillingPricing } from "@/components/billing/BillingPricingContext";
 import {
   PRICING_TIER_ORDER,
   PRICING_TIERS,
   type PricingTierConfig,
 } from "@/lib/billing/comparison";
-import type { PlanId } from "@/lib/billing/plans";
+import type { PaidPlanId, PlanId } from "@/lib/billing/plans";
 
 type PricingPlanCardsProps = {
   currentPlanId: PlanId;
@@ -119,6 +120,7 @@ function PlanCta({
   tier: PricingTierConfig;
   currentPlanId: PlanId;
 }) {
+  const { interval, currency } = useBillingPricing();
   const isCurrent = currentPlanId === tier.planId;
   const baseButtonClass =
     "block w-full rounded-xl py-3 text-center text-sm font-semibold transition disabled:cursor-not-allowed";
@@ -140,6 +142,8 @@ function PlanCta({
     return (
       <BillingPlanButton
         plan="starter"
+        interval={interval}
+        currency={currency}
         disabled={disabled}
         className={`${baseButtonClass} border border-cyan-500/35 bg-cyan-500/15 text-cyan-100 hover:border-cyan-400/50 hover:bg-cyan-500/25 disabled:opacity-50`}
       >
@@ -153,6 +157,8 @@ function PlanCta({
     return (
       <BillingPlanButton
         plan="pro"
+        interval={interval}
+        currency={currency}
         disabled={disabled}
         className={`${baseButtonClass} bg-gradient-to-r from-violet-500 via-fuchsia-500 to-pink-500 text-white shadow-lg shadow-violet-500/30 hover:opacity-90 disabled:opacity-50`}
       >
@@ -180,6 +186,29 @@ function PlanCta({
 export default function PricingPlanCards({
   currentPlanId,
 }: PricingPlanCardsProps) {
+  const { getQuote } = useBillingPricing();
+
+  function getTierPriceDisplay(tier: PricingTierConfig): {
+    priceDisplay: string;
+    priceSuffix?: string;
+    showSaveBadge: boolean;
+  } {
+    if (tier.planId === "starter" || tier.planId === "pro") {
+      const quote = getQuote(tier.planId as PaidPlanId);
+      return {
+        priceDisplay: quote.displayAmount,
+        priceSuffix: quote.priceSuffix,
+        showSaveBadge: quote.showSaveBadge,
+      };
+    }
+
+    return {
+      priceDisplay: tier.priceDisplay,
+      priceSuffix: tier.priceSuffix,
+      showSaveBadge: false,
+    };
+  }
+
   return (
     <section className="space-y-8 pt-2">
       <div className="text-center">
@@ -201,6 +230,7 @@ export default function PricingPlanCards({
         {PRICING_TIERS.map((tier, index) => {
           const isCurrent = currentPlanId === tier.planId;
           const isHighlighted = tier.highlighted;
+          const pricing = getTierPriceDisplay(tier);
 
           return (
             <motion.article
@@ -248,6 +278,11 @@ export default function PricingPlanCards({
                     {tier.badge}
                   </span>
                 )}
+                {pricing.showSaveBadge && (
+                  <span className="inline-flex w-fit rounded-full border border-emerald-500/30 bg-emerald-500/15 px-2.5 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-emerald-300">
+                    Save 20%
+                  </span>
+                )}
                 {isCurrent && !tier.badge && (
                   <span
                     className={`inline-flex w-fit rounded-full border px-2.5 py-0.5 text-[10px] font-semibold uppercase tracking-wide ${VARIANT_BADGE_CLASS.free}`}
@@ -274,15 +309,16 @@ export default function PricingPlanCards({
               <div className="relative mt-5 flex min-h-[3rem] items-baseline gap-1.5">
                 <span
                   className={`font-bold tracking-tight text-white ${
-                    tier.priceDisplay === "Free" || tier.priceDisplay === "Custom"
+                    pricing.priceDisplay === "Free" ||
+                    pricing.priceDisplay === "Custom"
                       ? "text-3xl"
                       : "text-3xl sm:text-4xl"
                   }`}
                 >
-                  {tier.priceDisplay}
+                  {pricing.priceDisplay}
                 </span>
-                {tier.priceSuffix && (
-                  <span className="text-sm text-zinc-500">{tier.priceSuffix}</span>
+                {pricing.priceSuffix && (
+                  <span className="text-sm text-zinc-500">{pricing.priceSuffix}</span>
                 )}
               </div>
 

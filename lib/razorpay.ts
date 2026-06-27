@@ -1,7 +1,10 @@
 import crypto from "crypto";
 import Razorpay from "razorpay";
 import type { PaidPlanId } from "@/lib/billing/plans";
-import { PLANS } from "@/lib/billing/plans";
+import {
+  getPaidPlanAmountMinor,
+  type BillingInterval,
+} from "@/lib/billing/pricing";
 
 function requireEnv(name: string): string {
   const value = process.env[name];
@@ -67,18 +70,21 @@ export function verifyWebhookSignature(rawBody: string, signature: string): bool
 export async function createPlanOrder(
   planId: PaidPlanId,
   userId: string,
-  userEmail?: string | null
+  userEmail?: string | null,
+  interval: BillingInterval = "monthly"
 ) {
-  const plan = PLANS[planId];
   const razorpay = createRazorpayClient();
+  const amount = getPaidPlanAmountMinor(planId, interval, "INR");
 
   const order = await razorpay.orders.create({
-    amount: plan.amountPaise,
+    amount,
     currency: "INR",
-    receipt: `advora_${planId}_${userId.slice(0, 8)}_${Date.now()}`,
+    receipt: `advora_${planId}_${interval}_${userId.slice(0, 8)}_${Date.now()}`,
     notes: {
       user_id: userId,
       plan: planId,
+      interval,
+      currency: "INR",
       merchant: "Advora AI",
       website: "https://useadvora.com",
       ...(userEmail ? { email: userEmail } : {}),

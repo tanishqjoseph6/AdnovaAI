@@ -4,6 +4,7 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { invalidateCreditsCache } from "@/hooks/useCredits";
 import type { PaidPlanId } from "@/lib/billing/plans";
+import type { BillingCurrency, BillingInterval } from "@/lib/billing/pricing";
 import { createRazorpayCheckoutOptions } from "@/lib/razorpay/checkout-options";
 
 type RazorpaySuccessResponse = {
@@ -24,6 +25,8 @@ declare global {
 
 type BillingPlanButtonProps = {
   plan: PaidPlanId;
+  interval?: BillingInterval;
+  currency?: BillingCurrency;
   className?: string;
   children: React.ReactNode;
   disabled?: boolean;
@@ -66,6 +69,8 @@ function loadRazorpayScript(): Promise<void> {
 
 export default function BillingPlanButton({
   plan,
+  interval = "monthly",
+  currency = "INR",
   className,
   children,
   disabled = false,
@@ -82,10 +87,34 @@ export default function BillingPlanButton({
     setIsLoading(true);
 
     try {
+      if (currency === "USD") {
+        const checkoutResponse = await fetch("/api/stripe/create-checkout", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ plan, interval, currency }),
+        });
+
+        const checkoutPayload = await checkoutResponse.json();
+
+        if (!checkoutResponse.ok) {
+          throw new Error(
+            checkoutPayload.error ??
+              "USD checkout is not available yet. Please use INR billing."
+          );
+        }
+
+        if (typeof checkoutPayload.url === "string") {
+          window.location.href = checkoutPayload.url;
+          return;
+        }
+
+        throw new Error("Invalid Stripe checkout response.");
+      }
+
       const orderResponse = await fetch("/api/razorpay/create-order", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ plan }),
+        body: JSON.stringify({ plan, interval, currency }),
       });
 
       const orderPayload = await orderResponse.json();

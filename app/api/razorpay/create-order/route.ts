@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { isPaidPlan, PLANS } from "@/lib/billing/plans";
+import type { BillingInterval } from "@/lib/billing/pricing";
 import { createPlanOrder } from "@/lib/razorpay";
 import { createClient } from "@/lib/supabase/server";
 
@@ -24,18 +25,37 @@ export async function POST(request: Request) {
 
     const body = await request.json();
     const planId = body?.plan;
+    const interval = (body?.interval ?? "monthly") as BillingInterval;
+    const currency = body?.currency ?? "INR";
 
     if (!isPaidPlan(planId)) {
       return NextResponse.json({ error: "Invalid plan" }, { status: 400 });
     }
 
-    const order = await createPlanOrder(planId, user.id, user.email);
+    if (interval !== "monthly" && interval !== "yearly") {
+      return NextResponse.json({ error: "Invalid billing interval" }, { status: 400 });
+    }
+
+    if (currency !== "INR") {
+      return NextResponse.json(
+        { error: "Razorpay only supports INR. Use Stripe for USD checkout." },
+        { status: 400 }
+      );
+    }
+
+    const order = await createPlanOrder(
+      planId,
+      user.id,
+      user.email,
+      interval
+    );
 
     return NextResponse.json({
       orderId: order.id,
       amount: order.amount,
       currency: order.currency,
       plan: planId,
+      interval,
       planName: PLANS[planId].name,
       keyId:
         process.env.NEXT_PUBLIC_RAZORPAY_KEY_ID ?? process.env.RAZORPAY_KEY_ID,

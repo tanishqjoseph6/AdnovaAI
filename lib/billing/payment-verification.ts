@@ -1,5 +1,9 @@
 import type { PaidPlanId } from "@/lib/billing/plans";
-import { PLANS } from "@/lib/billing/plans";
+import {
+  getPaidPlanAmountMinor,
+  type BillingCurrency,
+  type BillingInterval,
+} from "@/lib/billing/pricing";
 
 export class PaymentVerificationError extends Error {
   readonly statusCode: number;
@@ -36,9 +40,11 @@ function noteValue(notes: RazorpayNotes | undefined, key: string): string | unde
 function assertAmountMatchesPlan(
   amount: number | string,
   plan: PaidPlanId,
-  label: string
+  label: string,
+  interval: BillingInterval = "monthly",
+  currency: BillingCurrency = "INR"
 ): void {
-  const expected = PLANS[plan].amountPaise;
+  const expected = getPaidPlanAmountMinor(plan, interval, currency);
   if (Number(amount) !== expected) {
     throw new PaymentVerificationError(`${label} amount mismatch`, 400);
   }
@@ -48,10 +54,14 @@ function assertAmountMatchesPlan(
 export function assertOrderMatchesUserPlan(
   order: RazorpayOrderEntity,
   userId: string,
-  plan: PaidPlanId
+  plan: PaidPlanId,
+  interval: BillingInterval = "monthly"
 ): void {
   const orderUserId = noteValue(order.notes, "user_id");
   const orderPlan = noteValue(order.notes, "plan");
+  const orderInterval =
+    (noteValue(order.notes, "interval") as BillingInterval | undefined) ??
+    "monthly";
 
   if (orderUserId !== userId) {
     throw new PaymentVerificationError("Order does not belong to user", 403);
@@ -61,7 +71,11 @@ export function assertOrderMatchesUserPlan(
     throw new PaymentVerificationError("Plan mismatch for order", 400);
   }
 
-  assertAmountMatchesPlan(order.amount, plan, "Order");
+  if (orderInterval !== interval) {
+    throw new PaymentVerificationError("Billing interval mismatch for order", 400);
+  }
+
+  assertAmountMatchesPlan(order.amount, plan, "Order", interval, "INR");
 
   if (order.status !== "paid") {
     throw new PaymentVerificationError(
@@ -76,7 +90,8 @@ export function assertPaymentMatchesOrder(
   payment: RazorpayPaymentEntity,
   orderId: string,
   plan: PaidPlanId,
-  userId?: string
+  userId?: string,
+  interval: BillingInterval = "monthly"
 ): void {
   if (payment.order_id !== orderId) {
     throw new PaymentVerificationError("Payment order mismatch", 400);
@@ -86,7 +101,7 @@ export function assertPaymentMatchesOrder(
     throw new PaymentVerificationError("Payment not captured", 400);
   }
 
-  assertAmountMatchesPlan(payment.amount, plan, "Payment");
+  assertAmountMatchesPlan(payment.amount, plan, "Payment", interval, "INR");
 
   if (userId) {
     const paymentUserId = noteValue(payment.notes, "user_id");
@@ -104,7 +119,8 @@ export function assertPaymentMatchesOrder(
 /** Webhook payloads include payment notes; validate before activating. */
 export function assertWebhookPaymentEntity(
   payment: RazorpayPaymentEntity,
-  plan: PaidPlanId
+  plan: PaidPlanId,
+  interval: BillingInterval = "monthly"
 ): { userId: string; email: string | null } {
   const userId = noteValue(payment.notes, "user_id");
   const paymentPlan = noteValue(payment.notes, "plan");
@@ -121,7 +137,7 @@ export function assertWebhookPaymentEntity(
     throw new PaymentVerificationError("Payment not captured", 400);
   }
 
-  assertAmountMatchesPlan(payment.amount, plan, "Payment");
+  assertAmountMatchesPlan(payment.amount, plan, "Payment", interval, "INR");
 
   return {
     userId,

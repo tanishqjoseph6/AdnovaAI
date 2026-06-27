@@ -4,6 +4,7 @@ import {
   PaymentVerificationError,
 } from "@/lib/billing/payment-verification";
 import { isPaidPlan } from "@/lib/billing/plans";
+import type { BillingInterval } from "@/lib/billing/pricing";
 import { createRazorpayClient, verifyWebhookSignature } from "@/lib/razorpay";
 import { activateSubscriptionFromPayment } from "@/lib/subscription";
 
@@ -75,6 +76,9 @@ export async function POST(request: Request) {
   }
 
   try {
+    const interval: BillingInterval =
+      payment.notes?.interval === "yearly" ? "yearly" : "monthly";
+
     const { userId, email } = assertWebhookPaymentEntity(
       {
         id: payment.id,
@@ -83,7 +87,8 @@ export async function POST(request: Request) {
         status: payment.status,
         notes: payment.notes,
       },
-      plan
+      plan,
+      interval
     );
 
     // Cross-check order ownership and paid status via Razorpay API

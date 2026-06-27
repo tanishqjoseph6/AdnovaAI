@@ -5,6 +5,7 @@ import {
   PaymentVerificationError,
 } from "@/lib/billing/payment-verification";
 import { isPaidPlan } from "@/lib/billing/plans";
+import type { BillingInterval } from "@/lib/billing/pricing";
 import { createRazorpayClient, verifyPaymentSignature } from "@/lib/razorpay";
 import { activateSubscriptionFromPayment } from "@/lib/subscription";
 import { createClient } from "@/lib/supabase/server";
@@ -70,6 +71,10 @@ export async function POST(request: Request) {
       razorpay.orders.fetch(orderId),
     ]);
 
+    const orderNotes = order.notes as Record<string, string | undefined>;
+    const interval: BillingInterval =
+      orderNotes?.interval === "yearly" ? "yearly" : "monthly";
+
     assertPaymentMatchesOrder(
       {
         id: payment.id,
@@ -80,7 +85,8 @@ export async function POST(request: Request) {
       },
       orderId,
       plan,
-      user.id
+      user.id,
+      interval
     );
 
     assertOrderMatchesUserPlan(
@@ -88,10 +94,11 @@ export async function POST(request: Request) {
         id: order.id,
         amount: order.amount,
         status: order.status,
-        notes: order.notes as Record<string, string | undefined>,
+        notes: orderNotes,
       },
       user.id,
-      plan
+      plan,
+      interval
     );
 
     // Step 3: atomic profile upgrade (safe if webhook already processed this payment)

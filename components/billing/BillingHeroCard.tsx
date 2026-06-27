@@ -1,5 +1,5 @@
-import BillingPlanButton from "@/components/dashboard/BillingPlanButton";
 import BillingCreditsLive from "@/components/billing/BillingCreditsLive";
+import BillingHeroUpgradeButtons from "@/components/billing/BillingHeroUpgradeButtons";
 import { getPlanHeroDescription } from "@/lib/billing/comparison";
 import { PLANS } from "@/lib/billing/plans";
 import { formatBillingPlanLabel } from "@/lib/billing/invoices";
@@ -114,26 +114,7 @@ export default function BillingHeroCard({
             </ul>
 
             {(showStarterUpgrade || showProUpgrade) && (
-              <div className="mt-auto flex flex-col gap-3 pt-8 sm:flex-row sm:flex-wrap">
-                {showStarterUpgrade && (
-                  <BillingPlanButton
-                    plan="starter"
-                    disabled={false}
-                    className="inline-flex items-center justify-center rounded-xl border border-cyan-500/30 bg-cyan-500/10 px-5 py-2.5 text-sm font-semibold text-cyan-200 transition hover:border-cyan-400/50 hover:bg-cyan-500/15 disabled:cursor-not-allowed disabled:opacity-50"
-                  >
-                    Upgrade to Starter — ₹999
-                  </BillingPlanButton>
-                )}
-                {showProUpgrade && (
-                  <BillingPlanButton
-                    plan="pro"
-                    disabled={false}
-                    className="inline-flex items-center justify-center rounded-xl bg-gradient-to-r from-cyan-400 via-violet-500 to-fuchsia-500 px-5 py-2.5 text-sm font-semibold text-white shadow-lg shadow-violet-500/20 transition hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-50"
-                  >
-                    Upgrade to Pro — ₹2,999
-                  </BillingPlanButton>
-                )}
-              </div>
+              <BillingHeroUpgradeButtons subscription={subscription} />
             )}
           </div>
         </article>
