@@ -32,12 +32,38 @@ export function getAvatarInitials(name: string, email?: string | null): string {
   if (trimmed) {
     const parts = trimmed.split(/\s+/).filter(Boolean);
     if (parts.length >= 2) {
-      return `${parts[0][0]}${parts[1][0]}`.toUpperCase();
+      const first = parts[0][0] ?? "";
+      const last = parts[parts.length - 1][0] ?? "";
+      const initials = `${first}${last}`.toUpperCase();
+      return initials || "U";
     }
-    return trimmed.slice(0, 2).toUpperCase();
+    const letter = parts[0]?.[0];
+    return letter ? letter.toUpperCase() : "U";
   }
+
   if (email) {
-    return email.slice(0, 2).toUpperCase();
+    const letter = email.trim()[0];
+    return letter ? letter.toUpperCase() : "U";
   }
-  return "AA";
+
+  return "U";
+}
+
+export function getAvatarDisplayName(
+  name: string,
+  email?: string | null
+): string {
+  const trimmed = name.trim();
+  if (trimmed) {
+    return trimmed.split(/\s+/)[0] ?? trimmed;
+  }
+
+  if (email) {
+    const local = email.split("@")[0];
+    if (local) {
+      return local.charAt(0).toUpperCase() + local.slice(1);
+    }
+  }
+
+  return "";
 }
