@@ -5,6 +5,11 @@ import {
   deductUserCredit,
   getUserCreditsForUser,
 } from "@/lib/credits/server";
+import { buildGenerateAdsPrompt } from "@/lib/product-analysis/prompt";
+import {
+  formatProductAnalysisForPrompt,
+  normalizeProductAnalysis,
+} from "@/lib/product-analysis/types";
 import { createClient } from "@/lib/supabase/server";
 import OpenAI from "openai";
 
@@ -24,7 +29,7 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
-    const { productDescription } = await req.json();
+    const { productDescription, productAnalysis: rawAnalysis } = await req.json();
 
     if (!productDescription) {
       return NextResponse.json(
@@ -47,42 +52,12 @@ export async function POST(req: Request) {
       );
     }
 
-    const prompt = `
-You are an expert direct response copywriter.
+    const productAnalysis = normalizeProductAnalysis(rawAnalysis);
+    const analysisSection = productAnalysis
+      ? formatProductAnalysisForPrompt(productAnalysis)
+      : undefined;
 
-Generate:
-
-- 5 ad hooks
-- 3 ad captions
-- 3 CTAs
-- 1 UGC video script
-
-Product:
-${productDescription}
-
-Return ONLY valid JSON in this format:
-
-{
-  "ad_hooks": [
-    "hook 1",
-    "hook 2",
-    "hook 3",
-    "hook 4",
-    "hook 5"
-  ],
-  "ad_captions": [
-    "caption 1",
-    "caption 2",
-    "caption 3"
-  ],
-  "ctas": [
-    "cta 1",
-    "cta 2",
-    "cta 3"
-  ],
-  "ugc_script": "full script here"
-}
-`;
+    const prompt = buildGenerateAdsPrompt(productDescription, analysisSection);
 
     const response = await openai.chat.completions.create({
       model: "gpt-4o-mini",

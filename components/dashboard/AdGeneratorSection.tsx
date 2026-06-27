@@ -4,6 +4,7 @@ import { useRef, useState } from "react";
 import { useAdGenerator } from "@/hooks/useAdGenerator";
 import { useCredits } from "@/hooks/useCredits";
 import { CREDITS_ERROR_CODE } from "@/lib/credits/constants";
+import type { ProductAnalysis } from "@/lib/product-analysis/types";
 import UpgradeModal from "@/components/credits/UpgradeModal";
 import ProductUpload from "./ProductUpload";
 import AiOutput from "./AiOutput";
@@ -36,11 +37,13 @@ export default function AdGeneratorSection({
 
   const handleGenerate = async ({
     productDescription,
+    productAnalysis,
   }: {
     productDescription: string;
+    productAnalysis?: ProductAnalysis | null;
   }) => {
     try {
-      await generate(productDescription);
+      await generate(productDescription, productAnalysis);
       requestAnimationFrame(() => {
         outputRef.current?.scrollIntoView({
           behavior: "smooth",

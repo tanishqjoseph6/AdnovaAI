@@ -2,6 +2,13 @@
 
 import { ImagePlus, X } from "lucide-react";
 import { useCallback, useEffect, useId, useRef, useState } from "react";
+import { analyzeProductImage } from "@/lib/api/analyze-product-client";
+import {
+  createEmptyProductAnalysis,
+  hasProductAnalysisContent,
+  type ProductAnalysis,
+} from "@/lib/product-analysis/types";
+import ProductAnalysisCard from "./ProductAnalysisCard";
 import LoadingSpinner from "./LoadingSpinner";
 
 const ACCEPTED_TYPES = ["image/jpeg", "image/png", "image/webp", "image/gif"];
@@ -9,6 +16,7 @@ const MAX_SIZE_MB = 10;
 
 export type GeneratePayload = {
   productDescription: string;
+  productAnalysis?: ProductAnalysis | null;
 };
 
 type ProductUploadProps = {
@@ -122,6 +130,12 @@ export default function ProductUpload({
   const [productUrl, setProductUrl] = useState("");
   const [file, setFile] = useState<File | null>(null);
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
+  const [analysis, setAnalysis] = useState<ProductAnalysis>(
+    createEmptyProductAnalysis()
+  );
+  const [isAnalyzing, setIsAnalyzing] = useState(false);
+  const [analysisError, setAnalysisError] = useState<string | null>(null);
+  const [isEditingAnalysis, setIsEditingAnalysis] = useState(false);
   const [localError, setLocalError] = useState<string | null>(null);
 
   const displayError = localError ?? externalError;
@@ -156,11 +170,36 @@ export default function ProductUpload({
   const clearImage = useCallback(() => {
     revokeCurrentPreview();
     setFile(null);
+    setAnalysis(createEmptyProductAnalysis());
+    setAnalysisError(null);
+    setIsEditingAnalysis(false);
+    setIsAnalyzing(false);
     clearErrors();
     if (fileInputRef.current) {
       fileInputRef.current.value = "";
     }
   }, [clearErrors, revokeCurrentPreview]);
+
+  const runAnalysis = useCallback(async (imageFile: File) => {
+    setIsAnalyzing(true);
+    setAnalysisError(null);
+
+    try {
+      const result = await analyzeProductImage(imageFile);
+      setAnalysis(result);
+      setIsEditingAnalysis(false);
+    } catch (err) {
+      setAnalysis(createEmptyProductAnalysis());
+      setAnalysisError(
+        err instanceof Error
+          ? err.message
+          : "Analysis failed. You can edit the fields manually."
+      );
+      setIsEditingAnalysis(true);
+    } finally {
+      setIsAnalyzing(false);
+    }
+  }, []);
 
   const openFilePicker = useCallback(() => {
     if (uploadDisabled) return;
@@ -197,6 +236,7 @@ export default function ProductUpload({
           return nextPreview;
         });
         setFile(incoming);
+        void runAnalysis(incoming);
       } finally {
         setIsProcessingUpload(false);
         if (fileInputRef.current) {
@@ -204,7 +244,7 @@ export default function ProductUpload({
         }
       }
     },
-    [clearErrors]
+    [clearErrors, runAnalysis]
   );
 
   const handleFiles = useCallback(
@@ -268,7 +308,10 @@ export default function ProductUpload({
     clearErrors();
 
     try {
-      await onGenerate?.({ productDescription: fullDescription });
+      await onGenerate?.({
+        productDescription: fullDescription,
+        productAnalysis: hasProductAnalysisContent(analysis) ? analysis : null,
+      });
     } catch (err) {
       setLocalError(
         err instanceof Error
@@ -356,7 +399,24 @@ export default function ProductUpload({
               fileName={file.name}
               onRemove={clearImage}
               onReplace={openFilePicker}
-              disabled={uploadDisabled}
+              disabled={uploadDisabled || isAnalyzing}
+            />
+          )}
+
+          {previewUrl && file && !isProcessingUpload && (
+            <ProductAnalysisCard
+              analysis={analysis}
+              isEditing={isEditingAnalysis}
+              isAnalyzing={isAnalyzing}
+              analysisError={analysisError}
+              disabled={isGenerating}
+              onChange={setAnalysis}
+              onEditToggle={() => setIsEditingAnalysis((current) => !current)}
+              onRegenerate={() => {
+                if (file) {
+                  void runAnalysis(file);
+                }
+              }}
             />
           )}
 

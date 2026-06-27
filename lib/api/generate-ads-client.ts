@@ -1,4 +1,5 @@
 import { CREDITS_ERROR_CODE } from "@/lib/credits/constants";
+import type { ProductAnalysis } from "@/lib/product-analysis/types";
 import type { GenerateAdsResponse } from "@/lib/validations/generate-ads";
 import { ApiClientError } from "@/lib/api/credits-client";
 
@@ -35,12 +36,16 @@ export { isNoCreditsError } from "@/lib/api/credits-client";
 export { CREDITS_ERROR_CODE } from "@/lib/credits/constants";
 
 export async function fetchGeneratedAds(
-  productDescription: string
+  productDescription: string,
+  productAnalysis?: ProductAnalysis | null
 ): Promise<GenerateAdsResponse & { ctas: string[] }> {
   const response = await fetch("/api/generate-ads", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ productDescription }),
+    body: JSON.stringify({
+      productDescription,
+      productAnalysis: productAnalysis ?? undefined,
+    }),
   });
 
   let payload: (RawGenerateAdsPayload & ApiErrorPayload) | ApiErrorPayload;

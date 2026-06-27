@@ -4,6 +4,7 @@ import { useCallback, useReducer } from "react";
 import { fetchGeneratedAds } from "@/lib/api/generate-ads-client";
 import { ApiClientError, isNoCreditsError } from "@/lib/api/credits-client";
 import { CREDITS_ERROR_CODE } from "@/lib/credits/constants";
+import type { ProductAnalysis } from "@/lib/product-analysis/types";
 import type { GenerateAdsResponse } from "@/lib/validations/generate-ads";
 
 export type AdGeneratorState =
@@ -44,29 +45,35 @@ export function useAdGenerator(options?: {
 }) {
   const [state, dispatch] = useReducer(reducer, { status: "idle" });
 
-  const generate = useCallback(async (productDescription: string) => {
-    dispatch({ type: "START" });
+  const generate = useCallback(
+    async (
+      productDescription: string,
+      productAnalysis?: ProductAnalysis | null
+    ) => {
+      dispatch({ type: "START" });
 
-    try {
-      const data = await fetchGeneratedAds(productDescription);
-      dispatch({ type: "SUCCESS", data });
-      options?.onSuccess?.();
-      return data;
-    } catch (error) {
-      const message =
-        error instanceof Error
-          ? error.message
-          : "Failed to generate ads. Please try again.";
-      const code = error instanceof ApiClientError ? error.code : undefined;
+      try {
+        const data = await fetchGeneratedAds(productDescription, productAnalysis);
+        dispatch({ type: "SUCCESS", data });
+        options?.onSuccess?.();
+        return data;
+      } catch (error) {
+        const message =
+          error instanceof Error
+            ? error.message
+            : "Failed to generate ads. Please try again.";
+        const code = error instanceof ApiClientError ? error.code : undefined;
 
-      if (isNoCreditsError(error)) {
-        options?.onNoCredits?.();
+        if (isNoCreditsError(error)) {
+          options?.onNoCredits?.();
+        }
+
+        dispatch({ type: "ERROR", message, code });
+        throw error;
       }
-
-      dispatch({ type: "ERROR", message, code });
-      throw error;
-    }
-  }, [options]);
+    },
+    [options]
+  );
 
   const clearError = useCallback(() => {
     dispatch({ type: "CLEAR_ERROR" });
