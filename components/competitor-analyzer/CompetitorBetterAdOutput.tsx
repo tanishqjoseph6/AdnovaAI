@@ -2,14 +2,57 @@
 
 import CopyButton from "@/components/dashboard/CopyButton";
 import type { BetterCompetitorAd } from "@/lib/competitor-ad/types";
+import { CompetitorExpandableSection } from "./CompetitorConfidenceBadge";
+
+function OutputBlock({
+  title,
+  items,
+  copyLabel,
+  singleText,
+}: {
+  title: string;
+  items?: string[];
+  copyLabel: string;
+  singleText?: string;
+}) {
+  const copyText = singleText ?? items?.join("\n") ?? "";
+  const hasContent = Boolean(copyText.trim());
+
+  if (!hasContent) {
+    return null;
+  }
+
+  return (
+    <div className="rounded-2xl border border-white/10 bg-black/20 p-5 sm:p-6">
+      <div className="mb-4 flex items-center justify-between gap-3">
+        <h3 className="text-base font-bold text-white">{title}</h3>
+        <CopyButton text={copyText} label={copyLabel} />
+      </div>
+      {items && items.length > 0 ? (
+        <div className="space-y-3">
+          {items.map((item, index) => (
+            <div
+              key={`${title}-${index}`}
+              className="rounded-xl bg-white/5 p-3 text-sm text-zinc-200"
+            >
+              {item}
+            </div>
+          ))}
+        </div>
+      ) : (
+        <div className="whitespace-pre-wrap rounded-xl bg-white/5 p-4 text-sm text-zinc-200">
+          {singleText}
+        </div>
+      )}
+    </div>
+  );
+}
 
 export default function CompetitorBetterAdOutput({
   data,
 }: {
   data: BetterCompetitorAd;
 }) {
-  const { hooks, captions, ctas, ugcScript } = data;
-
   return (
     <div className="space-y-6">
       <div className="flex flex-wrap items-center justify-between gap-3">
@@ -23,57 +66,59 @@ export default function CompetitorBetterAdOutput({
         </div>
       </div>
 
-      <div className="rounded-2xl border border-white/10 bg-black/20 p-5 sm:p-6">
-        <div className="mb-4 flex items-center justify-between gap-3">
-          <h3 className="text-base font-bold text-white">Hooks</h3>
-          <CopyButton text={hooks.join("\n")} label="Copy Hooks" />
-        </div>
-        <div className="space-y-3">
-          {hooks.map((hook, index) => (
-            <div key={`hook-${index}`} className="rounded-xl bg-white/5 p-3 text-sm text-zinc-200">
-              {hook}
-            </div>
-          ))}
-        </div>
-      </div>
+      <OutputBlock title="Hooks" items={data.hooks} copyLabel="Copy Hooks" />
+      <OutputBlock
+        title="Headlines"
+        items={data.headlines}
+        copyLabel="Copy Headlines"
+      />
+      <OutputBlock
+        title="Captions"
+        items={data.captions}
+        copyLabel="Copy Captions"
+      />
+      <OutputBlock title="CTAs" items={data.ctas} copyLabel="Copy CTAs" />
+      <OutputBlock title="Offers" items={data.offers} copyLabel="Copy Offers" />
 
-      <div className="rounded-2xl border border-white/10 bg-black/20 p-5 sm:p-6">
-        <div className="mb-4 flex items-center justify-between gap-3">
-          <h3 className="text-base font-bold text-white">Captions</h3>
-          <CopyButton text={captions.join("\n")} label="Copy Captions" />
-        </div>
-        <div className="space-y-3">
-          {captions.map((caption, index) => (
-            <div key={`caption-${index}`} className="rounded-xl bg-white/5 p-3 text-sm text-zinc-200">
-              {caption}
-            </div>
-          ))}
-        </div>
-      </div>
+      {data.emotional_angle && (
+        <OutputBlock
+          title="Emotional angle"
+          singleText={data.emotional_angle}
+          copyLabel="Copy Angle"
+        />
+      )}
 
-      <div className="rounded-2xl border border-white/10 bg-black/20 p-5 sm:p-6">
-        <div className="mb-4 flex items-center justify-between gap-3">
-          <h3 className="text-base font-bold text-white">CTAs</h3>
-          <CopyButton text={ctas.join("\n")} label="Copy CTAs" />
-        </div>
-        <div className="space-y-3">
-          {ctas.map((cta, index) => (
-            <div key={`cta-${index}`} className="rounded-xl bg-white/5 p-3 text-sm text-zinc-200">
-              {cta}
-            </div>
-          ))}
-        </div>
-      </div>
+      {data.target_audience.length > 0 && (
+        <CompetitorExpandableSection title="Target audience" defaultOpen>
+          <ul className="space-y-2 text-sm text-zinc-300">
+            {data.target_audience.map((item) => (
+              <li key={item} className="flex items-start gap-2">
+                <span className="mt-1.5 h-1.5 w-1.5 shrink-0 rounded-full bg-cyan-400/80" />
+                {item}
+              </li>
+            ))}
+          </ul>
+        </CompetitorExpandableSection>
+      )}
 
-      <div className="rounded-2xl border border-white/10 bg-black/20 p-5 sm:p-6">
-        <div className="mb-4 flex items-center justify-between gap-3">
-          <h3 className="text-base font-bold text-white">UGC Script</h3>
-          <CopyButton text={ugcScript} label="Copy Script" />
-        </div>
-        <div className="whitespace-pre-wrap rounded-xl bg-white/5 p-4 text-sm text-zinc-200">
-          {ugcScript}
-        </div>
-      </div>
+      {data.visual_suggestions.length > 0 && (
+        <CompetitorExpandableSection title="Visual suggestions" defaultOpen>
+          <ul className="space-y-2 text-sm text-zinc-300">
+            {data.visual_suggestions.map((item) => (
+              <li key={item} className="flex items-start gap-2">
+                <span className="mt-1.5 h-1.5 w-1.5 shrink-0 rounded-full bg-fuchsia-400/80" />
+                {item}
+              </li>
+            ))}
+          </ul>
+        </CompetitorExpandableSection>
+      )}
+
+      <OutputBlock
+        title="UGC Script"
+        singleText={data.ugcScript}
+        copyLabel="Copy Script"
+      />
     </div>
   );
 }

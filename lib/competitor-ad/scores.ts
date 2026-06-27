@@ -102,3 +102,43 @@ export function hasValidCompetitorScores(
 ): boolean {
   return SCORE_KEYS.some((key) => inputs[key] > 0);
 }
+
+export type ComparisonScoreInputs = {
+  hook_score: number;
+  cta_score: number;
+  offer_score: number;
+  psychology_score: number;
+  urgency_fomo_score: number;
+};
+
+const COMPARISON_WEIGHTS: Record<keyof ComparisonScoreInputs, number> = {
+  hook_score: 0.25,
+  cta_score: 0.2,
+  offer_score: 0.2,
+  psychology_score: 0.2,
+  urgency_fomo_score: 0.15,
+};
+
+export function computeComparisonOverall(
+  inputs: ComparisonScoreInputs
+): number {
+  let weightedSum = 0;
+  let weightTotal = 0;
+
+  for (const key of Object.keys(COMPARISON_WEIGHTS) as (keyof ComparisonScoreInputs)[]) {
+    const score = inputs[key];
+    if (score > 0) {
+      weightedSum += score * COMPARISON_WEIGHTS[key];
+      weightTotal += COMPARISON_WEIGHTS[key];
+    }
+  }
+
+  if (weightTotal === 0) {
+    return 0;
+  }
+
+  return clampScore(weightedSum / weightTotal);
+}
+
+export const ANALYSIS_CONFIDENCE_HIGH = 80;
+export const ANALYSIS_CONFIDENCE_MEDIUM = 70;

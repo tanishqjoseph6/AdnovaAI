@@ -2,7 +2,15 @@
 
 import { useEffect, useState } from "react";
 import { getCompetitorScoreColor } from "@/lib/competitor-ad/scores";
-import type { CompetitorAdAnalysis } from "@/lib/competitor-ad/types";
+import type {
+  CompetitorAdAnalysis,
+  CompetitorScoreExplanations,
+} from "@/lib/competitor-ad/types";
+import CompetitorConfidenceBadge, {
+  CompetitorExpandableSection,
+} from "./CompetitorConfidenceBadge";
+import CompetitorComparisonSection from "./CompetitorComparisonSection";
+import CompetitorPerformanceInsights from "./CompetitorPerformanceInsights";
 
 function useAnimatedScore(target: number, durationMs = 900): number {
   const [value, setValue] = useState(0);
@@ -30,10 +38,12 @@ function useAnimatedScore(target: number, durationMs = 900): number {
 function ScoreTile({
   label,
   score,
+  explanation,
   delayMs = 0,
 }: {
   label: string;
   score: number;
+  explanation: string;
   delayMs?: number;
 }) {
   const animated = useAnimatedScore(score);
@@ -41,23 +51,30 @@ function ScoreTile({
 
   return (
     <div
-      className="animate-[fadeInUp_0.6s_ease-out_both] rounded-xl border border-white/[0.08] bg-white/[0.03] p-4 text-center"
+      className="animate-[fadeInUp_0.6s_ease-out_both] rounded-xl border border-white/[0.08] bg-white/[0.03] p-4"
       style={{ animationDelay: `${delayMs}ms` }}
     >
-      <p className="text-2xl font-bold" style={{ color }}>
-        {animated}
-      </p>
-      <p className="mt-1 text-xs text-zinc-500">{label}</p>
-      <div className="mt-2 h-1 overflow-hidden rounded-full bg-white/10">
-        <div
-          className="h-full rounded-full transition-[width] duration-1000 ease-out"
-          style={{
-            width: `${animated}%`,
-            backgroundColor: color,
-            transitionDelay: `${delayMs}ms`,
-          }}
-        />
+      <div className="text-center">
+        <p className="text-2xl font-bold" style={{ color }}>
+          {animated}
+        </p>
+        <p className="mt-1 text-xs text-zinc-500">{label}</p>
+        <div className="mt-2 h-1 overflow-hidden rounded-full bg-white/10">
+          <div
+            className="h-full rounded-full transition-[width] duration-1000 ease-out"
+            style={{
+              width: `${animated}%`,
+              backgroundColor: color,
+              transitionDelay: `${delayMs}ms`,
+            }}
+          />
+        </div>
       </div>
+      {explanation && (
+        <p className="mt-3 text-left text-xs leading-relaxed text-zinc-400">
+          {explanation}
+        </p>
+      )}
     </div>
   );
 }
@@ -92,38 +109,66 @@ function BulletList({
   );
 }
 
-function SectionCard({
-  title,
-  children,
-  className = "",
-}: {
-  title: string;
-  children: React.ReactNode;
-  className?: string;
-}) {
-  return (
-    <section
-      className={`glass rounded-2xl border border-white/[0.08] p-5 sm:p-6 ${className}`}
-    >
-      <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-cyan-400/90">
-        {title}
-      </p>
-      <div className="mt-4">{children}</div>
-    </section>
-  );
-}
+const SCORE_TILES: {
+  label: string;
+  scoreKey: keyof CompetitorScoreExplanations;
+  getScore: (analysis: CompetitorAdAnalysis) => number;
+}[] = [
+  {
+    label: "Hook score",
+    scoreKey: "hook_score",
+    getScore: (a) => a.scores.hook_score,
+  },
+  {
+    label: "CTA score",
+    scoreKey: "cta_score",
+    getScore: (a) => a.scores.cta_score,
+  },
+  {
+    label: "Visual score",
+    scoreKey: "visual_score",
+    getScore: (a) => a.scores.visual_score,
+  },
+  {
+    label: "Copy score",
+    scoreKey: "copy_score",
+    getScore: (a) => a.scores.copy_score,
+  },
+  {
+    label: "Trust score",
+    scoreKey: "trust_score",
+    getScore: (a) => a.scores.trust_score,
+  },
+  {
+    label: "Offer score",
+    scoreKey: "offer_score",
+    getScore: (a) => a.scores.offer_score,
+  },
+  {
+    label: "Psychology score",
+    scoreKey: "psychology_score",
+    getScore: (a) => a.scores.psychology_score,
+  },
+  {
+    label: "Urgency / FOMO",
+    scoreKey: "urgency_fomo_score",
+    getScore: (a) => a.urgency_fomo_score,
+  },
+];
 
 export default function CompetitorAnalysisResults({
   analysis,
 }: {
   analysis: CompetitorAdAnalysis;
 }) {
-  const { scores, suggestions } = analysis;
+  const { scores, suggestions, score_explanations: explanations } = analysis;
   const overallColor = getCompetitorScoreColor(scores.overall_score);
   const animatedOverall = useAnimatedScore(scores.overall_score, 1100);
 
   return (
     <div className="space-y-6">
+      <CompetitorConfidenceBadge confidence={analysis.analysis_confidence} />
+
       <section className="glass relative overflow-hidden rounded-2xl border border-violet-500/20 p-5 sm:p-8">
         <div className="pointer-events-none absolute inset-0 bg-gradient-to-br from-violet-600/[0.08] via-transparent to-cyan-500/[0.06]" />
         <div className="relative text-center">
@@ -140,19 +185,24 @@ export default function CompetitorAnalysisResults({
         </div>
 
         <div className="relative mt-6 grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
-          <ScoreTile label="Hook score" score={scores.hook_score} delayMs={60} />
-          <ScoreTile label="CTA score" score={scores.cta_score} delayMs={120} />
-          <ScoreTile label="Visual score" score={scores.visual_score} delayMs={180} />
-          <ScoreTile label="Copy score" score={scores.copy_score} delayMs={240} />
-          <ScoreTile label="Trust score" score={scores.trust_score} delayMs={300} />
-          <ScoreTile label="Offer score" score={scores.offer_score} delayMs={360} />
-          <ScoreTile label="Psychology score" score={scores.psychology_score} delayMs={420} />
-          <ScoreTile label="Urgency / FOMO" score={analysis.urgency_fomo_score} delayMs={480} />
+          {SCORE_TILES.map((tile, index) => (
+            <ScoreTile
+              key={tile.scoreKey}
+              label={tile.label}
+              score={tile.getScore(analysis)}
+              explanation={explanations[tile.scoreKey]}
+              delayMs={60 + index * 60}
+            />
+          ))}
         </div>
       </section>
 
-      <div className="grid gap-6 lg:grid-cols-2">
-        <SectionCard title="Ad breakdown">
+      <CompetitorComparisonSection analysis={analysis} />
+
+      <CompetitorPerformanceInsights insights={analysis.performance_insights} />
+
+      <div className="grid gap-4 lg:grid-cols-2">
+        <CompetitorExpandableSection title="Ad breakdown" defaultOpen>
           <dl className="space-y-3 text-sm">
             <div>
               <dt className="text-zinc-500">Brand</dt>
@@ -191,9 +241,9 @@ export default function CompetitorAnalysisResults({
               <dd className="mt-0.5 text-zinc-200">{analysis.offer_quality || "—"}</dd>
             </div>
           </dl>
-        </SectionCard>
+        </CompetitorExpandableSection>
 
-        <SectionCard title="Audience & psychology">
+        <CompetitorExpandableSection title="Audience & psychology" defaultOpen>
           <div className="space-y-4">
             <div>
               <p className="text-xs font-medium uppercase tracking-wider text-zinc-500">
@@ -228,31 +278,31 @@ export default function CompetitorAnalysisResults({
               </div>
             </div>
           </div>
-        </SectionCard>
+        </CompetitorExpandableSection>
 
-        <SectionCard title="What makes this ad successful" className="lg:col-span-2">
+        <CompetitorExpandableSection title="What makes this ad successful">
           <BulletList items={suggestions.what_makes_successful} accent="emerald" />
-        </SectionCard>
+        </CompetitorExpandableSection>
 
-        <SectionCard title="Weaknesses">
+        <CompetitorExpandableSection title="Weaknesses">
           <BulletList items={suggestions.weaknesses} accent="amber" />
-        </SectionCard>
+        </CompetitorExpandableSection>
 
-        <SectionCard title="How to outperform it">
+        <CompetitorExpandableSection title="How to outperform it">
           <BulletList items={suggestions.how_to_outperform} accent="cyan" />
-        </SectionCard>
+        </CompetitorExpandableSection>
 
-        <SectionCard title="Better hook suggestions">
+        <CompetitorExpandableSection title="Better hook suggestions">
           <BulletList items={suggestions.better_hook_suggestions} accent="fuchsia" />
-        </SectionCard>
+        </CompetitorExpandableSection>
 
-        <SectionCard title="Better CTA suggestions">
+        <CompetitorExpandableSection title="Better CTA suggestions">
           <BulletList items={suggestions.better_cta_suggestions} />
-        </SectionCard>
+        </CompetitorExpandableSection>
 
-        <SectionCard title="Better offer suggestions" className="lg:col-span-2">
+        <CompetitorExpandableSection title="Better offer suggestions">
           <BulletList items={suggestions.better_offer_suggestions} accent="emerald" />
-        </SectionCard>
+        </CompetitorExpandableSection>
       </div>
     </div>
   );

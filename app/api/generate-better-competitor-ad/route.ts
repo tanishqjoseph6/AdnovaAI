@@ -127,9 +127,14 @@ export async function POST(req: Request) {
 
     return NextResponse.json({
       hooks: betterAd.hooks,
+      headlines: betterAd.headlines,
       captions: betterAd.captions,
       ctas: betterAd.ctas,
+      offers: betterAd.offers,
       ugcScript: betterAd.ugcScript,
+      target_audience: betterAd.target_audience,
+      emotional_angle: betterAd.emotional_angle,
+      visual_suggestions: betterAd.visual_suggestions,
       credits: remainingCredits,
       unlimited: userCredits.unlimited,
     });

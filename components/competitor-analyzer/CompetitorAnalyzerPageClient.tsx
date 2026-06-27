@@ -1,12 +1,13 @@
 "use client";
 
 import { useCallback, useState } from "react";
-import { Sparkles, Target } from "lucide-react";
+import { FileDown, Rocket, Target } from "lucide-react";
 import { analyzeCompetitorAd } from "@/lib/api/analyze-competitor-client";
 import {
   generateBetterCompetitorAd,
   isNoCreditsError,
 } from "@/lib/api/generate-better-competitor-client";
+import { generateCompetitorPdfReport } from "@/lib/competitor-ad/pdf-report";
 import type {
   BetterCompetitorAd,
   CompetitorAdAnalysis,
@@ -61,12 +62,7 @@ export default function CompetitorAnalyzerPageClient() {
 
     try {
       const result = await generateBetterCompetitorAd(state.analysis);
-      setBetterAd({
-        hooks: result.hooks,
-        captions: result.captions,
-        ctas: result.ctas,
-        ugcScript: result.ugcScript,
-      });
+      setBetterAd(result);
       void refresh();
     } catch (error) {
       if (isNoCreditsError(error)) {
@@ -82,6 +78,11 @@ export default function CompetitorAnalyzerPageClient() {
     } finally {
       setIsGeneratingBetter(false);
     }
+  };
+
+  const handleDownloadPdf = () => {
+    if (state.status !== "success") return;
+    generateCompetitorPdfReport(state.analysis, betterAd);
   };
 
   const isAnalyzing = state.status === "analyzing";
@@ -135,37 +136,52 @@ export default function CompetitorAnalyzerPageClient() {
 
       {hasAnalysis && (
         <>
+          <div className="flex flex-col gap-3 sm:flex-row sm:justify-end">
+            <button
+              type="button"
+              onClick={handleDownloadPdf}
+              className="inline-flex items-center justify-center gap-2 rounded-xl border border-white/10 bg-white/[0.04] px-5 py-3 text-sm font-medium text-zinc-200 transition hover:border-cyan-500/30 hover:bg-white/[0.08]"
+            >
+              <FileDown className="h-4 w-4" aria-hidden />
+              Download PDF Report
+            </button>
+          </div>
+
           <CompetitorAnalysisResults analysis={state.analysis} />
 
-          <section className="glass rounded-2xl border border-white/[0.08] p-5 sm:p-6">
-            <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+          <section className="glass relative overflow-hidden rounded-2xl border border-violet-500/30 p-6 sm:p-8">
+            <div className="pointer-events-none absolute inset-0 bg-gradient-to-br from-violet-600/10 via-transparent to-cyan-500/10" />
+            <div className="relative flex flex-col items-center gap-5 text-center">
               <div>
-                <h2 className="text-lg font-semibold text-white">
+                <h2 className="text-xl font-semibold text-white sm:text-2xl">
                   Outperform this competitor
                 </h2>
-                <p className="mt-1 text-sm text-zinc-500">
-                  Generate 5 hooks, 3 captions, 3 CTAs, and 1 UGC script
+                <p className="mx-auto mt-2 max-w-lg text-sm text-zinc-400">
+                  Generate hooks, headlines, captions, CTAs, offers, UGC script,
+                  audience targeting, emotional angles, and visual suggestions —
+                  all tailored to beat this ad.
                 </p>
               </div>
               <button
                 type="button"
                 onClick={() => void handleGenerateBetter()}
                 disabled={isGeneratingBetter}
-                className="inline-flex items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-cyan-400 via-violet-500 to-fuchsia-500 px-6 py-3.5 text-sm font-semibold text-white shadow-lg shadow-violet-500/25 transition hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-40"
+                className="inline-flex w-full max-w-md items-center justify-center gap-2.5 rounded-2xl bg-gradient-to-r from-cyan-400 via-violet-500 to-fuchsia-500 px-8 py-4 text-base font-bold text-white shadow-xl shadow-violet-500/30 transition hover:scale-[1.02] hover:opacity-95 disabled:cursor-not-allowed disabled:opacity-40 disabled:hover:scale-100"
               >
                 {isGeneratingBetter ? (
-                  <LoadingSpinner className="h-5 w-5" />
+                  <LoadingSpinner className="h-6 w-6" />
                 ) : (
-                  <Sparkles className="h-4 w-4" aria-hidden />
+                  <Rocket className="h-5 w-5" aria-hidden />
                 )}
                 {isGeneratingBetter ? "Generating…" : "Generate Better Ad"}
               </button>
+              <p className="text-xs text-zinc-500">Uses 1 credit</p>
             </div>
 
             {generateError && (
               <div
                 role="alert"
-                className="mt-4 rounded-lg border border-red-500/20 bg-red-500/10 px-4 py-3"
+                className="relative mt-4 rounded-lg border border-red-500/20 bg-red-500/10 px-4 py-3"
               >
                 <p className="text-sm text-red-400">{generateError}</p>
               </div>
@@ -177,16 +193,21 @@ export default function CompetitorAnalyzerPageClient() {
       )}
 
       {state.status === "idle" && (
-        <section className="glass rounded-2xl border border-dashed border-white/10 p-8 text-center sm:p-12">
-          <Target className="mx-auto h-10 w-10 text-zinc-600" strokeWidth={1.5} />
-          <h3 className="mt-4 text-lg font-semibold text-white">
-            Ready to analyze
-          </h3>
-          <p className="mx-auto mt-2 max-w-md text-sm leading-relaxed text-zinc-500">
-            Upload a competitor ad screenshot to get scores, psychology
-            insights, improvement suggestions, and AI-generated copy that beats
-            it.
-          </p>
+        <section className="glass relative overflow-hidden rounded-2xl border border-dashed border-white/10 p-8 text-center sm:p-14">
+          <div className="pointer-events-none absolute inset-0 bg-gradient-to-br from-violet-600/[0.06] via-transparent to-cyan-500/[0.04]" />
+          <div className="relative">
+            <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-2xl border border-white/10 bg-white/[0.04]">
+              <Target className="h-8 w-8 text-zinc-500" strokeWidth={1.5} />
+            </div>
+            <h3 className="mt-5 text-xl font-semibold text-white">
+              Ready to analyze
+            </h3>
+            <p className="mx-auto mt-3 max-w-md text-sm leading-relaxed text-zinc-500">
+              Upload a competitor ad screenshot to unlock score explanations,
+              confidence ratings, performance insights, AI comparison, and a
+              downloadable agency-ready PDF report.
+            </p>
+          </div>
         </section>
       )}
     </div>
