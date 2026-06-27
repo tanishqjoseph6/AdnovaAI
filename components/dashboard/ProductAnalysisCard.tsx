@@ -3,9 +3,12 @@
 import { Pencil, RefreshCw, Sparkles } from "lucide-react";
 import {
   arrayToLines,
+  isLowConfidence,
   linesToArray,
   type ProductAnalysis,
 } from "@/lib/product-analysis/types";
+import EditableBulletList from "./EditableBulletList";
+import EditableChipList from "./EditableChipList";
 import LoadingSpinner from "./LoadingSpinner";
 
 type ProductAnalysisCardProps = {
@@ -25,39 +28,74 @@ const inputClassName =
 const textareaClassName =
   "w-full resize-y rounded-lg border border-white/10 bg-white/[0.03] px-3 py-2 text-sm text-white outline-none transition focus:border-cyan-400/40 focus:ring-2 focus:ring-cyan-400/10 disabled:opacity-50";
 
-function ReadOnlyList({ items }: { items: string[] }) {
-  if (items.length === 0) {
-    return <p className="text-sm text-zinc-500">Not specified</p>;
-  }
-
-  return (
-    <ul className="space-y-1.5">
-      {items.map((item) => (
-        <li
-          key={item}
-          className="flex items-start gap-2 text-sm leading-relaxed text-zinc-300"
-        >
-          <span className="mt-1.5 h-1.5 w-1.5 shrink-0 rounded-full bg-cyan-400/80" />
-          <span>{item}</span>
-        </li>
-      ))}
-    </ul>
-  );
-}
-
 function FieldBlock({
   label,
   children,
+  className = "",
 }: {
   label: string;
   children: React.ReactNode;
+  className?: string;
 }) {
   return (
-    <div>
+    <div className={className}>
       <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-zinc-500">
         {label}
       </p>
       <div className="mt-2">{children}</div>
+    </div>
+  );
+}
+
+function ConfidenceMeter({
+  analysis,
+  isAnalyzing,
+}: {
+  analysis: ProductAnalysis;
+  isAnalyzing: boolean;
+}) {
+  if (isAnalyzing) {
+    return null;
+  }
+
+  const displayScore = Math.round(analysis.confidence_score);
+  const toneClass =
+    displayScore >= 80
+      ? "text-emerald-300"
+      : displayScore >= 60
+        ? "text-cyan-300"
+        : "text-amber-300";
+
+  return (
+    <div className="mt-4 rounded-lg border border-white/10 bg-white/[0.03] px-3 py-3 sm:px-4">
+      <div className="flex flex-wrap items-center justify-between gap-2">
+        <p className="text-sm text-zinc-400">
+          Confidence:{" "}
+          <span className={`font-semibold ${toneClass}`}>{displayScore}%</span>
+        </p>
+      </div>
+      <div className="mt-2 h-1.5 overflow-hidden rounded-full bg-white/10">
+        <div
+          className={`h-full rounded-full transition-all duration-500 ${
+            displayScore >= 80
+              ? "bg-emerald-400"
+              : displayScore >= 60
+                ? "bg-cyan-400"
+                : "bg-amber-400"
+          }`}
+          style={{ width: `${displayScore}%` }}
+          role="progressbar"
+          aria-valuenow={displayScore}
+          aria-valuemin={0}
+          aria-valuemax={100}
+          aria-label="AI confidence score"
+        />
+      </div>
+      {isLowConfidence(analysis) && (
+        <p className="mt-2 text-sm text-amber-200">
+          Please review the detected information before generating ads.
+        </p>
+      )}
     </div>
   );
 }
@@ -84,7 +122,7 @@ export default function ProductAnalysisCard({
           <div>
             <h3 className="text-sm font-semibold text-white">AI product analysis</h3>
             <p className="text-xs text-zinc-500">
-              Used to improve your generated ads
+              Tags, USPs, audience and tone power your ads
             </p>
           </div>
         </div>
@@ -131,7 +169,9 @@ export default function ProductAnalysisCard({
         </div>
       )}
 
-      <div className="mt-5 grid gap-4 sm:grid-cols-2">
+      <ConfidenceMeter analysis={analysis} isAnalyzing={isAnalyzing} />
+
+      <div className="mt-5 grid gap-5 sm:grid-cols-2">
         {isEditing ? (
           <>
             <FieldBlock label="Product name">
@@ -156,7 +196,7 @@ export default function ProductAnalysisCard({
                 className={inputClassName}
               />
             </FieldBlock>
-            <FieldBlock label="Recommended tone">
+            <FieldBlock label="Recommended tone" className="sm:col-span-2">
               <input
                 type="text"
                 value={analysis.recommended_tone}
@@ -167,36 +207,7 @@ export default function ProductAnalysisCard({
                 className={inputClassName}
               />
             </FieldBlock>
-            <div className="sm:col-span-2" />
-            <FieldBlock label="Key features (one per line)">
-              <textarea
-                rows={4}
-                value={arrayToLines(analysis.key_features)}
-                disabled={controlsDisabled}
-                onChange={(e) =>
-                  onChange({
-                    ...analysis,
-                    key_features: linesToArray(e.target.value),
-                  })
-                }
-                className={textareaClassName}
-              />
-            </FieldBlock>
-            <FieldBlock label="Target audience (one per line)">
-              <textarea
-                rows={4}
-                value={arrayToLines(analysis.target_audience)}
-                disabled={controlsDisabled}
-                onChange={(e) =>
-                  onChange({
-                    ...analysis,
-                    target_audience: linesToArray(e.target.value),
-                  })
-                }
-                className={textareaClassName}
-              />
-            </FieldBlock>
-            <FieldBlock label="Suggested ad angles (one per line)">
+            <FieldBlock label="Suggested ad angles (one per line)" className="sm:col-span-2">
               <textarea
                 rows={4}
                 value={arrayToLines(analysis.suggested_ad_angles)}
@@ -207,7 +218,7 @@ export default function ProductAnalysisCard({
                     suggested_ad_angles: linesToArray(e.target.value),
                   })
                 }
-                className={`${textareaClassName} sm:col-span-2`}
+                className={textareaClassName}
               />
             </FieldBlock>
           </>
@@ -223,23 +234,61 @@ export default function ProductAnalysisCard({
                 {analysis.category || "Not specified"}
               </p>
             </FieldBlock>
-            <FieldBlock label="Recommended tone">
+            <FieldBlock label="Recommended tone" className="sm:col-span-2">
               <p className="text-sm text-zinc-300">
                 {analysis.recommended_tone || "Not specified"}
               </p>
             </FieldBlock>
-            <div className="sm:col-span-2" />
-            <FieldBlock label="Key features">
-              <ReadOnlyList items={analysis.key_features} />
-            </FieldBlock>
-            <FieldBlock label="Target audience">
-              <ReadOnlyList items={analysis.target_audience} />
-            </FieldBlock>
-            <FieldBlock label="Suggested ad angles">
-              <ReadOnlyList items={analysis.suggested_ad_angles} />
+            <FieldBlock label="Suggested ad angles" className="sm:col-span-2">
+              {analysis.suggested_ad_angles.length > 0 ? (
+                <ul className="space-y-1.5">
+                  {analysis.suggested_ad_angles.map((angle) => (
+                    <li
+                      key={angle}
+                      className="flex items-start gap-2 text-sm text-zinc-300"
+                    >
+                      <span className="mt-1.5 h-1.5 w-1.5 shrink-0 rounded-full bg-fuchsia-400/80" />
+                      <span>{angle}</span>
+                    </li>
+                  ))}
+                </ul>
+              ) : (
+                <p className="text-sm text-zinc-500">Not specified</p>
+              )}
             </FieldBlock>
           </>
         )}
+
+        <FieldBlock label="Product tags" className="sm:col-span-2">
+          <EditableChipList
+            items={analysis.product_tags}
+            onChange={(product_tags) => onChange({ ...analysis, product_tags })}
+            disabled={controlsDisabled}
+            placeholder="Add a tag..."
+            addLabel="Add tag"
+          />
+        </FieldBlock>
+
+        <FieldBlock label="Unique selling points" className="sm:col-span-2">
+          <EditableBulletList
+            items={analysis.usps}
+            onChange={(usps) => onChange({ ...analysis, usps })}
+            disabled={controlsDisabled}
+            placeholder="e.g. Long Battery Life"
+          />
+        </FieldBlock>
+
+        <FieldBlock label="Target audience" className="sm:col-span-2">
+          <EditableChipList
+            items={analysis.target_audience}
+            onChange={(target_audience) =>
+              onChange({ ...analysis, target_audience })
+            }
+            disabled={controlsDisabled}
+            placeholder="Add an audience..."
+            addLabel="Add audience"
+          />
+        </FieldBlock>
       </div>
     </div>
   );

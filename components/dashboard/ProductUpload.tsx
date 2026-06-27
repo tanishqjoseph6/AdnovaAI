@@ -5,6 +5,7 @@ import { useCallback, useEffect, useId, useRef, useState } from "react";
 import { analyzeProductImage } from "@/lib/api/analyze-product-client";
 import {
   createEmptyProductAnalysis,
+  getAutoFillDescription,
   hasProductAnalysisContent,
   type ProductAnalysis,
 } from "@/lib/product-analysis/types";
@@ -188,6 +189,11 @@ export default function ProductUpload({
       const result = await analyzeProductImage(imageFile);
       setAnalysis(result);
       setIsEditingAnalysis(false);
+
+      const autoDescription = getAutoFillDescription(result);
+      if (autoDescription) {
+        setProductDescription(autoDescription);
+      }
     } catch (err) {
       setAnalysis(createEmptyProductAnalysis());
       setAnalysisError(
@@ -492,7 +498,7 @@ export default function ProductUpload({
               Product description
             </label>
             <p className="mt-1 text-xs text-zinc-500">
-              Sent to OpenAI — include features, audience, and price
+              Auto-filled from image analysis — edit before generating
             </p>
             <textarea
               id={descriptionInputId}
