@@ -1,7 +1,7 @@
 import type { LandingPageContent } from "@/lib/landing-analyzer/fetch-page";
 
 export function buildLandingAnalysisPrompt(content: LandingPageContent): string {
-  return `You are an expert conversion rate optimization and direct-response marketing strategist.
+  return `You are a strict conversion rate optimization auditor. Score landing pages honestly using the FULL 0–100 range. Different pages MUST receive noticeably different scores.
 
 Analyze the landing page content below and return a comprehensive marketing audit.
 
@@ -9,12 +9,12 @@ URL: ${content.url}
 Page title: ${content.title || "Unknown"}
 Meta description: ${content.metaDescription || "Not provided"}
 
-Page text content:
+Extracted landing page content (headings, hero, CTAs, pricing, testimonials, FAQ, trust signals):
 """
 ${content.textContent}
 """
 
-Return ONLY valid JSON in this exact shape:
+Return ONLY valid JSON in this exact shape (replace every "integer" with your evaluated score):
 
 {
   "brand_product_name": "detected brand or product name",
@@ -33,11 +33,14 @@ Return ONLY valid JSON in this exact shape:
   "strengths": ["strength 1", "strength 2", "strength 3"],
   "weaknesses": ["weakness 1", "weakness 2", "weakness 3"],
   "scores": {
-    "conversion_score": 82,
-    "hero_score": 78,
-    "cta_score": 70,
-    "trust_score": 65,
-    "offer_score": 74
+    "hero_score": "integer",
+    "cta_score": "integer",
+    "trust_score": "integer",
+    "offer_score": "integer",
+    "copy_score": "integer",
+    "social_proof_score": "integer",
+    "visual_hierarchy_score": "integer",
+    "mobile_ux_score": "integer"
   },
   "suggestions": {
     "better_headline": "improved headline suggestion",
@@ -54,8 +57,37 @@ Return ONLY valid JSON in this exact shape:
   }
 }
 
-Rules:
-- All scores are integers from 0 to 100.
+Scoring calibration (CRITICAL — use the full range, do NOT cluster scores near 50):
+- Score each dimension INDEPENDENTLY. It is normal for the same page to have hero_score 92 and cta_score 38.
+- Do NOT return conversion_score — it is computed server-side from your eight dimension scores.
+- Weak landing pages (confusing copy, no clear CTA, no trust, cluttered): most dimensions 20–45.
+- Average landing pages (some clarity, partial trust/offer, mixed UX): most dimensions 46–69.
+- Good landing pages (clear value, solid CTA/trust, decent structure): most dimensions 70–84.
+- Exceptional landing pages (Apple, Stripe, Linear, Notion-level clarity, polish, trust): most dimensions 85–95.
+
+Dimension definitions:
+- hero_score: headline clarity, relevance, emotional impact, differentiation above the fold.
+- cta_score: CTA visibility, action clarity, urgency, friction, repeated placement.
+- trust_score: testimonials, logos, guarantees, security signals, credibility copy, certifications.
+- offer_score: offer clarity, perceived value, pricing transparency, urgency, risk reversal.
+- copy_score: value proposition clarity, benefit-driven messaging, readability, persuasion, grammar.
+- social_proof_score: reviews, ratings, customer counts, case studies, press, user-generated proof.
+- visual_hierarchy_score: scannability, section structure, headline/subhead hierarchy, content flow cues inferable from text order and emphasis.
+- mobile_ux_score: concise mobile-friendly messaging, tap-friendly CTA language, brevity, clarity on small screens (infer from content structure when HTML layout is unavailable).
+
+Penalties (apply aggressively — do not give mid-range scores by default):
+- No visible primary CTA in content: cta_score must be 15–35.
+- No social proof at all: social_proof_score must be 10–30.
+- Vague or missing offer: offer_score must be 15–40.
+- Generic/confusing hero: hero_score must be 20–45.
+- Exceptional global brands with world-class copy and trust (Apple, Stripe, Linear, Notion): hero/copy/visual_hierarchy/trust typically 88–96 even if offer is softer.
+
+Spread requirement:
+- Do NOT assign similar scores to every dimension on a page.
+- Two different URLs should rarely produce the same overall profile unless they are genuinely similar quality.
+- Avoid scoring everything between 45–55 unless the page is truly mediocre across ALL dimensions.
+
+Content rules:
 - Be specific and actionable.
 - Base conclusions only on the provided page content.
 - ad_strategy must contain exactly 5 ad_angles, 5 hooks, 3 captions, and 3 ctas.`;

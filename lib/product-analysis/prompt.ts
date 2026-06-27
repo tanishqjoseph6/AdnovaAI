@@ -5,7 +5,9 @@ Analyze the uploaded product image and infer practical marketing details a copyw
 Return ONLY valid JSON in this exact shape:
 
 {
-  "product_name": "short product name",
+  "generic_product_name": "brand and product family only, e.g. Samsung Galaxy smartphone",
+  "exact_model": null,
+  "product_name": "same as generic_product_name unless exact_model is provided",
   "category": "product category",
   "product_description": "2 to 4 concise sentences describing the product, its benefits, and who it is for",
   "product_tags": ["Wireless", "Premium", "Gaming"],
@@ -13,18 +15,38 @@ Return ONLY valid JSON in this exact shape:
   "target_audience": ["Students", "Professionals", "Fitness Enthusiasts"],
   "suggested_ad_angles": ["angle 1", "angle 2", "angle 3"],
   "recommended_tone": "tone for ad copy",
-  "confidence_score": 94
+  "identification_confidence": "high",
+  "confidence_score": 0
 }
 
-Rules:
-- Be specific and concise.
-- product_description: 2 to 4 lines of polished marketing copy.
+Product identification rules (CRITICAL):
+- NEVER guess an exact product model unless the image provides clear visual evidence.
+- Clear evidence includes: readable model text on the product/packaging, unmistakable generation-specific design, or a uniquely identifiable variant.
+- If the exact model cannot be determined confidently, set exact_model to null and use a generic_product_name with brand + product family only.
+- Good generic examples: "Samsung Galaxy smartphone", "Apple iPhone", "Nike running shoe", "Sony wireless headphones".
+- Only set exact_model (e.g. "Samsung Galaxy S25 Ultra", "iPhone 15 Pro", "Nike Air Zoom Pegasus 40") when identification_confidence is "high".
+- If uncertain between similar models, use generic_product_name and exact_model null.
+
+Confidence rules:
+- identification_confidence must be "high", "medium", or "low".
+- "high": strong visual evidence for brand AND either exact model or product family.
+- "medium": brand/family likely correct but exact model unclear.
+- "low": product type visible but brand or variant uncertain.
+- confidence_score: integer 0 to 100 reflecting identification certainty.
+- Use confidence_score >= 80 only when identification_confidence is "high".
+- Use confidence_score 60-79 for "medium".
+- Use confidence_score below 60 for "low".
+- When identification_confidence is "medium" or "low", exact_model MUST be null and generic_product_name MUST stay generic (no model numbers or generation names).
+
+Content rules:
+- Be specific and concise about visible features, materials, colors, and use cases.
+- product_description: 2 to 4 lines of polished marketing copy based on what is visible.
 - product_tags: 5 to 10 short tags (1 to 3 words each).
-- usps: 3 to 6 strongest unique selling points.
+- usps: 3 to 6 strongest unique selling points visible or reasonably inferred from the product type.
 - target_audience: 3 to 6 likely audience segments.
 - suggested_ad_angles: 3 to 5 items.
 - recommended_tone: one short phrase (e.g. "Premium and aspirational").
-- confidence_score: integer 0 to 100 reflecting how confident you are in the product identification.`;
+- product_name should match the final customer-facing identification (generic_product_name when exact_model is null).`;
 
 export function buildGenerateAdsPrompt(
   productDescription: string,

@@ -1,33 +1,10 @@
 "use client";
 
 import type { LandingPageAnalysis } from "@/lib/landing-analyzer/types";
-
-function scoreTone(score: number): string {
-  if (score >= 80) return "text-emerald-300";
-  if (score >= 60) return "text-cyan-300";
-  return "text-amber-300";
-}
-
-function scoreBarTone(score: number): string {
-  if (score >= 80) return "bg-emerald-400";
-  if (score >= 60) return "bg-cyan-400";
-  return "bg-amber-400";
-}
-
-function ScoreRing({ score, label }: { score: number; label: string }) {
-  return (
-    <div className="rounded-xl border border-white/[0.08] bg-white/[0.03] p-4 text-center">
-      <p className={`text-2xl font-bold ${scoreTone(score)}`}>{score}</p>
-      <p className="mt-1 text-xs text-zinc-500">{label}</p>
-      <div className="mt-3 h-1.5 overflow-hidden rounded-full bg-white/10">
-        <div
-          className={`h-full rounded-full ${scoreBarTone(score)}`}
-          style={{ width: `${score}%` }}
-        />
-      </div>
-    </div>
-  );
-}
+import {
+  OverallScoreDisplay,
+  ScoreRing,
+} from "@/components/landing-analyzer/ScoreDisplay";
 
 function SectionCard({
   title,
@@ -119,23 +96,15 @@ export default function LandingAnalyzerResults({
       <section className="glass relative overflow-hidden rounded-2xl border border-white/[0.08] p-6 sm:p-8">
         <div className="pointer-events-none absolute inset-0 bg-gradient-to-br from-violet-600/[0.08] via-transparent to-cyan-500/[0.06]" />
         <div className="relative text-center">
-          <p className="text-[11px] font-semibold uppercase tracking-[0.2em] text-zinc-500">
-            Overall conversion score
-          </p>
-          <p
-            className={`mt-3 text-5xl font-bold sm:text-6xl ${scoreTone(scores.conversion_score)}`}
-          >
-            {scores.conversion_score}
-            <span className="text-2xl text-zinc-500">/100</span>
-          </p>
-          <p className="mt-2 truncate text-sm text-zinc-400">{analysis.url}</p>
+          <OverallScoreDisplay score={scores.conversion_score} />
+          <p className="mt-4 truncate text-sm text-zinc-400">{analysis.url}</p>
         </div>
 
         <div className="relative mt-6 grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
-          <ScoreRing score={scores.hero_score} label="Hero score" />
-          <ScoreRing score={scores.cta_score} label="CTA score" />
-          <ScoreRing score={scores.trust_score} label="Trust score" />
-          <ScoreRing score={scores.offer_score} label="Offer score" />
+          <ScoreRing score={scores.hero_score} label="Hero score" delayMs={80} />
+          <ScoreRing score={scores.cta_score} label="CTA score" delayMs={160} />
+          <ScoreRing score={scores.trust_score} label="Trust score" delayMs={240} />
+          <ScoreRing score={scores.offer_score} label="Offer score" delayMs={320} />
         </div>
       </section>
 

@@ -6,7 +6,10 @@
     "dev": "next dev --turbopack",
     "build": "next build",
     "start": "next start",
-    "lint": "next lint"
+    "lint": "next lint",
+    "test:landing-analyzer": "node --import tsx --test lib/landing-analyzer/landing-analyzer.test.ts",
+    "test:product-analysis": "node --import tsx --test lib/product-analysis/product-analysis.test.ts",
+    "test:ad-score": "node --import tsx --test lib/ad-score/ad-score.test.ts"
   },
   "dependencies": {
     "@google/genai": "^0.12.0",
@@ -27,6 +30,7 @@
     "@types/react": "^19",
     "@types/react-dom": "^19",
     "tailwindcss": "^4",
+    "tsx": "^4.20.3",
     "typescript": "^5"
   }
 }

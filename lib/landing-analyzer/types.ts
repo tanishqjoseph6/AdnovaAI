@@ -1,3 +1,9 @@
+import {
+  buildScoreInputs,
+  computeConversionScore,
+  hasValidComponentScores,
+} from "@/lib/landing-analyzer/scores";
+
 export type LandingPageScores = {
   conversion_score: number;
   hero_score: number;
@@ -54,28 +60,31 @@ function toStringArray(value: unknown): string[] {
     .filter(Boolean);
 }
 
-function clampScore(value: unknown): number {
-  if (typeof value !== "number" || Number.isNaN(value)) {
-    return 0;
-  }
-  return Math.min(100, Math.max(0, Math.round(value)));
-}
-
 function readString(record: Record<string, unknown>, key: string): string {
   const value = record[key];
   return typeof value === "string" ? value.trim() : "";
 }
 
-function normalizeScores(raw: unknown): LandingPageScores {
+function readScoreInputs(raw: unknown) {
   const record =
     raw && typeof raw === "object" ? (raw as Record<string, unknown>) : {};
 
+  return buildScoreInputs(record);
+}
+
+function normalizeScores(raw: unknown): LandingPageScores | null {
+  const inputs = readScoreInputs(raw);
+
+  if (!hasValidComponentScores(inputs)) {
+    return null;
+  }
+
   return {
-    conversion_score: clampScore(record.conversion_score),
-    hero_score: clampScore(record.hero_score),
-    cta_score: clampScore(record.cta_score),
-    trust_score: clampScore(record.trust_score),
-    offer_score: clampScore(record.offer_score),
+    hero_score: inputs.hero_score,
+    cta_score: inputs.cta_score,
+    trust_score: inputs.trust_score,
+    offer_score: inputs.offer_score,
+    conversion_score: computeConversionScore(inputs),
   };
 }
 
@@ -114,6 +123,11 @@ export function normalizeLandingPageAnalysis(
 
   const record = raw as Record<string, unknown>;
 
+  const scores = normalizeScores(record.scores);
+  if (!scores) {
+    return null;
+  }
+
   const analysis: LandingPageAnalysis = {
     url,
     brand_product_name: readString(record, "brand_product_name"),
@@ -131,16 +145,12 @@ export function normalizeLandingPageAnalysis(
     marketing_summary: readString(record, "marketing_summary"),
     strengths: toStringArray(record.strengths),
     weaknesses: toStringArray(record.weaknesses),
-    scores: normalizeScores(record.scores),
+    scores,
     suggestions: normalizeSuggestions(record.suggestions),
     ad_strategy: normalizeAdStrategy(record.ad_strategy),
   };
 
-  if (
-    !analysis.brand_product_name &&
-    !analysis.marketing_summary &&
-    analysis.scores.conversion_score === 0
-  ) {
+  if (!analysis.brand_product_name && !analysis.marketing_summary) {
     return null;
   }
 

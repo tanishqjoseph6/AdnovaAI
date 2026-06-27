@@ -1,3 +1,7 @@
+import type { CompetitorAnalysisRecord } from "@/lib/competitor-ad/types";
+
+export type { CompetitorAnalysisRecord };
+
 export type GenerationRecord = {
   id: string;
   product_description: string;
@@ -8,6 +12,10 @@ export type GenerationRecord = {
   ugc_script: string | null;
   user_email?: string | null;
 };
+
+export type HistoryEntry =
+  | { kind: "generation"; record: GenerationRecord }
+  | { kind: "competitor"; record: CompetitorAnalysisRecord };
 
 export type HistoryFilter = "today" | "week" | "month" | "all";
 export type HistorySort = "newest" | "oldest";

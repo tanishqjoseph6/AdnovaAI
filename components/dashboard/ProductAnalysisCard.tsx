@@ -3,6 +3,7 @@
 import { Pencil, RefreshCw, Sparkles } from "lucide-react";
 import {
   arrayToLines,
+  capitalizeDetectionConfidence,
   isLowConfidence,
   linesToArray,
   type ProductAnalysis,
@@ -47,6 +48,35 @@ function FieldBlock({
   );
 }
 
+function DetectionConfidenceBadge({
+  analysis,
+  isAnalyzing,
+}: {
+  analysis: ProductAnalysis;
+  isAnalyzing: boolean;
+}) {
+  if (isAnalyzing) {
+    return null;
+  }
+
+  const level = analysis.detection_confidence;
+  const label = capitalizeDetectionConfidence(level);
+  const badgeClass =
+    level === "high"
+      ? "border-emerald-500/30 bg-emerald-500/10 text-emerald-200"
+      : level === "medium"
+        ? "border-cyan-500/30 bg-cyan-500/10 text-cyan-200"
+        : "border-amber-500/30 bg-amber-500/10 text-amber-200";
+
+  return (
+    <span
+      className={`inline-flex items-center rounded-full border px-2.5 py-1 text-[11px] font-semibold uppercase tracking-[0.12em] ${badgeClass}`}
+    >
+      Detection confidence: {label}
+    </span>
+  );
+}
+
 function ConfidenceMeter({
   analysis,
   isAnalyzing,
@@ -60,26 +90,27 @@ function ConfidenceMeter({
 
   const displayScore = Math.round(analysis.confidence_score);
   const toneClass =
-    displayScore >= 80
+    analysis.detection_confidence === "high"
       ? "text-emerald-300"
-      : displayScore >= 60
+      : analysis.detection_confidence === "medium"
         ? "text-cyan-300"
         : "text-amber-300";
 
   return (
     <div className="mt-4 rounded-lg border border-white/10 bg-white/[0.03] px-3 py-3 sm:px-4">
       <div className="flex flex-wrap items-center justify-between gap-2">
+        <DetectionConfidenceBadge analysis={analysis} isAnalyzing={isAnalyzing} />
         <p className="text-sm text-zinc-400">
-          Confidence:{" "}
+          Score:{" "}
           <span className={`font-semibold ${toneClass}`}>{displayScore}%</span>
         </p>
       </div>
       <div className="mt-2 h-1.5 overflow-hidden rounded-full bg-white/10">
         <div
           className={`h-full rounded-full transition-all duration-500 ${
-            displayScore >= 80
+            analysis.detection_confidence === "high"
               ? "bg-emerald-400"
-              : displayScore >= 60
+              : analysis.detection_confidence === "medium"
                 ? "bg-cyan-400"
                 : "bg-amber-400"
           }`}
@@ -93,7 +124,12 @@ function ConfidenceMeter({
       </div>
       {isLowConfidence(analysis) && (
         <p className="mt-2 text-sm text-amber-200">
-          Please review the detected information before generating ads.
+          Exact model not confirmed — please review the detected product name before generating ads.
+        </p>
+      )}
+      {analysis.detection_confidence === "medium" && (
+        <p className="mt-2 text-sm text-cyan-100/90">
+          Using a generic product name because the exact model is not fully visible.
         </p>
       )}
     </div>

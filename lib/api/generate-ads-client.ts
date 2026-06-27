@@ -23,7 +23,7 @@ type RawGenerateAdsPayload = {
 
 function normalizeGenerateAdsResponse(
   payload: RawGenerateAdsPayload
-): GenerateAdsResponse & { ctas: string[] } {
+): GenerateAdsResponse {
   return {
     hooks: payload.hooks ?? payload.ad_hooks ?? [],
     captions: payload.captions ?? payload.ad_captions ?? [],
@@ -38,7 +38,7 @@ export { CREDITS_ERROR_CODE } from "@/lib/credits/constants";
 export async function fetchGeneratedAds(
   productDescription: string,
   productAnalysis?: ProductAnalysis | null
-): Promise<GenerateAdsResponse & { ctas: string[] }> {
+): Promise<GenerateAdsResponse> {
   const response = await fetch("/api/generate-ads", {
     method: "POST",
     headers: { "Content-Type": "application/json" },

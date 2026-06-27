@@ -5,6 +5,7 @@ import {
   normalizeLandingPageUrl,
 } from "@/lib/landing-analyzer/fetch-page";
 import { buildLandingAnalysisPrompt } from "@/lib/landing-analyzer/prompt";
+import { summarizeLandingPageContent } from "@/lib/landing-analyzer/summarize-content";
 import { normalizeLandingPageAnalysis } from "@/lib/landing-analyzer/types";
 import { createClient } from "@/lib/supabase/server";
 
@@ -43,14 +44,23 @@ export async function POST(req: Request) {
     }
 
     const pageContent = await fetchLandingPageContent(normalizedUrl);
+    const preparedContent = pageContent.needsSummarization
+      ? await summarizeLandingPageContent(openai, pageContent)
+      : pageContent;
 
     const response = await openai.chat.completions.create({
       model: "gpt-4o-mini",
+      temperature: 0.4,
       response_format: { type: "json_object" },
       messages: [
         {
+          role: "system",
+          content:
+            "You are a strict landing page auditor. Score each dimension independently using the full 0-100 range. Never cluster all scores near 50.",
+        },
+        {
           role: "user",
-          content: buildLandingAnalysisPrompt(pageContent),
+          content: buildLandingAnalysisPrompt(preparedContent),
         },
       ],
     });
@@ -79,9 +89,9 @@ export async function POST(req: Request) {
       error instanceof Error &&
       (message.includes("URL") ||
         message.includes("fetch") ||
-        message.includes("content") ||
+        message.includes("Not enough readable content") ||
         message.includes("timed out") ||
-        message.includes("too large"))
+        message.includes("does not appear to be an HTML"))
         ? 400
         : 500;
 

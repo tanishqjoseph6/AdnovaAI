@@ -1,6 +1,12 @@
-const MAX_RESPONSE_BYTES = 1_000_000;
-const FETCH_TIMEOUT_MS = 15_000;
-const MAX_TEXT_LENGTH = 12_000;
+import {
+  extractImportantContent,
+  extractMetaDescription,
+  extractTitle,
+  isExtractedContentUsable,
+} from "@/lib/landing-analyzer/extract-content";
+
+const MAX_DOWNLOAD_BYTES = 5_000_000;
+const FETCH_TIMEOUT_MS = 20_000;
 
 const BLOCKED_HOSTNAMES = new Set([
   "localhost",
@@ -59,48 +65,23 @@ export function normalizeLandingPageUrl(input: string): string {
   return url.toString();
 }
 
-function htmlToText(html: string): string {
-  const withoutScripts = html
-    .replace(/<script[\s\S]*?<\/script>/gi, " ")
-    .replace(/<style[\s\S]*?<\/style>/gi, " ")
-    .replace(/<noscript[\s\S]*?<\/noscript>/gi, " ");
-
-  const text = withoutScripts
-    .replace(/<[^>]+>/g, " ")
-    .replace(/&nbsp;/gi, " ")
-    .replace(/&amp;/gi, "&")
-    .replace(/&lt;/gi, "<")
-    .replace(/&gt;/gi, ">")
-    .replace(/&#39;/gi, "'")
-    .replace(/&quot;/gi, '"')
-    .replace(/\s+/g, " ")
-    .trim();
-
-  return text.slice(0, MAX_TEXT_LENGTH);
-}
-
-function extractTitle(html: string): string {
-  const match = html.match(/<title[^>]*>([\s\S]*?)<\/title>/i);
-  if (!match?.[1]) {
-    return "";
-  }
-
-  return match[1].replace(/<[^>]+>/g, " ").replace(/\s+/g, " ").trim();
-}
-
-function extractMetaDescription(html: string): string {
-  const match = html.match(
-    /<meta[^>]+name=["']description["'][^>]+content=["']([^"']+)["'][^>]*>/i
-  );
-  return match?.[1]?.trim() ?? "";
-}
-
 export type LandingPageContent = {
   url: string;
   title: string;
   metaDescription: string;
   textContent: string;
+  needsSummarization: boolean;
 };
+
+async function readHtmlWithLimit(response: Response): Promise<string> {
+  const buffer = await response.arrayBuffer();
+  const limited =
+    buffer.byteLength > MAX_DOWNLOAD_BYTES
+      ? buffer.slice(0, MAX_DOWNLOAD_BYTES)
+      : buffer;
+
+  return new TextDecoder("utf-8", { fatal: false }).decode(limited);
+}
 
 export async function fetchLandingPageContent(
   url: string
@@ -126,21 +107,20 @@ export async function fetchLandingPageContent(
     }
 
     const contentType = response.headers.get("content-type") ?? "";
-    if (!contentType.includes("text/html") && !contentType.includes("text/plain")) {
+    if (
+      !contentType.includes("text/html") &&
+      !contentType.includes("text/plain") &&
+      !contentType.includes("application/xhtml")
+    ) {
       throw new Error("This URL does not appear to be an HTML landing page.");
     }
 
-    const buffer = await response.arrayBuffer();
-    if (buffer.byteLength > MAX_RESPONSE_BYTES) {
-      throw new Error("This page is too large to analyze. Try a simpler URL.");
-    }
-
-    const html = new TextDecoder("utf-8", { fatal: false }).decode(buffer);
+    const html = await readHtmlWithLimit(response);
     const title = extractTitle(html);
     const metaDescription = extractMetaDescription(html);
-    const textContent = htmlToText(html);
+    const extracted = extractImportantContent(html);
 
-    if (textContent.length < 80) {
+    if (!isExtractedContentUsable(extracted.textContent)) {
       throw new Error(
         "Not enough readable content found on this page to analyze."
       );
@@ -150,7 +130,8 @@ export async function fetchLandingPageContent(
       url,
       title,
       metaDescription,
-      textContent,
+      textContent: extracted.textContent,
+      needsSummarization: extracted.needsSummarization,
     };
   } catch (error) {
     if (error instanceof Error && error.name === "AbortError") {

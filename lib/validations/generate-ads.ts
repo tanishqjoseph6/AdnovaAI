@@ -9,8 +9,9 @@ export const generateAdsRequestSchema = z.object({
 });
 
 export const generateAdsResponseSchema = z.object({
-  hooks: z.array(z.string().min(1)).length(5),
-  captions: z.array(z.string().min(1)).length(3),
+  hooks: z.array(z.string().min(1)),
+  captions: z.array(z.string().min(1)),
+  ctas: z.array(z.string()).default([]),
   ugcScript: z.string().min(1),
 });
 

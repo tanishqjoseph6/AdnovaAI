@@ -1,13 +1,15 @@
 "use client";
 
-import { useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useAdGenerator } from "@/hooks/useAdGenerator";
+import { useAdScore } from "@/hooks/useAdScore";
 import { useCredits } from "@/hooks/useCredits";
 import { CREDITS_ERROR_CODE } from "@/lib/credits/constants";
 import type { ProductAnalysis } from "@/lib/product-analysis/types";
 import UpgradeModal from "@/components/credits/UpgradeModal";
 import ProductUpload from "./ProductUpload";
 import AiOutput from "./AiOutput";
+import AdScoreCard from "./AdScoreCard";
 
 type AdGeneratorSectionProps = {
   compact?: boolean;
@@ -24,6 +26,11 @@ export default function AdGeneratorSection({
   compact = false,
 }: AdGeneratorSectionProps) {
   const outputRef = useRef<HTMLDivElement>(null);
+  const lastInputRef = useRef<{
+    productDescription: string;
+    productAnalysis?: ProductAnalysis | null;
+  } | null>(null);
+  const scoredSignatureRef = useRef<string | null>(null);
   const [upgradeOpen, setUpgradeOpen] = useState(false);
   const { refresh } = useCredits();
 
@@ -35,6 +42,35 @@ export default function AdGeneratorSection({
       onNoCredits: () => setUpgradeOpen(true),
     });
 
+  const {
+    analyze: analyzeAdScore,
+    reset: resetAdScore,
+    isLoading: isScoring,
+    analysis: adScoreAnalysis,
+    error: adScoreError,
+  } = useAdScore();
+
+  useEffect(() => {
+    if (state.status !== "success" || !state.data || !lastInputRef.current) {
+      return;
+    }
+
+    const signature = JSON.stringify(state.data);
+    if (scoredSignatureRef.current === signature) {
+      return;
+    }
+
+    scoredSignatureRef.current = signature;
+
+    void analyzeAdScore({
+      productDescription: lastInputRef.current.productDescription,
+      hooks: state.data.hooks,
+      captions: state.data.captions,
+      ctas: state.data.ctas,
+      ugcScript: state.data.ugcScript,
+    });
+  }, [state, analyzeAdScore]);
+
   const handleGenerate = async ({
     productDescription,
     productAnalysis,
@@ -42,6 +78,10 @@ export default function AdGeneratorSection({
     productDescription: string;
     productAnalysis?: ProductAnalysis | null;
   }) => {
+    lastInputRef.current = { productDescription, productAnalysis };
+    scoredSignatureRef.current = null;
+    resetAdScore();
+
     try {
       await generate(productDescription, productAnalysis);
       requestAnimationFrame(() => {
@@ -75,6 +115,13 @@ export default function AdGeneratorSection({
             data={outputData ?? emptyOutput}
             isLoading={isLoading}
           />
+          {!isLoading && (
+            <AdScoreCard
+              analysis={adScoreAnalysis}
+              isLoading={isScoring}
+              error={adScoreError}
+            />
+          )}
         </div>
       )}
 

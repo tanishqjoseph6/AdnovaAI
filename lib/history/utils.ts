@@ -1,4 +1,10 @@
-import type { GenerationRecord, HistoryFilter, HistorySort } from "./types";
+import type {
+  CompetitorAnalysisRecord,
+  GenerationRecord,
+  HistoryEntry,
+  HistoryFilter,
+  HistorySort,
+} from "./types";
 
 const GENERATION_DATE_FORMAT_OPTIONS = {
   weekday: "short",
@@ -95,6 +101,45 @@ export function matchesSearchQuery(
   return parts.some((part) => part.toLowerCase().includes(normalized));
 }
 
+export function matchesSearchQueryForCompetitor(
+  record: CompetitorAnalysisRecord,
+  query: string
+): boolean {
+  const normalized = query.trim().toLowerCase();
+  if (!normalized) return true;
+
+  const { analysis, better_ad: betterAd } = record;
+  const parts = [
+    record.image_name ?? "",
+    analysis.brand,
+    analysis.product,
+    analysis.platform,
+    analysis.ad_objective,
+    analysis.hook_analysis,
+    analysis.cta_analysis,
+    ...analysis.suggestions.what_makes_successful,
+    ...analysis.suggestions.weaknesses,
+    ...analysis.suggestions.how_to_outperform,
+    ...(betterAd?.hooks ?? []),
+    ...(betterAd?.captions ?? []),
+    ...(betterAd?.ctas ?? []),
+    betterAd?.ugcScript ?? "",
+  ];
+
+  return parts.some((part) => part.toLowerCase().includes(normalized));
+}
+
+export function matchesSearchQueryForEntry(
+  entry: HistoryEntry,
+  query: string
+): boolean {
+  if (entry.kind === "generation") {
+    return matchesSearchQuery(entry.record, query);
+  }
+
+  return matchesSearchQueryForCompetitor(entry.record, query);
+}
+
 export function sortGenerations(
   items: GenerationRecord[],
   sort: HistorySort
@@ -102,6 +147,17 @@ export function sortGenerations(
   return [...items].sort((a, b) => {
     const aTime = new Date(a.created_at).getTime();
     const bTime = new Date(b.created_at).getTime();
+    return sort === "newest" ? bTime - aTime : aTime - bTime;
+  });
+}
+
+export function sortHistoryEntries(
+  items: HistoryEntry[],
+  sort: HistorySort
+): HistoryEntry[] {
+  return [...items].sort((a, b) => {
+    const aTime = new Date(a.record.created_at).getTime();
+    const bTime = new Date(b.record.created_at).getTime();
     return sort === "newest" ? bTime - aTime : aTime - bTime;
   });
 }

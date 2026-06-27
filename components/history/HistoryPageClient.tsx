@@ -4,22 +4,23 @@ import { useMemo, useState } from "react";
 import { AnimatePresence, motion } from "framer-motion";
 import { createClient } from "@/lib/supabase/client";
 import GenerationCard from "@/components/history/GenerationCard";
+import CompetitorHistoryCard from "@/components/history/CompetitorHistoryCard";
 import HistoryEmptyState from "@/components/history/HistoryEmptyState";
 import { useCredits } from "@/hooks/useCredits";
 import type {
-  GenerationRecord,
+  HistoryEntry,
   HistoryFilter,
   HistorySort,
   PlanBadge,
 } from "@/lib/history/types";
 import {
   matchesDateFilter,
-  matchesSearchQuery,
-  sortGenerations,
+  matchesSearchQueryForEntry,
+  sortHistoryEntries,
 } from "@/lib/history/utils";
 
 type HistoryPageClientProps = {
-  initialGenerations: GenerationRecord[];
+  initialEntries: HistoryEntry[];
 };
 
 const FILTERS: { id: HistoryFilter; label: string }[] = [
@@ -30,42 +31,47 @@ const FILTERS: { id: HistoryFilter; label: string }[] = [
 ];
 
 export default function HistoryPageClient({
-  initialGenerations,
+  initialEntries,
 }: HistoryPageClientProps) {
   const { credits } = useCredits();
   const planBadge: PlanBadge = credits?.unlimited ? "Pro" : "Free";
 
-  const [generations, setGenerations] =
-    useState<GenerationRecord[]>(initialGenerations);
+  const [entries, setEntries] = useState<HistoryEntry[]>(initialEntries);
   const [search, setSearch] = useState("");
   const [filter, setFilter] = useState<HistoryFilter>("all");
   const [sort, setSort] = useState<HistorySort>("newest");
 
-  const filteredGenerations = useMemo(() => {
-    const filtered = generations.filter(
+  const filteredEntries = useMemo(() => {
+    const filtered = entries.filter(
       (item) =>
-        matchesSearchQuery(item, search) && matchesDateFilter(item.created_at, filter)
+        matchesSearchQueryForEntry(item, search) &&
+        matchesDateFilter(item.record.created_at, filter)
     );
-    return sortGenerations(filtered, sort);
-  }, [generations, search, filter, sort]);
+    return sortHistoryEntries(filtered, sort);
+  }, [entries, search, filter, sort]);
 
-  const handleDelete = async (id: string) => {
+  const handleDelete = async (entry: HistoryEntry) => {
     const supabase = createClient();
-    const { error } = await supabase.from("generations").delete().eq("id", id);
+    const table =
+      entry.kind === "generation" ? "generations" : "competitor_analyses";
+    const { error } = await supabase
+      .from(table)
+      .delete()
+      .eq("id", entry.record.id);
 
     if (error) {
       throw error;
     }
 
-    setGenerations((prev) => prev.filter((item) => item.id !== id));
+    setEntries((prev) => prev.filter((item) => item.record.id !== entry.record.id));
   };
 
-  const hasAnyGenerations = generations.length > 0;
-  const hasFilteredResults = filteredGenerations.length > 0;
+  const hasAnyEntries = entries.length > 0;
+  const hasFilteredResults = filteredEntries.length > 0;
 
   return (
     <div className="space-y-6">
-      {hasAnyGenerations && (
+      {hasAnyEntries && (
         <motion.div
           initial={{ opacity: 0, y: -8 }}
           animate={{ opacity: 1, y: 0 }}
@@ -92,9 +98,9 @@ export default function HistoryPageClient({
                 type="search"
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
-                placeholder="Search generations…"
+                placeholder="Search history…"
                 className="w-full rounded-xl border border-white/10 bg-white/[0.04] py-2.5 pl-10 pr-4 text-sm text-white placeholder:text-zinc-500 transition focus:border-violet-500/50 focus:outline-none focus:ring-2 focus:ring-violet-500/20"
-                aria-label="Search generations"
+                aria-label="Search history"
               />
             </div>
 
@@ -113,7 +119,7 @@ export default function HistoryPageClient({
               </select>
 
               <p className="text-sm text-zinc-500">
-                {filteredGenerations.length} of {generations.length}
+                {filteredEntries.length} of {entries.length}
               </p>
             </div>
           </div>
@@ -145,7 +151,7 @@ export default function HistoryPageClient({
         </motion.div>
       )}
 
-      {!hasAnyGenerations ? (
+      {!hasAnyEntries ? (
         <HistoryEmptyState />
       ) : !hasFilteredResults ? (
         <motion.div
@@ -171,15 +177,35 @@ export default function HistoryPageClient({
       ) : (
         <motion.div layout className="space-y-5">
           <AnimatePresence mode="popLayout">
-            {filteredGenerations.map((generation, index) => (
-              <GenerationCard
-                key={generation.id}
-                generation={generation}
-                planBadge={planBadge}
-                index={index}
-                onDelete={handleDelete}
-              />
-            ))}
+            {filteredEntries.map((entry, index) =>
+              entry.kind === "generation" ? (
+                <GenerationCard
+                  key={`gen-${entry.record.id}`}
+                  generation={entry.record}
+                  planBadge={planBadge}
+                  index={index}
+                  onDelete={async (id) => {
+                    await handleDelete({
+                      kind: "generation",
+                      record: { ...entry.record, id },
+                    });
+                  }}
+                />
+              ) : (
+                <CompetitorHistoryCard
+                  key={`comp-${entry.record.id}`}
+                  record={entry.record}
+                  planBadge={planBadge}
+                  index={index}
+                  onDelete={async (id) => {
+                    await handleDelete({
+                      kind: "competitor",
+                      record: { ...entry.record, id },
+                    });
+                  }}
+                />
+              )
+            )}
           </AnimatePresence>
         </motion.div>
       )}

@@ -1,3 +1,5 @@
+export type DetectionConfidenceLevel = "high" | "medium" | "low";
+
 export type ProductAnalysis = {
   product_name: string;
   category: string;
@@ -8,9 +10,11 @@ export type ProductAnalysis = {
   suggested_ad_angles: string[];
   recommended_tone: string;
   confidence_score: number;
+  detection_confidence: DetectionConfidenceLevel;
 };
 
 export const LOW_CONFIDENCE_THRESHOLD = 60;
+export const HIGH_CONFIDENCE_THRESHOLD = 80;
 
 export function createEmptyProductAnalysis(): ProductAnalysis {
   return {
@@ -23,6 +27,7 @@ export function createEmptyProductAnalysis(): ProductAnalysis {
     suggested_ad_angles: [],
     recommended_tone: "",
     confidence_score: 0,
+    detection_confidence: "low",
   };
 }
 
@@ -37,12 +42,91 @@ function toStringArray(value: unknown): string[] {
     .filter(Boolean);
 }
 
+function readString(record: Record<string, unknown>, key: string): string {
+  const value = record[key];
+  return typeof value === "string" ? value.trim() : "";
+}
+
 function normalizeConfidenceScore(value: unknown): number {
+  if (typeof value === "string") {
+    const parsed = Number(value.trim());
+    if (!Number.isNaN(parsed)) {
+      return Math.min(100, Math.max(0, Math.round(parsed)));
+    }
+    return 0;
+  }
+
   if (typeof value !== "number" || Number.isNaN(value)) {
     return 0;
   }
 
   return Math.min(100, Math.max(0, Math.round(value)));
+}
+
+export function getDetectionConfidenceLevel(
+  score: number
+): DetectionConfidenceLevel {
+  if (score >= HIGH_CONFIDENCE_THRESHOLD) {
+    return "high";
+  }
+  if (score >= LOW_CONFIDENCE_THRESHOLD) {
+    return "medium";
+  }
+  return "low";
+}
+
+function normalizeDetectionConfidence(
+  value: unknown,
+  confidenceScore: number
+): DetectionConfidenceLevel {
+  const fromScore = getDetectionConfidenceLevel(confidenceScore);
+  let fromAi: DetectionConfidenceLevel | null = null;
+
+  if (typeof value === "string") {
+    const normalized = value.trim().toLowerCase();
+    if (
+      normalized === "high" ||
+      normalized === "medium" ||
+      normalized === "low"
+    ) {
+      fromAi = normalized;
+    }
+  }
+
+  if (!fromAi) {
+    return fromScore;
+  }
+
+  const rank: Record<DetectionConfidenceLevel, number> = {
+    low: 0,
+    medium: 1,
+    high: 2,
+  };
+
+  return rank[fromAi] <= rank[fromScore] ? fromAi : fromScore;
+}
+
+export function resolveProductName(
+  record: Record<string, unknown>,
+  detectionConfidence: DetectionConfidenceLevel
+): string {
+  const exactModel = readString(record, "exact_model");
+  const genericName = readString(record, "generic_product_name");
+  const legacyName = readString(record, "product_name");
+
+  if (detectionConfidence === "high" && exactModel) {
+    return exactModel;
+  }
+
+  if (genericName) {
+    return genericName;
+  }
+
+  if (detectionConfidence === "high" && legacyName) {
+    return legacyName;
+  }
+
+  return legacyName;
 }
 
 export function normalizeProductAnalysis(raw: unknown): ProductAnalysis | null {
@@ -52,18 +136,9 @@ export function normalizeProductAnalysis(raw: unknown): ProductAnalysis | null {
 
   const record = raw as Record<string, unknown>;
 
-  const product_name =
-    typeof record.product_name === "string" ? record.product_name.trim() : "";
-  const category =
-    typeof record.category === "string" ? record.category.trim() : "";
-  const product_description =
-    typeof record.product_description === "string"
-      ? record.product_description.trim()
-      : "";
-  const recommended_tone =
-    typeof record.recommended_tone === "string"
-      ? record.recommended_tone.trim()
-      : "";
+  const category = readString(record, "category");
+  const product_description = readString(record, "product_description");
+  const recommended_tone = readString(record, "recommended_tone");
 
   const product_tags = toStringArray(record.product_tags);
   const usps = toStringArray(
@@ -72,6 +147,11 @@ export function normalizeProductAnalysis(raw: unknown): ProductAnalysis | null {
   const target_audience = toStringArray(record.target_audience);
   const suggested_ad_angles = toStringArray(record.suggested_ad_angles);
   const confidence_score = normalizeConfidenceScore(record.confidence_score);
+  const detection_confidence = normalizeDetectionConfidence(
+    record.identification_confidence ?? record.detection_confidence,
+    confidence_score
+  );
+  const product_name = resolveProductName(record, detection_confidence);
 
   if (
     !product_name &&
@@ -97,6 +177,7 @@ export function normalizeProductAnalysis(raw: unknown): ProductAnalysis | null {
     suggested_ad_angles,
     recommended_tone,
     confidence_score,
+    detection_confidence,
   };
 }
 
@@ -146,10 +227,23 @@ export function formatProductAnalysisForPrompt(
         : "Not specified"
     }`,
     `- Recommended tone: ${analysis.recommended_tone || "Not specified"}`,
-    `- AI confidence: ${analysis.confidence_score}%`,
+    `- Detection confidence: ${capitalizeDetectionConfidence(analysis.detection_confidence)}`,
+    `- AI confidence score: ${analysis.confidence_score}%`,
   ];
 
+  if (analysis.detection_confidence !== "high") {
+    lines.push(
+      "- Note: Product identification is generic (exact model not confirmed). Avoid inventing a specific model name in ad copy."
+    );
+  }
+
   return lines.join("\n");
+}
+
+export function capitalizeDetectionConfidence(
+  level: DetectionConfidenceLevel
+): string {
+  return level.charAt(0).toUpperCase() + level.slice(1);
 }
 
 export function linesToArray(value: string): string[] {
@@ -168,5 +262,12 @@ export function getAutoFillDescription(analysis: ProductAnalysis): string {
 }
 
 export function isLowConfidence(analysis: ProductAnalysis): boolean {
-  return analysis.confidence_score < LOW_CONFIDENCE_THRESHOLD;
+  return (
+    analysis.detection_confidence === "low" ||
+    analysis.confidence_score < LOW_CONFIDENCE_THRESHOLD
+  );
+}
+
+export function isMediumOrLowConfidence(analysis: ProductAnalysis): boolean {
+  return analysis.detection_confidence !== "high";
 }
