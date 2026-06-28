@@ -5,6 +5,7 @@ import {
   getUserDisplayName,
 } from "@/lib/dashboard/metrics";
 import type { PlanId } from "@/lib/billing/plans";
+import { getUserCreditsForUser } from "@/lib/credits/server";
 import type { GenerationRecord } from "@/lib/history/types";
 import { createClient } from "@/lib/supabase/server";
 
@@ -14,34 +15,53 @@ export default async function DashboardPage() {
     data: { user },
   } = await supabase.auth.getUser();
 
-  const generationsResult = await supabase
-    .from("generations")
-    .select("*")
-    .order("created_at", { ascending: false });
-
-  const generations = (generationsResult.data ?? []) as GenerationRecord[];
-  const recentGenerations = generations.slice(0, 5);
-
   let planId: PlanId = "free";
+  let userCredits:
+    | { credits: number; maxCredits: number | null; unlimited: boolean }
+    | undefined;
+  let generations: GenerationRecord[] = [];
 
   if (user) {
-    const { data: profile } = await supabase
-      .from("profiles")
-      .select("plan")
-      .eq("id", user.id)
-      .maybeSingle();
+    const [profileResult, generationsResult] = await Promise.all([
+      supabase
+        .from("profiles")
+        .select("plan")
+        .eq("id", user.id)
+        .maybeSingle(),
+      supabase
+        .from("generations")
+        .select("*")
+        .in("user_email", [user.email ?? "", user.id])
+        .order("created_at", { ascending: false }),
+    ]);
 
+    const profile = profileResult.data;
     if (profile && typeof profile.plan === "string") {
       planId = profile.plan as PlanId;
     }
+
+    const credits = await getUserCreditsForUser(user.id, supabase, {
+      email: user.email,
+    });
+    userCredits = {
+      credits: credits.credits,
+      maxCredits: credits.maxCredits,
+      unlimited: credits.unlimited,
+    };
+    generations = (generationsResult.data ?? []) as GenerationRecord[];
   }
 
+  const recentGenerations = generations.slice(0, 5);
   const userName = getUserDisplayName(
     user?.email,
     user?.user_metadata as Record<string, unknown> | null
   );
 
-  const metrics = computeDashboardMetrics(generations, planId);
+  const metrics = computeDashboardMetrics(generations, planId, {
+    remainingCredits: userCredits?.credits,
+    maxCredits: userCredits?.maxCredits,
+    unlimited: userCredits?.unlimited,
+  });
 
   return (
     <DashboardShell
