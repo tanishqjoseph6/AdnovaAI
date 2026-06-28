@@ -1,5 +1,9 @@
 -- Harden signup eligibility and idempotent free credit grants.
 
+create unique index if not exists profiles_email_lower_unique
+  on public.profiles (lower(email))
+  where email is not null;
+
 create or replace function public.email_is_available_for_signup(p_email text)
 returns boolean
 language sql
