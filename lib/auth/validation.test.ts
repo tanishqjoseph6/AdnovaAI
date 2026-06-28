@@ -34,3 +34,14 @@ describe("auth errors", () => {
     );
   });
 });
+
+describe("password reset", () => {
+  it("validates matching passwords", async () => {
+    const { validateNewPassword } = await import("./password-reset");
+    const invalid = validateNewPassword("password123", "password456");
+    assert.equal(invalid.ok, false);
+
+    const valid = validateNewPassword("password123", "password123");
+    assert.equal(valid.ok, true);
+  });
+});

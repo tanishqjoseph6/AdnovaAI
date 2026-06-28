@@ -12,6 +12,12 @@ const AUTH_ERROR_MAP: Record<string, string> = {
     "Too many attempts. Please wait a few minutes and try again.",
   "Signup requires a valid password":
     "Please choose a stronger password.",
+  "For security purposes, you can only request this once every 60 seconds":
+    "Please wait a minute before requesting another reset email.",
+  "Email link is invalid or has expired":
+    "This reset link is invalid or has expired. Please request a new password reset.",
+  "Token has expired or is invalid":
+    "This reset link is invalid or has expired. Please request a new password reset.",
 };
 
 export function mapAuthErrorMessage(message: string): string {
