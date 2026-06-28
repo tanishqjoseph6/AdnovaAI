@@ -17,7 +17,15 @@ const AUTH_ERROR_MAP: Record<string, string> = {
   "Email link is invalid or has expired":
     "This reset link is invalid or has expired. Please request a new password reset.",
   "Token has expired or is invalid":
-    "This reset link is invalid or has expired. Please request a new password reset.",
+    "This code or link has expired. Please request a new one.",
+  "otp expired":
+    "This code has expired. Please request a new one.",
+  "invalid otp":
+    "Invalid code. Please check and try again.",
+  "token has expired":
+    "This code has expired. Please request a new one.",
+  "signups not allowed":
+    "No account found for this email. Please sign up first.",
 };
 
 export function mapAuthErrorMessage(message: string): string {
