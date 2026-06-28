@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useState } from "react";
+import { useRouter } from "next/navigation";
 import { FileDown, Rocket, Target } from "lucide-react";
 import { analyzeCompetitorAd } from "@/lib/api/analyze-competitor-client";
 import {
@@ -27,6 +28,7 @@ type AnalyzerState =
   | { status: "error"; message: string };
 
 export default function CompetitorAnalyzerPageClient() {
+  const router = useRouter();
   const { refresh } = useCredits();
   const [state, setState] = useState<AnalyzerState>({ status: "idle" });
   const [betterAd, setBetterAd] = useState<BetterCompetitorAd | null>(null);
@@ -64,6 +66,17 @@ export default function CompetitorAnalyzerPageClient() {
       const result = await generateBetterCompetitorAd(state.analysis);
       setBetterAd(result);
       void refresh();
+      if (result.generatedAt) {
+        const detail = {
+          generatedAt: result.generatedAt,
+          remainingCredits: result.credits,
+          unlimited: result.unlimited,
+        };
+        window.dispatchEvent(
+          new CustomEvent("advora:generation-success", { detail })
+        );
+        router.refresh();
+      }
     } catch (error) {
       if (isNoCreditsError(error)) {
         setUpgradeOpen(true);

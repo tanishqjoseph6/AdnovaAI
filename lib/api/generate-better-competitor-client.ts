@@ -10,7 +10,14 @@ export { isNoCreditsError, CREDITS_ERROR_CODE };
 
 export async function generateBetterCompetitorAd(
   analysis: CompetitorAdAnalysis
-): Promise<BetterCompetitorAd & { credits?: number | null; unlimited?: boolean }> {
+): Promise<
+  BetterCompetitorAd & {
+    credits?: number | null;
+    unlimited?: boolean;
+    generationId?: string;
+    generatedAt?: string;
+  }
+> {
   const response = await fetch("/api/generate-better-competitor-ad", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
@@ -28,6 +35,8 @@ export async function generateBetterCompetitorAd(
     ugc_script?: string;
     credits?: number | null;
     unlimited?: boolean;
+    generationId?: string;
+    generatedAt?: string;
     error?: string;
     code?: string;
   };
@@ -68,5 +77,7 @@ export async function generateBetterCompetitorAd(
     ...betterAd,
     credits: payload.credits,
     unlimited: payload.unlimited,
+    generationId: payload.generationId,
+    generatedAt: payload.generatedAt,
   };
 }

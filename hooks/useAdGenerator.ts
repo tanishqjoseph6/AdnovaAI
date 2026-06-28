@@ -40,7 +40,7 @@ function reducer(state: AdGeneratorState, action: Action): AdGeneratorState {
 }
 
 export function useAdGenerator(options?: {
-  onSuccess?: () => void;
+  onSuccess?: (data: GenerateAdsResponse) => void;
   onNoCredits?: () => void;
 }) {
   const [state, dispatch] = useReducer(reducer, { status: "idle" });
@@ -55,7 +55,7 @@ export function useAdGenerator(options?: {
       try {
         const data = await fetchGeneratedAds(productDescription, productAnalysis);
         dispatch({ type: "SUCCESS", data });
-        options?.onSuccess?.();
+        options?.onSuccess?.(data);
         return data;
       } catch (error) {
         const message =

@@ -53,17 +53,19 @@ function HeroMetric({
 
 function LastGenerationTime({ iso }: { iso: string | null }) {
   const [display, setDisplay] = useState(() =>
-    iso ? formatGenerationDate(iso) : "—"
+    iso ? formatGenerationDate(iso) : "Never"
   );
 
   useEffect(() => {
     if (iso) {
       setDisplay(formatGenerationDateLocal(iso));
+    } else {
+      setDisplay("Never");
     }
   }, [iso]);
 
   if (!iso) {
-    return <span className="text-zinc-500">No generations yet</span>;
+    return <span className="text-zinc-500">Never</span>;
   }
 
   return <time dateTime={iso}>{display}</time>;

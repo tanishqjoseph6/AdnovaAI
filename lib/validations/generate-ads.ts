@@ -13,6 +13,10 @@ export const generateAdsResponseSchema = z.object({
   captions: z.array(z.string().min(1)),
   ctas: z.array(z.string()).default([]),
   ugcScript: z.string().min(1),
+  credits: z.number().nullable().optional(),
+  unlimited: z.boolean().optional(),
+  generationId: z.string().optional(),
+  generatedAt: z.string().optional(),
 });
 
 export type GenerateAdsRequest = z.infer<typeof generateAdsRequestSchema>;

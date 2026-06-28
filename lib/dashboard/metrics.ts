@@ -12,6 +12,7 @@ type CreditUsageSnapshot = {
 export type DashboardMetrics = {
   planName: string;
   planId: PlanId;
+  monthlyLimit: number | null;
   adsThisMonth: number;
   totalAds: number;
   lastGenerationIso: string | null;
@@ -63,6 +64,10 @@ function dedupeGenerations(generations: GenerationRecord[]): GenerationRecord[] 
   return unique;
 }
 
+function newestFirst(a: GenerationRecord, b: GenerationRecord): number {
+  return new Date(b.created_at).getTime() - new Date(a.created_at).getTime();
+}
+
 export function resolveCurrentCycleUsage(
   successfulCurrentCycleGenerations: number,
   credits?: CreditUsageSnapshot
@@ -94,7 +99,7 @@ export function computeDashboardMetrics(
   const now = new Date();
   const monthStart = startOfMonth(now);
   const productionSuccessful = dedupeGenerations(
-    generations.filter(isProductionSuccessfulGeneration)
+    generations.filter(isProductionSuccessfulGeneration).sort(newestFirst)
   );
   const currentCycleGenerations = productionSuccessful.filter(
     (g) => new Date(g.created_at) >= monthStart
@@ -104,6 +109,8 @@ export function computeDashboardMetrics(
     currentCycleGenerations.length,
     credits
   );
+  const lastGenerationIso =
+    adsThisMonth > 0 ? currentCycleGenerations[0]?.created_at ?? null : null;
   const totalAds = productionSuccessful.length;
   const successRate = generations.length > 0
     ? Math.round((productionSuccessful.length / generations.length) * 100)
@@ -112,9 +119,10 @@ export function computeDashboardMetrics(
   return {
     planName: formatBillingPlanLabel(planId),
     planId,
+    monthlyLimit: credits?.maxCredits ?? null,
     adsThisMonth,
     totalAds,
-    lastGenerationIso: productionSuccessful[0]?.created_at ?? null,
+    lastGenerationIso,
     successRate,
   };
 }

@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
+import { useRouter } from "next/navigation";
 import { useAdGenerator } from "@/hooks/useAdGenerator";
 import { useAdScore } from "@/hooks/useAdScore";
 import { useCredits } from "@/hooks/useCredits";
@@ -25,6 +26,7 @@ const emptyOutput = {
 export default function AdGeneratorSection({
   compact = false,
 }: AdGeneratorSectionProps) {
+  const router = useRouter();
   const outputRef = useRef<HTMLDivElement>(null);
   const lastInputRef = useRef<{
     productDescription: string;
@@ -36,8 +38,21 @@ export default function AdGeneratorSection({
 
   const { state, generate, clearError, reset, isLoading, hasOutput, outputData } =
     useAdGenerator({
-      onSuccess: () => {
+      onSuccess: (data) => {
         void refresh();
+        if (data.generatedAt) {
+          const detail = {
+            generatedAt: data.generatedAt,
+            remainingCredits: data.credits,
+            unlimited: data.unlimited,
+          };
+          window.dispatchEvent(
+            new CustomEvent("advora:generation-success", {
+              detail,
+            })
+          );
+        }
+        router.refresh();
       },
       onNoCredits: () => setUpgradeOpen(true),
     });

@@ -101,14 +101,18 @@ export async function POST(req: Request) {
 
     const productDescription = `[Competitor Ad] ${analysis.brand || "Unknown brand"} — ${analysis.product || "Unknown product"} (${analysis.platform || "Unknown platform"})`;
 
-    const { error: generationError } = await supabase.from("generations").insert({
-      user_email: user.email ?? user.id,
-      product_description: productDescription,
-      hooks: betterAd.hooks,
-      captions: betterAd.captions,
-      ctas: betterAd.ctas,
-      ugc_script: betterAd.ugcScript,
-    });
+    const { data: generationRow, error: generationError } = await supabase
+      .from("generations")
+      .insert({
+        user_email: user.email ?? user.id,
+        product_description: productDescription,
+        hooks: betterAd.hooks,
+        captions: betterAd.captions,
+        ctas: betterAd.ctas,
+        ugc_script: betterAd.ugcScript,
+      })
+      .select("id, created_at")
+      .single();
 
     if (generationError) {
       console.error("generations insert error:", generationError);
@@ -137,6 +141,8 @@ export async function POST(req: Request) {
       visual_suggestions: betterAd.visual_suggestions,
       credits: remainingCredits,
       unlimited: userCredits.unlimited,
+      generationId: generationRow?.id,
+      generatedAt: generationRow?.created_at ?? new Date().toISOString(),
     });
   } catch (error) {
     console.error("POST /api/generate-better-competitor-ad error:", error);

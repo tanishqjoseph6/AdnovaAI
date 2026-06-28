@@ -96,14 +96,18 @@ export async function POST(req: Request) {
       remainingCredits = deduction.credits;
     }
 
-    const { error: insertError } = await supabase.from("generations").insert({
-      user_email: user.email ?? user.id,
-      product_description: productDescription,
-      hooks,
-      captions,
-      ctas,
-      ugc_script: ugcScript,
-    });
+    const { data: generationRow, error: insertError } = await supabase
+      .from("generations")
+      .insert({
+        user_email: user.email ?? user.id,
+        product_description: productDescription,
+        hooks,
+        captions,
+        ctas,
+        ugc_script: ugcScript,
+      })
+      .select("id, created_at")
+      .single();
 
     if (insertError) {
       console.error("Supabase insert error:", insertError);
@@ -116,6 +120,8 @@ export async function POST(req: Request) {
       ugcScript,
       credits: remainingCredits,
       unlimited: userCredits.unlimited,
+      generationId: generationRow?.id,
+      generatedAt: generationRow?.created_at ?? new Date().toISOString(),
     });
   } catch (error) {
     console.error("OpenAI Error:", error);

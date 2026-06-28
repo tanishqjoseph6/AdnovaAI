@@ -98,4 +98,50 @@ describe("dashboard metrics", () => {
       42
     );
   });
+
+  it("uses the latest successful current-cycle generation for last generation time", () => {
+    const latest = new Date().toISOString();
+    const older = new Date(Date.now() - 60_000).toISOString();
+    const lastMonth = new Date();
+    lastMonth.setMonth(lastMonth.getMonth() - 1);
+
+    const metrics = computeDashboardMetrics(
+      [
+        generation("older", { created_at: older }),
+        generation("failed", {
+          created_at: new Date(Date.now() + 60_000).toISOString(),
+          hooks: [],
+          captions: [],
+          ctas: [],
+          ugc_script: "",
+        }),
+        generation("mock", {
+          created_at: new Date(Date.now() + 120_000).toISOString(),
+          product_description: "Mock product",
+        }),
+        generation("latest", { created_at: latest }),
+        generation("last-month", { created_at: lastMonth.toISOString() }),
+      ],
+      "free",
+      {
+        maxCredits: 5,
+        remainingCredits: 3,
+        unlimited: false,
+      }
+    );
+
+    assert.equal(metrics.adsThisMonth, 2);
+    assert.equal(metrics.lastGenerationIso, latest);
+  });
+
+  it("returns no last generation when current-cycle usage is zero", () => {
+    const metrics = computeDashboardMetrics([generation("old")], "free", {
+      maxCredits: 5,
+      remainingCredits: 5,
+      unlimited: false,
+    });
+
+    assert.equal(metrics.adsThisMonth, 0);
+    assert.equal(metrics.lastGenerationIso, null);
+  });
 });

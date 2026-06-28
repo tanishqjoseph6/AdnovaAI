@@ -1,5 +1,6 @@
 "use client";
 
+import { useEffect, useState } from "react";
 import DashboardHero from "@/components/dashboard/DashboardHero";
 import DashboardEmptyState from "@/components/dashboard/DashboardEmptyState";
 import DashboardStatsGrid from "@/components/dashboard/DashboardStatsGrid";
@@ -17,22 +18,99 @@ type DashboardPageClientProps = {
   recentGenerations: GenerationRecord[];
 };
 
+type GenerationSuccessDetail = {
+  generatedAt?: string;
+  remainingCredits?: number | null;
+  unlimited?: boolean;
+};
+
+function isCurrentMonth(iso: string): boolean {
+  const date = new Date(iso);
+  if (Number.isNaN(date.getTime())) {
+    return false;
+  }
+
+  const now = new Date();
+  return (
+    date.getFullYear() === now.getFullYear() &&
+    date.getMonth() === now.getMonth()
+  );
+}
+
+function applyGenerationSuccess(
+  current: DashboardMetrics,
+  detail: GenerationSuccessDetail
+): DashboardMetrics {
+  if (!detail.generatedAt || !isCurrentMonth(detail.generatedAt)) {
+    return current;
+  }
+
+  if (detail.generatedAt === current.lastGenerationIso) {
+    return current;
+  }
+
+  const adsThisMonth =
+    detail.unlimited || current.monthlyLimit === null
+      ? current.adsThisMonth + 1
+      : typeof detail.remainingCredits === "number"
+        ? Math.max(
+            0,
+            Math.min(
+              current.monthlyLimit,
+              current.monthlyLimit - detail.remainingCredits
+            )
+          )
+        : Math.min(current.monthlyLimit, current.adsThisMonth + 1);
+
+  return {
+    ...current,
+    adsThisMonth,
+    totalAds: current.totalAds + 1,
+    lastGenerationIso: adsThisMonth > 0 ? detail.generatedAt : null,
+    successRate: current.totalAds > 0 ? current.successRate : 100,
+  };
+}
+
 export default function DashboardPageClient({
   userName,
   metrics,
   recentGenerations,
 }: DashboardPageClientProps) {
+  const [liveMetrics, setLiveMetrics] = useState(metrics);
   const { credits } = useCredits();
-  const hasGenerations = metrics.totalAds > 0;
+  const hasGenerations = liveMetrics.totalAds > 0;
   const showUpgrade = !credits?.unlimited && credits?.billingPlan !== "pro";
+
+  useEffect(() => {
+    setLiveMetrics(metrics);
+  }, [metrics]);
+
+  useEffect(() => {
+    function applyFromDetail(detail: GenerationSuccessDetail) {
+      setLiveMetrics((current) => applyGenerationSuccess(current, detail));
+    }
+
+    function handleGenerationSuccess(event: Event) {
+      const detail = (event as CustomEvent<GenerationSuccessDetail>).detail;
+      applyFromDetail(detail);
+    }
+
+    window.addEventListener("advora:generation-success", handleGenerationSuccess);
+    return () => {
+      window.removeEventListener(
+        "advora:generation-success",
+        handleGenerationSuccess
+      );
+    };
+  }, []);
 
   return (
     <div className="space-y-10">
-      <DashboardHero userName={userName} metrics={metrics} />
+      <DashboardHero userName={userName} metrics={liveMetrics} />
 
       <QuickActionCards />
 
-      <DashboardStatsGrid metrics={metrics} />
+      <DashboardStatsGrid metrics={liveMetrics} />
 
       {hasGenerations ? (
         <RecentGenerations generations={recentGenerations} />
@@ -45,7 +123,7 @@ export default function DashboardPageClient({
           showUpgrade ? "grid gap-6 lg:grid-cols-2" : "max-w-2xl"
         }
       >
-        <UsageCard metrics={metrics} />
+        <UsageCard metrics={liveMetrics} />
         {showUpgrade && <UpgradeCard show />}
       </div>
     </div>

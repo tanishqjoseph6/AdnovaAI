@@ -19,6 +19,8 @@ type RawGenerateAdsPayload = {
   ugc_script?: string;
   credits?: number | null;
   unlimited?: boolean;
+  generationId?: string;
+  generatedAt?: string;
 };
 
 function normalizeGenerateAdsResponse(
@@ -29,6 +31,10 @@ function normalizeGenerateAdsResponse(
     captions: payload.captions ?? payload.ad_captions ?? [],
     ctas: payload.ctas ?? [],
     ugcScript: payload.ugcScript ?? payload.ugc_script ?? "",
+    credits: payload.credits,
+    unlimited: payload.unlimited,
+    generationId: payload.generationId,
+    generatedAt: payload.generatedAt,
   };
 }
 
