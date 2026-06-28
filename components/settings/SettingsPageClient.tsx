@@ -1,19 +1,25 @@
 "use client";
 
 import { useState } from "react";
+import { useRouter } from "next/navigation";
 import { motion } from "framer-motion";
+import { Loader2 } from "lucide-react";
 import SettingsHeader from "@/components/settings/SettingsHeader";
 import SettingsSectionCard from "@/components/settings/SettingsSectionCard";
 import SettingsToggle from "@/components/settings/SettingsToggle";
 import {
+  getAvatarInitials,
   settingsInputClassName,
   settingsLabelClassName,
   settingsSelectClassName,
 } from "@/lib/settings/display";
+import { validateProfileSettings } from "@/lib/settings/profile";
 
 type SettingsPageClientProps = {
   defaultFullName: string;
   defaultEmail: string;
+  defaultUsername: string;
+  defaultAvatarUrl: string;
   avatarInitials: string;
 };
 
@@ -31,12 +37,22 @@ const QUALITY_OPTIONS = ["High quality", "Balanced", "Fast"];
 export default function SettingsPageClient({
   defaultFullName,
   defaultEmail,
+  defaultUsername,
+  defaultAvatarUrl,
   avatarInitials,
 }: SettingsPageClientProps) {
+  const router = useRouter();
+  const [headerInitials, setHeaderInitials] = useState(avatarInitials);
   const [fullName, setFullName] = useState(defaultFullName);
-  const [email, setEmail] = useState(defaultEmail);
+  const [username, setUsername] = useState(defaultUsername);
+  const [avatarUrl, setAvatarUrl] = useState(defaultAvatarUrl);
   const [workspaceName, setWorkspaceName] = useState("My Workspace");
-  const [saved, setSaved] = useState(false);
+  const [saveStatus, setSaveStatus] = useState<
+    | { type: "success"; message: string }
+    | { type: "error"; message: string }
+    | null
+  >(null);
+  const [isSaving, setIsSaving] = useState(false);
 
   const [emailNotifications, setEmailNotifications] = useState(true);
   const [productUpdates, setProductUpdates] = useState(true);
@@ -47,14 +63,94 @@ export default function SettingsPageClient({
   const [creativeLevel, setCreativeLevel] = useState(65);
   const [quality, setQuality] = useState(QUALITY_OPTIONS[0]);
 
-  const handleSave = () => {
-    setSaved(true);
-    window.setTimeout(() => setSaved(false), 2500);
-  };
+  async function handleSave(event: React.FormEvent) {
+    event.preventDefault();
+
+    if (isSaving) {
+      return;
+    }
+
+    setSaveStatus(null);
+
+    const validation = validateProfileSettings({
+      username,
+      fullName,
+      avatarUrl,
+    });
+
+    if (!validation.ok) {
+      setSaveStatus({ type: "error", message: validation.error });
+      return;
+    }
+
+    setIsSaving(true);
+
+    try {
+      const response = await fetch("/api/profile", {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          username: validation.value.username,
+          fullName: validation.value.fullName,
+          avatarUrl: validation.value.avatarUrl,
+        }),
+      });
+
+      const payload = (await response.json()) as {
+        error?: string;
+        profile?: {
+          username?: string | null;
+          fullName?: string | null;
+          avatarUrl?: string | null;
+        };
+      };
+
+      if (!response.ok) {
+        setSaveStatus({
+          type: "error",
+          message: payload.error ?? "Unable to save profile changes.",
+        });
+        return;
+      }
+
+      const savedFullName = payload.profile?.fullName ?? validation.value.fullName;
+      const savedUsername = payload.profile?.username ?? validation.value.username;
+      const savedAvatarUrl = payload.profile?.avatarUrl ?? validation.value.avatarUrl;
+
+      setFullName(savedFullName);
+      setUsername(savedUsername);
+      setAvatarUrl(savedAvatarUrl ?? "");
+      setHeaderInitials(getAvatarInitials(savedFullName || savedUsername, defaultEmail));
+      setSaveStatus({
+        type: "success",
+        message: "Changes saved.",
+      });
+      router.refresh();
+    } catch {
+      setSaveStatus({
+        type: "error",
+        message: "Unable to save profile changes. Please try again.",
+      });
+    } finally {
+      setIsSaving(false);
+    }
+  }
 
   return (
     <div className="mx-auto max-w-3xl space-y-8">
-      <SettingsHeader initials={avatarInitials} email={defaultEmail} />
+      <SettingsHeader initials={headerInitials} email={defaultEmail} />
+      {saveStatus && (
+        <div
+          className={`fixed bottom-4 right-4 z-50 w-[calc(100%-2rem)] rounded-2xl border px-4 py-3 text-sm shadow-2xl backdrop-blur-xl sm:w-auto ${
+            saveStatus.type === "success"
+              ? "border-emerald-500/30 bg-emerald-500/15 text-emerald-200 shadow-emerald-950/20"
+              : "border-red-500/30 bg-red-500/15 text-red-200 shadow-red-950/20"
+          }`}
+          role={saveStatus.type === "success" ? "status" : "alert"}
+        >
+          {saveStatus.message}
+        </div>
+      )}
 
       <motion.div
         initial={{ opacity: 0, y: 12 }}
@@ -73,18 +169,47 @@ export default function SettingsPageClient({
           }
         >
           <div className="mb-6 flex items-center gap-4">
-            <div className="flex h-16 w-16 items-center justify-center rounded-2xl bg-gradient-to-br from-cyan-400 via-violet-500 to-fuchsia-500 text-lg font-semibold text-white shadow-lg shadow-violet-500/20">
-              {avatarInitials}
+            <div className="flex h-16 w-16 items-center justify-center overflow-hidden rounded-2xl bg-gradient-to-br from-cyan-400 via-violet-500 to-fuchsia-500 text-lg font-semibold text-white shadow-lg shadow-violet-500/20">
+              {avatarUrl ? (
+                // eslint-disable-next-line @next/next/no-img-element
+                <img
+                  src={avatarUrl}
+                  alt=""
+                  className="h-full w-full object-cover"
+                />
+              ) : (
+                headerInitials
+              )}
             </div>
             <div>
               <p className="text-sm font-medium text-white">Profile photo</p>
               <p className="mt-0.5 text-xs text-zinc-500">
-                Avatar generated from your initials
+                Add an image URL or leave blank to use initials.
               </p>
             </div>
           </div>
 
-          <div className="space-y-4">
+          <form className="space-y-4" onSubmit={(event) => void handleSave(event)}>
+            <div>
+              <label htmlFor="username" className={settingsLabelClassName}>
+                Username
+              </label>
+              <input
+                id="username"
+                type="text"
+                value={username}
+                onChange={(event) => setUsername(event.target.value)}
+                disabled={isSaving}
+                minLength={3}
+                maxLength={30}
+                autoComplete="username"
+                className={settingsInputClassName}
+              />
+              <p className="mt-1 text-xs text-zinc-500">
+                3–30 characters. Letters, numbers, dots, underscores, and hyphens.
+              </p>
+            </div>
+
             <div>
               <label htmlFor="full-name" className={settingsLabelClassName}>
                 Full name
@@ -93,7 +218,9 @@ export default function SettingsPageClient({
                 id="full-name"
                 type="text"
                 value={fullName}
-                onChange={(e) => setFullName(e.target.value)}
+                onChange={(event) => setFullName(event.target.value)}
+                disabled={isSaving}
+                autoComplete="name"
                 className={settingsInputClassName}
               />
             </div>
@@ -104,11 +231,30 @@ export default function SettingsPageClient({
               <input
                 id="email"
                 type="email"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
+                value={defaultEmail}
+                readOnly
+                className={`${settingsInputClassName} cursor-not-allowed opacity-70`}
+              />
+              <p className="mt-1 text-xs text-zinc-500">
+                Email changes are handled through authentication settings.
+              </p>
+            </div>
+
+            <div>
+              <label htmlFor="avatar-url" className={settingsLabelClassName}>
+                Avatar image URL
+              </label>
+              <input
+                id="avatar-url"
+                type="url"
+                value={avatarUrl}
+                onChange={(event) => setAvatarUrl(event.target.value)}
+                disabled={isSaving}
+                placeholder="https://example.com/avatar.jpg"
                 className={settingsInputClassName}
               />
             </div>
+
             <div>
               <label htmlFor="workspace" className={settingsLabelClassName}>
                 Workspace name
@@ -118,25 +264,40 @@ export default function SettingsPageClient({
                 type="text"
                 value={workspaceName}
                 onChange={(e) => setWorkspaceName(e.target.value)}
+                disabled={isSaving}
                 className={settingsInputClassName}
               />
             </div>
-          </div>
 
-          <div className="mt-6 flex flex-wrap items-center gap-3">
-            <button
-              type="button"
-              onClick={handleSave}
-              className="inline-flex items-center justify-center rounded-xl bg-gradient-to-r from-cyan-400 via-violet-500 to-fuchsia-500 px-6 py-2.5 text-sm font-semibold text-white shadow-lg shadow-violet-500/20 transition hover:opacity-90"
-            >
-              Save changes
-            </button>
-            {saved && (
-              <span className="text-sm text-emerald-400" role="status">
-                Changes saved
-              </span>
-            )}
-          </div>
+            <div className="flex flex-wrap items-center gap-3 pt-2">
+              <button
+                type="submit"
+                disabled={isSaving}
+                className="inline-flex items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-cyan-400 via-violet-500 to-fuchsia-500 px-6 py-2.5 text-sm font-semibold text-white shadow-lg shadow-violet-500/20 transition hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-60"
+              >
+                {isSaving ? (
+                  <>
+                    <Loader2 className="h-4 w-4 animate-spin" aria-hidden />
+                    Saving…
+                  </>
+                ) : (
+                  "Save changes"
+                )}
+              </button>
+              {saveStatus && (
+                <span
+                  className={`text-sm ${
+                    saveStatus.type === "success"
+                      ? "text-emerald-400"
+                      : "text-red-300"
+                  }`}
+                  role={saveStatus.type === "success" ? "status" : "alert"}
+                >
+                  {saveStatus.message}
+                </span>
+              )}
+            </div>
+          </form>
         </SettingsSectionCard>
 
         {/* Appearance */}

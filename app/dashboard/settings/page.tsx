@@ -4,6 +4,7 @@ import {
   getAvatarInitials,
   getSettingsFullName,
 } from "@/lib/settings/display";
+import { getDefaultUsername } from "@/lib/settings/profile";
 import { createClient } from "@/lib/supabase/server";
 
 export default async function SettingsPage() {
@@ -13,10 +14,30 @@ export default async function SettingsPage() {
   } = await supabase.auth.getUser();
 
   const email = user?.email ?? "you@company.com";
-  const fullName = getSettingsFullName(
+  const metadataFullName = getSettingsFullName(
     user?.email,
     user?.user_metadata as Record<string, unknown> | null
   );
+  const { data: profile } = user
+    ? await supabase
+        .from("profiles")
+        .select("username, full_name, avatar_url")
+        .eq("id", user.id)
+        .maybeSingle()
+    : { data: null };
+
+  const fullName =
+    typeof profile?.full_name === "string" && profile.full_name.trim()
+      ? profile.full_name.trim()
+      : metadataFullName;
+  const username =
+    typeof profile?.username === "string" && profile.username.trim()
+      ? profile.username.trim()
+      : typeof user?.user_metadata?.username === "string"
+        ? user.user_metadata.username
+        : getDefaultUsername(email);
+  const avatarUrl =
+    typeof profile?.avatar_url === "string" ? profile.avatar_url : "";
   const avatarInitials = getAvatarInitials(fullName, email);
 
   return (
@@ -27,6 +48,8 @@ export default async function SettingsPage() {
       <SettingsPageClient
         defaultFullName={fullName || "Advora User"}
         defaultEmail={email}
+        defaultUsername={username}
+        defaultAvatarUrl={avatarUrl}
         avatarInitials={avatarInitials}
       />
     </DashboardShell>
