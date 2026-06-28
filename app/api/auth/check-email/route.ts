@@ -1,22 +1,8 @@
 import { NextResponse } from "next/server";
 import { checkSignupEligibility } from "@/lib/auth/account-eligibility";
-import {
-  buildRateLimitBucketKey,
-  getClientIp,
-} from "@/lib/auth/rate-limit-config";
-import { withAuthRateLimit } from "@/lib/auth/rate-limit-response";
 
 export async function POST(request: Request) {
   try {
-    const ip = getClientIp(request);
-    const rateLimited = await withAuthRateLimit(
-      "signup",
-      buildRateLimitBucketKey("ip", ip)
-    );
-    if (rateLimited) {
-      return rateLimited;
-    }
-
     const body = await request.json().catch(() => ({}));
     const email = typeof body?.email === "string" ? body.email : "";
     const eligibility = await checkSignupEligibility(email);

@@ -2,10 +2,14 @@ import { NextResponse } from "next/server";
 import { mapAuthErrorMessage } from "@/lib/auth/errors";
 import { isEmailVerified } from "@/lib/auth/email-verified";
 import {
+  checkAuthRateLimit,
+  consumeAuthRateLimit,
+} from "@/lib/auth/rate-limit";
+import {
   buildRateLimitBucketKey,
   getClientIp,
 } from "@/lib/auth/rate-limit-config";
-import { withAuthRateLimit } from "@/lib/auth/rate-limit-response";
+import { rateLimitExceededResponse } from "@/lib/auth/rate-limit-response";
 import { isValidEmail, normalizeEmail } from "@/lib/auth/validation";
 import { createClient } from "@/lib/supabase/server";
 
@@ -31,12 +35,19 @@ export async function POST(request: Request) {
     }
 
     const ip = getClientIp(request);
-    const rateLimited = await withAuthRateLimit(
-      "login",
-      buildRateLimitBucketKey("ip", ip)
-    );
-    if (rateLimited) {
-      return rateLimited;
+    const failedLoginBuckets = [
+      buildRateLimitBucketKey("email", normalized),
+      buildRateLimitBucketKey("ip", ip),
+    ];
+
+    for (const bucketKey of failedLoginBuckets) {
+      const status = await checkAuthRateLimit({
+        action: "failed_login",
+        bucketKey,
+      });
+      if (!status.allowed) {
+        return rateLimitExceededResponse(status);
+      }
     }
 
     const supabase = await createClient();
@@ -46,6 +57,13 @@ export async function POST(request: Request) {
     });
 
     if (error) {
+      for (const bucketKey of failedLoginBuckets) {
+        await consumeAuthRateLimit({
+          action: "failed_login",
+          bucketKey,
+        });
+      }
+
       return NextResponse.json(
         { error: mapAuthErrorMessage(error.message) },
         { status: 401 }

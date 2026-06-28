@@ -3,7 +3,6 @@ import { readFileSync } from "node:fs";
 import { join } from "node:path";
 import { describe, it } from "node:test";
 import { DUPLICATE_EMAIL_MESSAGE } from "./errors";
-import { AUTH_RATE_LIMITS } from "./rate-limit-config";
 
 const repoRoot = process.cwd();
 
@@ -64,9 +63,8 @@ describe("signup security database invariants", () => {
   });
 });
 
-describe("signup rate limits", () => {
-  it("keeps signup rate limiting active", () => {
-    assert.equal(AUTH_RATE_LIMITS.signup.maxAttempts, 5);
-    assert.equal(AUTH_RATE_LIMITS.signup.windowSeconds, 60 * 60);
+describe("signup access", () => {
+  it("relies on duplicate-account protections instead of broad signup limits", () => {
+    assert.equal(DUPLICATE_EMAIL_MESSAGE.includes("already exists"), true);
   });
 });

@@ -51,6 +51,34 @@ function consumeMemoryRateLimit(
   return { allowed: true };
 }
 
+function checkMemoryRateLimit(
+  bucketKey: string,
+  action: AuthRateLimitAction
+): RateLimitResult {
+  const config = AUTH_RATE_LIMITS[action];
+  const key = memoryBucketKey(bucketKey, action);
+  const now = Date.now();
+  const windowMs = config.windowSeconds * 1000;
+  const existing = memoryBuckets.get(key);
+
+  if (!existing || now - existing.windowStartedAt >= windowMs) {
+    return { allowed: true };
+  }
+
+  if (existing.attemptCount >= config.maxAttempts) {
+    const retryAfterSeconds = Math.ceil(
+      (existing.windowStartedAt + windowMs - now) / 1000
+    );
+    return {
+      allowed: false,
+      retryAfterSeconds,
+      message: formatRateLimitMessage(retryAfterSeconds, action),
+    };
+  }
+
+  return { allowed: true };
+}
+
 function hasAdminCredentials(): boolean {
   return Boolean(
     process.env.NEXT_PUBLIC_SUPABASE_URL && process.env.SUPABASE_SERVICE_ROLE_KEY
@@ -108,6 +136,64 @@ export async function consumeAuthRateLimit(input: {
   } catch (error) {
     console.error("Rate limit check failed:", error);
     return consumeMemoryRateLimit(input.bucketKey, input.action);
+  }
+}
+
+export async function checkAuthRateLimit(input: {
+  action: AuthRateLimitAction;
+  bucketKey: string;
+}): Promise<RateLimitResult> {
+  const config = AUTH_RATE_LIMITS[input.action];
+
+  if (!hasAdminCredentials()) {
+    return checkMemoryRateLimit(input.bucketKey, input.action);
+  }
+
+  try {
+    const admin = createAdminClient();
+    const { data, error } = await admin
+      .from("auth_rate_limit_buckets")
+      .select("attempt_count, window_started_at")
+      .eq("bucket_key", input.bucketKey)
+      .eq("action", input.action)
+      .maybeSingle();
+
+    if (error) {
+      console.error("Rate limit status check failed:", error.message);
+      return checkMemoryRateLimit(input.bucketKey, input.action);
+    }
+
+    if (!data) {
+      return { allowed: true };
+    }
+
+    const windowStartedAt = new Date(
+      String(data.window_started_at)
+    ).getTime();
+    const now = Date.now();
+    const windowMs = config.windowSeconds * 1000;
+
+    if (Number.isNaN(windowStartedAt) || now - windowStartedAt >= windowMs) {
+      return { allowed: true };
+    }
+
+    const attemptCount =
+      typeof data.attempt_count === "number" ? data.attempt_count : 0;
+    if (attemptCount < config.maxAttempts) {
+      return { allowed: true };
+    }
+
+    const retryAfterSeconds = Math.ceil(
+      (windowStartedAt + windowMs - now) / 1000
+    );
+    return {
+      allowed: false,
+      retryAfterSeconds,
+      message: formatRateLimitMessage(retryAfterSeconds, input.action),
+    };
+  } catch (error) {
+    console.error("Rate limit status check failed:", error);
+    return checkMemoryRateLimit(input.bucketKey, input.action);
   }
 }
 

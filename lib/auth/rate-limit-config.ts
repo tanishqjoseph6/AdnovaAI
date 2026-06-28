@@ -1,14 +1,12 @@
 export type AuthRateLimitAction =
-  | "signup"
-  | "login"
+  | "failed_login"
   | "otp_send"
   | "otp_verify"
   | "forgot_password"
   | "resend_verification";
 
 export const AUTH_RATE_LIMITS = {
-  signup: { maxAttempts: 5, windowSeconds: 60 * 60 },
-  login: { maxAttempts: 10, windowSeconds: 60 * 60 },
+  failed_login: { maxAttempts: 10, windowSeconds: 15 * 60 },
   otp_send: { maxAttempts: 3, windowSeconds: 10 * 60 },
   otp_verify: { maxAttempts: 10, windowSeconds: 15 * 60 },
   forgot_password: { maxAttempts: 3, windowSeconds: 60 * 60 },
@@ -21,8 +19,7 @@ export const AUTH_RATE_LIMITS = {
 export const RATE_LIMIT_ERROR_CODE = "RATE_LIMITED";
 
 const ACTION_LABELS: Record<AuthRateLimitAction, string> = {
-  signup: "sign-up",
-  login: "sign-in",
+  failed_login: "sign-in",
   otp_send: "verification code",
   otp_verify: "verification code",
   forgot_password: "password reset",

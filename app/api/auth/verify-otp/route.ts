@@ -4,10 +4,14 @@ import { isEmailVerified } from "@/lib/auth/email-verified";
 import { checkLoginOtpEligibility } from "@/lib/auth/login-otp";
 import { isCompleteOtp } from "@/lib/auth/otp-login";
 import {
+  checkAuthRateLimit,
+  consumeAuthRateLimit,
+} from "@/lib/auth/rate-limit";
+import {
   buildRateLimitBucketKey,
   getClientIp,
 } from "@/lib/auth/rate-limit-config";
-import { withAuthRateLimits } from "@/lib/auth/rate-limit-response";
+import { rateLimitExceededResponse } from "@/lib/auth/rate-limit-response";
 import { isValidEmail, normalizeEmail } from "@/lib/auth/validation";
 import { createClient } from "@/lib/supabase/server";
 
@@ -33,23 +37,30 @@ export async function POST(request: Request) {
     }
 
     const ip = getClientIp(request);
-    const rateLimited = await withAuthRateLimits([
-      {
-        action: "otp_verify",
-        bucketKey: buildRateLimitBucketKey("email", normalized),
-      },
-      {
-        action: "otp_verify",
-        bucketKey: buildRateLimitBucketKey("ip", ip),
-      },
-    ]);
+    const failedLoginBuckets = [
+      buildRateLimitBucketKey("email", normalized),
+      buildRateLimitBucketKey("ip", ip),
+    ];
 
-    if (rateLimited) {
-      return rateLimited;
+    for (const bucketKey of failedLoginBuckets) {
+      const status = await checkAuthRateLimit({
+        action: "failed_login",
+        bucketKey,
+      });
+      if (!status.allowed) {
+        return rateLimitExceededResponse(status);
+      }
     }
 
     const eligibility = await checkLoginOtpEligibility(normalized);
     if (!eligibility.allowed) {
+      for (const bucketKey of failedLoginBuckets) {
+        await consumeAuthRateLimit({
+          action: "failed_login",
+          bucketKey,
+        });
+      }
+
       return NextResponse.json(
         { error: eligibility.message },
         { status: eligibility.status }
@@ -65,6 +76,13 @@ export async function POST(request: Request) {
     });
 
     if (error) {
+      for (const bucketKey of failedLoginBuckets) {
+        await consumeAuthRateLimit({
+          action: "failed_login",
+          bucketKey,
+        });
+      }
+
       return NextResponse.json(
         { error: mapAuthErrorMessage(error.message) },
         { status: 401 }

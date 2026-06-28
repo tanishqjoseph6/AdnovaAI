@@ -7,12 +7,11 @@ import {
 } from "./rate-limit-config";
 
 describe("auth rate limit config", () => {
-  it("defines expected limits", () => {
-    assert.equal(AUTH_RATE_LIMITS.signup.maxAttempts, 5);
-    assert.equal(AUTH_RATE_LIMITS.signup.windowSeconds, 3600);
-    assert.equal(AUTH_RATE_LIMITS.login.maxAttempts, 10);
-    assert.equal(AUTH_RATE_LIMITS.otp_send.maxAttempts, 3);
-    assert.equal(AUTH_RATE_LIMITS.otp_send.windowSeconds, 600);
+  it("defines targeted security limits", () => {
+    assert.equal("signup" in AUTH_RATE_LIMITS, false);
+    assert.equal("login" in AUTH_RATE_LIMITS, false);
+    assert.equal(AUTH_RATE_LIMITS.failed_login.maxAttempts, 10);
+    assert.equal(AUTH_RATE_LIMITS.failed_login.windowSeconds, 15 * 60);
     assert.equal(AUTH_RATE_LIMITS.forgot_password.maxAttempts, 3);
     assert.equal(AUTH_RATE_LIMITS.resend_verification.maxAttempts, 3);
   });
@@ -26,8 +25,11 @@ describe("auth rate limit config", () => {
   });
 
   it("formats friendly retry messages", () => {
-    assert.match(formatRateLimitMessage(45, "login"), /45 seconds/);
-    assert.match(formatRateLimitMessage(120, "signup"), /2 minutes/);
-    assert.match(formatRateLimitMessage(7200, "otp_send"), /2 hours/);
+    assert.match(formatRateLimitMessage(45, "failed_login"), /45 seconds/);
+    assert.match(formatRateLimitMessage(120, "forgot_password"), /2 minutes/);
+    assert.match(
+      formatRateLimitMessage(7200, "resend_verification"),
+      /2 hours/
+    );
   });
 });

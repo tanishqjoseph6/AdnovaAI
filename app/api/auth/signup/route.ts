@@ -1,23 +1,9 @@
 import { NextResponse } from "next/server";
 import { mapAuthErrorMessage } from "@/lib/auth/errors";
-import {
-  buildRateLimitBucketKey,
-  getClientIp,
-} from "@/lib/auth/rate-limit-config";
-import { withAuthRateLimit } from "@/lib/auth/rate-limit-response";
 import { signUpWithEmailVerification } from "@/lib/auth/signup";
 
 export async function POST(request: Request) {
   try {
-    const ip = getClientIp(request);
-    const rateLimited = await withAuthRateLimit(
-      "signup",
-      buildRateLimitBucketKey("ip", ip)
-    );
-    if (rateLimited) {
-      return rateLimited;
-    }
-
     const body = await request.json();
     const email = typeof body?.email === "string" ? body.email : "";
     const password = typeof body?.password === "string" ? body.password : "";
