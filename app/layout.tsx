@@ -18,10 +18,65 @@ const geistMono = Geist_Mono({
   subsets: ["latin"],
 });
 
+const siteUrl = new URL(process.env.NEXT_PUBLIC_APP_URL ?? "https://advora.ai");
+const siteTitle = "Advora AI — AI Ad Generator for High-Converting Campaigns";
+const siteDescription =
+  "Generate scroll-stopping ad copy, visuals, and multi-channel campaigns in seconds. AI-powered creative for Meta, Google, TikTok, and more.";
+
 export const metadata: Metadata = {
-  title: "Advora AI — AI Ad Generator for High-Converting Campaigns",
-  description:
-    "Generate scroll-stopping ad copy, visuals, and multi-channel campaigns in seconds. AI-powered creative for Meta, Google, TikTok, and more.",
+  metadataBase: siteUrl,
+  applicationName: "Advora AI",
+  title: siteTitle,
+  description: siteDescription,
+  manifest: "/manifest.json",
+  alternates: {
+    canonical: "/",
+  },
+  robots: {
+    index: true,
+    follow: true,
+    googleBot: {
+      index: true,
+      follow: true,
+      "max-image-preview": "large",
+      "max-snippet": -1,
+      "max-video-preview": -1,
+    },
+  },
+  icons: {
+    icon: [
+      { url: "/favicon.ico", sizes: "16x16 32x32", type: "image/x-icon" },
+      { url: "/icon.png", sizes: "512x512", type: "image/png" },
+    ],
+    shortcut: "/favicon.ico",
+    apple: [{ url: "/apple-touch-icon.png", sizes: "180x180", type: "image/png" }],
+  },
+  openGraph: {
+    title: siteTitle,
+    description: siteDescription,
+    url: "/",
+    siteName: "Advora AI",
+    type: "website",
+    images: [
+      {
+        url: "/opengraph-image.png",
+        width: 1200,
+        height: 630,
+        alt: "Advora AI - AI Ad Generator for High-Converting Campaigns",
+      },
+    ],
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: siteTitle,
+    description: siteDescription,
+    images: [
+      {
+        url: "/twitter-image.png",
+        alt: "Advora AI - AI Ad Generator for High-Converting Campaigns",
+      },
+    ],
+  },
 };
 
 export default function RootLayout({
