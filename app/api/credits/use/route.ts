@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { requireVerifiedUser } from "@/lib/auth/require-user";
 import { CREDITS_ERROR_CODE } from "@/lib/credits/constants";
 import {
   canUseCredits,
@@ -14,14 +15,11 @@ import { createClient } from "@/lib/supabase/server";
 export async function POST() {
   try {
     const supabase = await createClient();
-    const {
-      data: { user },
-      error: authError,
-    } = await supabase.auth.getUser();
-
-    if (authError || !user) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    const authResult = await requireVerifiedUser(supabase);
+    if ("response" in authResult) {
+      return authResult.response;
     }
+    const user = authResult.user;
 
     const current = await getUserCreditsForUser(user.id, supabase);
 

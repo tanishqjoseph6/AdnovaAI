@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { requireVerifiedUser } from "@/lib/auth/require-user";
 import { isPaidPlan } from "@/lib/billing/plans";
 import type { BillingCurrency, BillingInterval } from "@/lib/billing/pricing";
 import {
@@ -26,14 +27,11 @@ export async function POST(request: Request) {
     }
 
     const supabase = await createClient();
-    const {
-      data: { user },
-      error: authError,
-    } = await supabase.auth.getUser();
-
-    if (authError || !user) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    const authResult = await requireVerifiedUser(supabase);
+    if ("response" in authResult) {
+      return authResult.response;
     }
+    const user = authResult.user;
 
     const body = await request.json();
     const planId = body?.plan;

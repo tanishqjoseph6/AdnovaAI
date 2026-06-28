@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { requireVerifiedUser } from "@/lib/auth/require-user";
 import { isPaidPlan, PLANS } from "@/lib/billing/plans";
 import type { BillingInterval } from "@/lib/billing/pricing";
 import { createPlanOrder } from "@/lib/razorpay";
@@ -14,14 +15,11 @@ import { createClient } from "@/lib/supabase/server";
 export async function POST(request: Request) {
   try {
     const supabase = await createClient();
-    const {
-      data: { user },
-      error: authError,
-    } = await supabase.auth.getUser();
-
-    if (authError || !user) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    const authResult = await requireVerifiedUser(supabase);
+    if ("response" in authResult) {
+      return authResult.response;
     }
+    const user = authResult.user;
 
     const body = await request.json();
     const planId = body?.plan;

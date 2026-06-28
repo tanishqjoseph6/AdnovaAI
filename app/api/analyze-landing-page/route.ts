@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import OpenAI from "openai";
+import { requireVerifiedUser } from "@/lib/auth/require-user";
 import {
   fetchLandingPageContent,
   normalizeLandingPageUrl,
@@ -16,14 +17,11 @@ const openai = new OpenAI({
 export async function POST(req: Request) {
   try {
     const supabase = await createClient();
-    const {
-      data: { user },
-      error: authError,
-    } = await supabase.auth.getUser();
-
-    if (authError || !user) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    const authResult = await requireVerifiedUser(supabase);
+    if ("response" in authResult) {
+      return authResult.response;
     }
+    const user = authResult.user;
 
     const body = (await req.json()) as { url?: string };
     const rawUrl = typeof body.url === "string" ? body.url : "";

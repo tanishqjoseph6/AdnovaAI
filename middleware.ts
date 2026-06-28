@@ -1,21 +1,37 @@
 import { type NextRequest, NextResponse } from "next/server";
+import { isEmailVerified } from "@/lib/auth/email-verified";
 import { ensureUserCredits } from "@/lib/credits/server";
 import { ensureUserProfile } from "@/lib/subscription";
 import { updateSession } from "@/lib/supabase/middleware";
 
 export async function middleware(request: NextRequest) {
   const { supabaseResponse, user, supabase } = await updateSession(request);
+  const { pathname } = request.nextUrl;
+  const isDashboard = pathname.startsWith("/dashboard");
+  const isVerifyEmail = pathname === "/verify-email";
 
-  if (!user && request.nextUrl.pathname.startsWith("/dashboard")) {
+  if (!user && (isDashboard || isVerifyEmail)) {
     const url = request.nextUrl.clone();
     url.pathname = "/login";
     return NextResponse.redirect(url);
   }
 
-  if (user && request.nextUrl.pathname.startsWith("/dashboard")) {
+  if (user && isVerifyEmail && isEmailVerified(user)) {
+    const url = request.nextUrl.clone();
+    url.pathname = "/dashboard";
+    return NextResponse.redirect(url);
+  }
+
+  if (user && isDashboard && !isEmailVerified(user)) {
+    const url = request.nextUrl.clone();
+    url.pathname = "/verify-email";
+    return NextResponse.redirect(url);
+  }
+
+  if (user && isDashboard && isEmailVerified(user)) {
     try {
       await ensureUserProfile(user.id, user.email, supabase);
-      await ensureUserCredits(user.id, supabase);
+      await ensureUserCredits(user.id, supabase, { emailVerified: true });
     } catch (error) {
       console.error("Failed to ensure user profile/credits:", error);
     }
@@ -25,5 +41,5 @@ export async function middleware(request: NextRequest) {
 }
 
 export const config = {
-  matcher: ["/dashboard/:path*"],
+  matcher: ["/dashboard/:path*", "/verify-email"],
 };

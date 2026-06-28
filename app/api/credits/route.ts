@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { requireVerifiedUser } from "@/lib/auth/require-user";
 import type { CreditsApiResponse } from "@/lib/credits/types";
 import type { PlanId } from "@/lib/billing/plans";
 import { getPlan } from "@/lib/billing/plans";
@@ -8,14 +9,11 @@ import { createClient } from "@/lib/supabase/server";
 export async function GET() {
   try {
     const supabase = await createClient();
-    const {
-      data: { user },
-      error: authError,
-    } = await supabase.auth.getUser();
-
-    if (authError || !user) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    const authResult = await requireVerifiedUser(supabase);
+    if ("response" in authResult) {
+      return authResult.response;
     }
+    const user = authResult.user;
 
     const { data: profile } = await supabase
       .from("profiles")

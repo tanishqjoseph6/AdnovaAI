@@ -74,8 +74,13 @@ async function readCreditsRow(
 
 export async function ensureUserCredits(
   userId: string,
-  supabase?: SupabaseClient
+  supabase?: SupabaseClient,
+  options?: { emailVerified?: boolean }
 ): Promise<void> {
+  if (options?.emailVerified === false) {
+    return;
+  }
+
   const now = new Date().toISOString();
   const row = {
     user_id: userId,
@@ -212,8 +217,22 @@ async function readBillingProfile(
 
 export async function getUserCreditsForUser(
   userId: string,
-  supabase?: SupabaseClient
+  supabase?: SupabaseClient,
+  options?: { emailVerified?: boolean }
 ): Promise<UserCredits> {
+  const emailVerified = options?.emailVerified !== false;
+
+  if (!emailVerified) {
+    const billingProfile = await readBillingProfile(userId, supabase);
+    return {
+      credits: 0,
+      plan: "free",
+      unlimited: false,
+      maxCredits: resolveMaxCreditsForProfile("free", billingProfile?.plan),
+      updatedAt: new Date().toISOString(),
+    };
+  }
+
   const billingProfile = await readBillingProfile(userId, supabase);
 
   if (billingProfile && hasAdminCredentials()) {
