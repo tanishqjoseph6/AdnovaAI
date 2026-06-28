@@ -67,6 +67,12 @@ export function verifyWebhookSignature(rawBody: string, signature: string): bool
   return secureCompare(expected, signature);
 }
 
+export function createRazorpayReceipt(): string {
+  const timestamp = Date.now().toString().slice(-8);
+  const random = crypto.randomBytes(6).toString("hex");
+  return `adv_${timestamp}_${random}`;
+}
+
 export async function createPlanOrder(
   planId: PaidPlanId,
   userId: string,
@@ -79,7 +85,7 @@ export async function createPlanOrder(
   const order = await razorpay.orders.create({
     amount,
     currency: "INR",
-    receipt: `advora_${planId}_${interval}_${userId.slice(0, 8)}_${Date.now()}`,
+    receipt: createRazorpayReceipt(),
     notes: {
       user_id: userId,
       plan: planId,
