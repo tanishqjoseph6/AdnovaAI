@@ -10,7 +10,9 @@
     "test:landing-analyzer": "node --import tsx --test lib/landing-analyzer/landing-analyzer.test.ts",
     "test:product-analysis": "node --import tsx --test lib/product-analysis/product-analysis.test.ts",
     "test:ad-score": "node --import tsx --test lib/ad-score/ad-score.test.ts",
-    "test:billing-pricing": "node --import tsx --test lib/billing/pricing.test.ts"
+    "test:billing-pricing": "node --import tsx --test lib/billing/pricing.test.ts",
+    "test:free-credit-claims": "node --import tsx --test lib/credits/free-credit-claims.test.ts",
+    "test:auth-validation": "node --import tsx --test lib/auth/validation.test.ts"
   },
   "dependencies": {
     "@google/genai": "^0.12.0",

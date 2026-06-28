@@ -76,6 +76,27 @@ export async function ensureUserProfile(
   email?: string | null,
   supabase?: SupabaseClient
 ): Promise<UserSubscription> {
+  const normalizedEmail = email?.trim().toLowerCase() ?? null;
+
+  if (normalizedEmail && hasAdminCredentials()) {
+    const admin = createAdminClient();
+    const { data: existingProfile, error: lookupError } = await admin
+      .from("profiles")
+      .select("id")
+      .ilike("email", normalizedEmail)
+      .neq("id", userId)
+      .limit(1)
+      .maybeSingle();
+
+    if (lookupError) {
+      throw lookupError;
+    }
+
+    if (existingProfile) {
+      throw new Error("An account already exists with this email.");
+    }
+  }
+
   const now = new Date().toISOString();
   const profileRow = {
     id: userId,

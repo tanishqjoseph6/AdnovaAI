@@ -34,6 +34,24 @@ async function emailExistsInProfiles(email: string): Promise<boolean> {
   return Boolean(data);
 }
 
+async function emailExistsInAuth(email: string): Promise<boolean> {
+  if (!hasAdminCredentials()) {
+    return false;
+  }
+
+  const admin = createAdminClient();
+  const { data, error } = await admin.rpc("email_is_registered", {
+    p_email: email,
+  });
+
+  if (error) {
+    console.error("Auth email lookup failed:", error);
+    return false;
+  }
+
+  return Boolean(data);
+}
+
 export async function signUpWithEmailVerification(
   email: string,
   password: string,
@@ -47,6 +65,14 @@ export async function signUpWithEmailVerification(
   const normalizedEmail = normalizeEmail(email);
 
   if (await emailExistsInProfiles(normalizedEmail)) {
+    return {
+      ok: false,
+      error: DUPLICATE_EMAIL_MESSAGE,
+      status: 409,
+    };
+  }
+
+  if (await emailExistsInAuth(normalizedEmail)) {
     return {
       ok: false,
       error: DUPLICATE_EMAIL_MESSAGE,

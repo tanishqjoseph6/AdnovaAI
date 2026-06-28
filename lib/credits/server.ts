@@ -1,4 +1,5 @@
 import { FREE_PLAN_CREDITS, STARTER_PLAN_CREDITS } from "@/lib/credits/constants";
+import { evaluateFreeCreditClaim } from "@/lib/credits/free-credit-claims";
 import {
   resolveMaxCreditsForProfile,
 } from "@/lib/credits/plan-config";
@@ -32,7 +33,7 @@ function normalizeCreditsRow(
   const credits =
     typeof row?.credits === "number"
       ? Math.max(0, row.credits)
-      : FREE_PLAN_CREDITS;
+      : 0;
   const unlimited = isUnlimitedPlan(plan);
 
   return {
@@ -72,43 +73,59 @@ async function readCreditsRow(
   return data;
 }
 
+export async function grantFreeCreditsIfEligible(
+  userId: string,
+  email: string | null | undefined,
+  supabase?: SupabaseClient
+): Promise<boolean> {
+  const decision = evaluateFreeCreditClaim(email);
+  if (!decision.allowed) {
+    return false;
+  }
+
+  if (hasAdminCredentials()) {
+    const admin = createAdminClient();
+    const { data, error } = await admin.rpc("try_claim_free_credits", {
+      p_user_id: userId,
+      p_email: decision.emailLower,
+    });
+
+    if (error) {
+      throw error;
+    }
+
+    return Boolean(data);
+  }
+
+  const client = supabase ?? (await createClient());
+  const { data, error } = await client.rpc("try_claim_free_credits", {
+    p_user_id: userId,
+    p_email: decision.emailLower,
+  });
+
+  if (error) {
+    throw error;
+  }
+
+  return Boolean(data);
+}
+
 export async function ensureUserCredits(
   userId: string,
   supabase?: SupabaseClient,
-  options?: { emailVerified?: boolean }
+  options?: { emailVerified?: boolean; email?: string | null }
 ): Promise<void> {
   if (options?.emailVerified === false) {
     return;
   }
 
-  const now = new Date().toISOString();
-  const row = {
-    user_id: userId,
-    credits: FREE_PLAN_CREDITS,
-    plan: "free" as const,
-    updated_at: now,
-  };
-
-  if (hasAdminCredentials()) {
-    const admin = createAdminClient();
-    const { error } = await admin.from("user_credits").upsert(row, {
-      onConflict: "user_id",
-      ignoreDuplicates: true,
-    });
-    if (error) {
-      throw error;
-    }
+  const existing = await readCreditsRow(userId, supabase);
+  if (existing) {
     return;
   }
 
-  const client = supabase ?? (await createClient());
-  const { error } = await client.from("user_credits").upsert(row, {
-    onConflict: "user_id",
-    ignoreDuplicates: true,
-  });
-
-  if (error) {
-    throw error;
+  if (options?.emailVerified && options.email) {
+    await grantFreeCreditsIfEligible(userId, options.email, supabase);
   }
 }
 
@@ -129,34 +146,51 @@ async function ensureProCreditsIfSubscribed(
     return;
   }
 
-  await ensureUserCredits(userId);
-
   const admin = createAdminClient();
+  const now = new Date().toISOString();
+  const { error: upsertError } = await admin.from("user_credits").upsert(
+    {
+      user_id: userId,
+      credits: FREE_PLAN_CREDITS,
+      plan: "pro",
+      updated_at: now,
+    },
+    { onConflict: "user_id", ignoreDuplicates: true }
+  );
+
+  if (upsertError) {
+    throw upsertError;
+  }
+
   const existing = await readCreditsRow(userId, admin);
 
   if (existing?.plan === "pro") {
     return;
   }
 
-  const { error } = await admin
+  const { error: updateError } = await admin
     .from("user_credits")
     .update({
       plan: "pro",
-      updated_at: new Date().toISOString(),
+      updated_at: now,
     })
     .eq("user_id", userId);
 
-  if (error) {
-    throw error;
+  if (updateError) {
+    throw updateError;
   }
 }
 
 export async function getUserCredits(
   userId: string,
   supabase?: SupabaseClient,
-  profilesPlan?: PlanId
+  profilesPlan?: PlanId,
+  options?: { email?: string | null; emailVerified?: boolean }
 ): Promise<UserCredits> {
-  await ensureUserCredits(userId, supabase);
+  await ensureUserCredits(userId, supabase, {
+    emailVerified: options?.emailVerified,
+    email: options?.email,
+  });
   const data = await readCreditsRow(userId, supabase);
   return normalizeCreditsRow(data, profilesPlan);
 }
@@ -218,7 +252,7 @@ async function readBillingProfile(
 export async function getUserCreditsForUser(
   userId: string,
   supabase?: SupabaseClient,
-  options?: { emailVerified?: boolean }
+  options?: { emailVerified?: boolean; email?: string | null }
 ): Promise<UserCredits> {
   const emailVerified = options?.emailVerified !== false;
 
@@ -243,7 +277,10 @@ export async function getUserCreditsForUser(
     );
   }
 
-  return getUserCredits(userId, supabase, billingProfile?.plan);
+  return getUserCredits(userId, supabase, billingProfile?.plan, {
+    emailVerified: true,
+    email: options?.email,
+  });
 }
 
 export function canUseCredits(credits: UserCredits): boolean {
@@ -258,7 +295,6 @@ export async function deductUserCredit(
   }
 
   const admin = createAdminClient();
-  await ensureUserCredits(userId, admin);
 
   for (let attempt = 0; attempt < CREDIT_DEDUCT_MAX_RETRIES; attempt++) {
     const { data: row, error } = await admin
@@ -357,8 +393,6 @@ export async function syncCreditsWithProfilePlan(
     return;
   }
 
-  await ensureUserCredits(userId);
-
   const admin = createAdminClient();
   const now = new Date().toISOString();
 
@@ -366,10 +400,15 @@ export async function syncCreditsWithProfilePlan(
     (profilesPlan === "pro" || profilesPlan === "custom") &&
     subscriptionStatus === "active"
   ) {
-    const { error } = await admin
-      .from("user_credits")
-      .update({ plan: "pro", updated_at: now })
-      .eq("user_id", userId);
+    const { error } = await admin.from("user_credits").upsert(
+      {
+        user_id: userId,
+        credits: FREE_PLAN_CREDITS,
+        plan: "pro",
+        updated_at: now,
+      },
+      { onConflict: "user_id" }
+    );
 
     if (error) {
       throw error;
@@ -378,14 +417,15 @@ export async function syncCreditsWithProfilePlan(
   }
 
   if (profilesPlan === "starter" && subscriptionStatus === "active") {
-    const { error } = await admin
-      .from("user_credits")
-      .update({
+    const { error } = await admin.from("user_credits").upsert(
+      {
+        user_id: userId,
         plan: "free",
         credits: STARTER_PLAN_CREDITS,
         updated_at: now,
-      })
-      .eq("user_id", userId);
+      },
+      { onConflict: "user_id" }
+    );
 
     if (error) {
       throw error;

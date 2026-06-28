@@ -21,7 +21,9 @@ export async function POST() {
     }
     const user = authResult.user;
 
-    const current = await getUserCreditsForUser(user.id, supabase);
+    const current = await getUserCreditsForUser(user.id, supabase, {
+      email: user.email,
+    });
 
     if (!canUseCredits(current)) {
       return NextResponse.json(

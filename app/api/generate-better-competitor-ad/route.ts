@@ -43,7 +43,9 @@ export async function POST(req: Request) {
       );
     }
 
-    const userCredits = await getUserCreditsForUser(user.id, supabase);
+    const userCredits = await getUserCreditsForUser(user.id, supabase, {
+      email: user.email,
+    });
 
     if (!canUseCredits(userCredits)) {
       return NextResponse.json(

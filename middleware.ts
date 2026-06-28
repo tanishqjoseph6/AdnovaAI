@@ -31,7 +31,10 @@ export async function middleware(request: NextRequest) {
   if (user && isDashboard && isEmailVerified(user)) {
     try {
       await ensureUserProfile(user.id, user.email, supabase);
-      await ensureUserCredits(user.id, supabase, { emailVerified: true });
+      await ensureUserCredits(user.id, supabase, {
+        emailVerified: true,
+        email: user.email,
+      });
     } catch (error) {
       console.error("Failed to ensure user profile/credits:", error);
     }

@@ -26,7 +26,9 @@ export async function GET() {
         ? (profile.plan as PlanId)
         : "free";
 
-    const credits = await getUserCreditsForUser(user.id, supabase);
+    const credits = await getUserCreditsForUser(user.id, supabase, {
+      email: user.email,
+    });
 
     const response: CreditsApiResponse = {
       ...credits,
