@@ -1,5 +1,9 @@
 import { NextResponse } from "next/server";
 import { requireVerifiedUser } from "@/lib/auth/require-user";
+import {
+  buildBrandKitPromptSection,
+  getBrandKitForUser,
+} from "@/lib/brand-kit/server";
 import { CREDITS_ERROR_CODE } from "@/lib/credits/constants";
 import {
   canUseCredits,
@@ -57,7 +61,13 @@ export async function POST(req: Request) {
       ? formatProductAnalysisForPrompt(productAnalysis)
       : undefined;
 
-    const prompt = buildGenerateAdsPrompt(productDescription, analysisSection);
+    const brandKit = await getBrandKitForUser(supabase, user.id);
+    const brandKitSection = buildBrandKitPromptSection(brandKit);
+    const prompt = buildGenerateAdsPrompt(
+      productDescription,
+      analysisSection,
+      brandKitSection
+    );
 
     const response = await openai.chat.completions.create({
       model: "gpt-4o-mini",

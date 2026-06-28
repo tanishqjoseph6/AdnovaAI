@@ -98,14 +98,19 @@ Rules:
 - Be specific and actionable in all suggestions.`;
 
 export function buildBetterCompetitorAdPrompt(
-  analysis: Record<string, unknown>
+  analysis: Record<string, unknown>,
+  brandKitSection?: string
 ): string {
+  const brandKitBlock = brandKitSection
+    ? `\n\n${brandKitSection}\n\nUse the Brand Kit as the user's own brand identity while creating the improved ad.`
+    : "";
+
   return `You are an elite direct-response copywriter and creative strategist.
 
 Using the competitor ad analysis below, write a STRONGER ad package that specifically outperforms this competitor creative — not a generic ad.
 
 Competitor analysis:
-${JSON.stringify(analysis, null, 2)}
+${JSON.stringify(analysis, null, 2)}${brandKitBlock}
 
 Generate ALL of the following, beating the competitor on clarity, urgency, specificity, and conversion intent:
 

@@ -4,6 +4,7 @@ export type NavItem = {
   icon:
     | "dashboard"
     | "generate"
+    | "brand"
     | "landing"
     | "competitor"
     | "history"
@@ -14,6 +15,7 @@ export type NavItem = {
 export const dashboardNav: NavItem[] = [
   { label: "Dashboard", href: "/dashboard", icon: "dashboard" },
   { label: "Generate Ads", href: "/dashboard/generate", icon: "generate" },
+  { label: "Brand Kit", href: "/dashboard/brand-kit", icon: "brand" },
   {
     label: "Landing Analyzer",
     href: "/dashboard/landing-analyzer",

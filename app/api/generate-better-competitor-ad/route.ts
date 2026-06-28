@@ -1,6 +1,10 @@
 import { NextResponse } from "next/server";
 import OpenAI from "openai";
 import { requireVerifiedUser } from "@/lib/auth/require-user";
+import {
+  buildBrandKitPromptSection,
+  getBrandKitForUser,
+} from "@/lib/brand-kit/server";
 import { buildBetterCompetitorAdPrompt } from "@/lib/competitor-ad/prompt";
 import {
   normalizeBetterCompetitorAd,
@@ -57,6 +61,9 @@ export async function POST(req: Request) {
       );
     }
 
+    const brandKit = await getBrandKitForUser(supabase, user.id);
+    const brandKitSection = buildBrandKitPromptSection(brandKit);
+
     const response = await openai.chat.completions.create({
       model: "gpt-4o-mini",
       temperature: 0.5,
@@ -65,7 +72,8 @@ export async function POST(req: Request) {
         {
           role: "user",
           content: buildBetterCompetitorAdPrompt(
-            analysis as unknown as Record<string, unknown>
+            analysis as unknown as Record<string, unknown>,
+            brandKitSection
           ),
         },
       ],
