@@ -23,7 +23,7 @@ export default function CollapsibleSection({
 
   return (
     <div className="overflow-hidden rounded-xl border border-white/[0.06] bg-white/[0.02]">
-      <div className="flex w-full items-center justify-between gap-3 px-4 py-3.5 transition hover:bg-white/[0.03]">
+      <div className="flex flex-wrap items-center justify-between gap-2 px-3 py-3.5 transition hover:bg-white/[0.03] sm:px-4">
         <button
           type="button"
           onClick={() => setOpen((value) => !value)}
@@ -47,7 +47,7 @@ export default function CollapsibleSection({
           </motion.svg>
           <span className="text-sm font-semibold text-white">{title}</span>
         </button>
-        <CopyButton text={copyText} label={copyLabel} />
+        <CopyButton text={copyText} label={copyLabel} className="shrink-0" />
       </div>
 
       <AnimatePresence initial={false}>

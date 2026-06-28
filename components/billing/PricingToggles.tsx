@@ -24,7 +24,7 @@ function ToggleGroup<T extends string>({
       aria-label={label}
     >
       <span className="sr-only">{label}</span>
-      <div className="inline-flex rounded-2xl border border-white/10 bg-white/[0.04] p-1 shadow-inner shadow-black/20">
+      <div className="inline-flex max-w-full flex-wrap justify-center gap-1 rounded-2xl border border-white/10 bg-white/[0.04] p-1 shadow-inner shadow-black/20">
         {options.map((option) => {
           const active = value === option.id;
           return (
@@ -32,7 +32,7 @@ function ToggleGroup<T extends string>({
               key={option.id}
               type="button"
               onClick={() => onChange(option.id)}
-              className={`relative rounded-xl px-4 py-2.5 text-sm font-medium transition-colors duration-200 sm:px-5 ${
+              className={`relative rounded-xl px-3 py-2 text-xs font-medium transition-colors duration-200 sm:px-5 sm:text-sm ${
                 active ? "text-white" : "text-zinc-400 hover:text-zinc-200"
               }`}
               aria-pressed={active}
@@ -68,7 +68,7 @@ export default function PricingToggles() {
       initial={{ opacity: 0, y: 10 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.4 }}
-      className="flex flex-col items-center justify-center gap-4 sm:flex-row sm:gap-8"
+      className="flex w-full max-w-full flex-col items-center justify-center gap-4 px-2 sm:flex-row sm:gap-8"
     >
       <ToggleGroup
         label="Billing interval"

@@ -17,6 +17,11 @@ type EmailLoginEligibilityRow = {
   confirmed?: boolean;
 };
 
+type LoginOtpRequestBody = {
+  email: string;
+  create_user: false;
+};
+
 function hasAdminCredentials(): boolean {
   return Boolean(
     process.env.NEXT_PUBLIC_SUPABASE_URL && process.env.SUPABASE_SERVICE_ROLE_KEY
@@ -37,16 +42,12 @@ export async function checkLoginOtpEligibility(
   }
 
   if (!hasAdminCredentials()) {
-    if (process.env.NODE_ENV === "production") {
-      console.error("Login OTP eligibility check failed: missing service role key.");
-      return {
-        allowed: false,
-        message: "Unable to send login code right now. Please try again later.",
-        status: 503,
-      };
-    }
-
-    return { allowed: true };
+    console.error("Login OTP eligibility check failed: missing service role key.");
+    return {
+      allowed: false,
+      message: "Unable to send login code right now. Please try again later.",
+      status: 503,
+    };
   }
 
   const admin = createAdminClient();
@@ -63,9 +64,13 @@ export async function checkLoginOtpEligibility(
     };
   }
 
-  const row = (data ?? {}) as EmailLoginEligibilityRow;
+  return evaluateLoginOtpEligibility(data as EmailLoginEligibilityRow | null);
+}
 
-  if (!row.registered) {
+export function evaluateLoginOtpEligibility(
+  row: EmailLoginEligibilityRow | null | undefined
+): LoginOtpEligibilityResult {
+  if (!row?.registered) {
     return {
       allowed: false,
       message: LOGIN_OTP_NO_ACCOUNT_MESSAGE,
@@ -82,6 +87,13 @@ export async function checkLoginOtpEligibility(
   }
 
   return { allowed: true };
+}
+
+export function buildLoginOtpRequestBody(email: string): LoginOtpRequestBody {
+  return {
+    email: normalizeEmail(email),
+    create_user: false,
+  };
 }
 
 type SendLoginOtpResult =
@@ -112,10 +124,7 @@ export async function sendLoginOtpEmail(email: string): Promise<SendLoginOtpResu
       apikey: anonKey,
       Authorization: `Bearer ${anonKey}`,
     },
-    body: JSON.stringify({
-      email: normalized,
-      create_user: false,
-    }),
+    body: JSON.stringify(buildLoginOtpRequestBody(normalized)),
   });
 
   const payload = (await response.json().catch(() => ({}))) as {

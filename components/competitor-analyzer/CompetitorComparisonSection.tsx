@@ -20,26 +20,34 @@ function ComparisonRow({
     delta > 0 ? "#22C55E" : delta < 0 ? "#EF4444" : "#A1A1AA";
 
   return (
-    <div className="grid grid-cols-[1fr_auto_auto] items-center gap-3 border-b border-white/[0.06] py-3 text-sm last:border-0">
-      <span className="text-zinc-400">{label}</span>
-      <span
-        className="text-right font-semibold tabular-nums"
-        style={{ color: getCompetitorScoreColor(competitorScore) }}
-      >
-        {competitorScore}
-      </span>
-      <span
-        className="text-right font-semibold tabular-nums"
-        style={{ color: getCompetitorScoreColor(improvedScore) }}
-      >
-        {improvedScore}
-        {delta !== 0 && (
-          <span className="ml-1.5 text-xs" style={{ color: deltaColor }}>
-            ({delta > 0 ? "+" : ""}
-            {delta})
+    <div className="border-b border-white/[0.06] py-3 text-sm last:border-0 sm:grid sm:grid-cols-[minmax(0,1fr)_auto_auto] sm:items-center sm:gap-3">
+      <span className="block text-zinc-400">{label}</span>
+      <div className="mt-2 flex items-center justify-between gap-4 sm:mt-0 sm:contents">
+        <span
+          className="font-semibold tabular-nums sm:text-right"
+          style={{ color: getCompetitorScoreColor(competitorScore) }}
+        >
+          <span className="mr-1 text-[10px] uppercase tracking-wider text-zinc-600 sm:hidden">
+            Comp
           </span>
-        )}
-      </span>
+          {competitorScore}
+        </span>
+        <span
+          className="font-semibold tabular-nums sm:text-right"
+          style={{ color: getCompetitorScoreColor(improvedScore) }}
+        >
+          <span className="mr-1 text-[10px] uppercase tracking-wider text-zinc-600 sm:hidden">
+            AI
+          </span>
+          {improvedScore}
+          {delta !== 0 && (
+            <span className="ml-1.5 text-xs" style={{ color: deltaColor }}>
+              ({delta > 0 ? "+" : ""}
+              {delta})
+            </span>
+          )}
+        </span>
+      </div>
     </div>
   );
 }
@@ -57,7 +65,7 @@ export default function CompetitorComparisonSection({
   return (
     <section className="glass overflow-hidden rounded-2xl border border-violet-500/20">
       <div className="border-b border-white/[0.06] bg-gradient-to-r from-violet-600/10 via-transparent to-cyan-500/10 px-5 py-4 sm:px-6">
-        <h2 className="text-lg font-semibold text-white">
+        <h2 className="text-base font-semibold text-white sm:text-lg">
           Competitor vs Advora AI Improved Version
         </h2>
         <p className="mt-1 text-sm text-zinc-500">
@@ -111,7 +119,7 @@ export default function CompetitorComparisonSection({
       </div>
 
       <div className="border-t border-white/[0.06] px-5 py-2 sm:px-6">
-        <div className="grid grid-cols-[1fr_auto_auto] gap-3 py-2 text-[10px] font-semibold uppercase tracking-wider text-zinc-600">
+        <div className="hidden py-2 text-[10px] font-semibold uppercase tracking-wider text-zinc-600 sm:grid sm:grid-cols-[minmax(0,1fr)_auto_auto] sm:gap-3">
           <span>Dimension</span>
           <span className="text-right">Competitor</span>
           <span className="text-right">AI Improved</span>

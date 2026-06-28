@@ -40,14 +40,14 @@ export default function RecentAdsList({ ads }: RecentAdsListProps) {
         {ads.map((ad) => (
           <li key={ad.name} className="p-4">
             <div className="flex items-start justify-between gap-2">
-              <p className="font-medium text-white">{ad.name}</p>
+              <p className="min-w-0 break-words font-medium text-white">{ad.name}</p>
               <span
                 className={`shrink-0 rounded-full px-2.5 py-0.5 text-xs font-medium ${statusStyles[ad.status] ?? statusStyles.Draft}`}
               >
                 {ad.status}
               </span>
             </div>
-            <dl className="mt-3 grid grid-cols-3 gap-2 text-xs">
+            <dl className="mt-3 grid grid-cols-2 gap-2 text-xs sm:grid-cols-3">
               <div>
                 <dt className="text-zinc-600">Platform</dt>
                 <dd className="mt-0.5 text-zinc-300">{ad.platform}</dd>

@@ -24,9 +24,9 @@ function OutputBlock({
 
   return (
     <div className="rounded-2xl border border-white/10 bg-black/20 p-5 sm:p-6">
-      <div className="mb-4 flex items-center justify-between gap-3">
-        <h3 className="text-base font-bold text-white">{title}</h3>
-        <CopyButton text={copyText} label={copyLabel} />
+      <div className="mb-4 flex flex-wrap items-center justify-between gap-2">
+        <h3 className="min-w-0 text-base font-bold text-white">{title}</h3>
+        <CopyButton text={copyText} label={copyLabel} className="shrink-0" />
       </div>
       {items && items.length > 0 ? (
         <div className="space-y-3">

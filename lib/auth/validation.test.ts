@@ -61,4 +61,20 @@ describe("password reset", () => {
     const valid = validateNewPassword("password123", "password123");
     assert.equal(valid.ok, true);
   });
+
+  it("uses a generic forgot-password response", async () => {
+    const {
+      FORGOT_PASSWORD_RESPONSE_MESSAGE,
+      getPasswordResetRedirectUrl,
+    } = await import("./password-reset");
+
+    assert.equal(
+      FORGOT_PASSWORD_RESPONSE_MESSAGE,
+      "If an account exists for this email, a password reset link has been sent."
+    );
+    assert.equal(
+      getPasswordResetRedirectUrl("https://advora.example"),
+      "https://advora.example/auth/callback?next=/reset-password"
+    );
+  });
 });

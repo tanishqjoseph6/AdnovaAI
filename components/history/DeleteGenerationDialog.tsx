@@ -39,7 +39,7 @@ export default function DeleteGenerationDialog({
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           exit={{ opacity: 0 }}
-          className="fixed inset-0 z-50 flex items-center justify-center p-4"
+          className="fixed inset-0 z-50 flex items-end justify-center p-3 sm:items-center sm:p-4"
           role="presentation"
         >
           <button
@@ -58,7 +58,7 @@ export default function DeleteGenerationDialog({
             animate={{ opacity: 1, scale: 1, y: 0 }}
             exit={{ opacity: 0, scale: 0.95, y: 8 }}
             transition={{ duration: 0.2 }}
-            className="glass relative w-full max-w-md rounded-2xl border border-white/10 p-6 shadow-2xl shadow-black/40"
+            className="glass relative max-h-[calc(100dvh-1.5rem)] w-full max-w-md overflow-y-auto rounded-2xl border border-white/10 p-5 shadow-2xl shadow-black/40 sm:max-h-[90dvh] sm:p-6"
           >
             <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-full bg-red-500/10 text-red-400">
               <svg

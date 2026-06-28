@@ -1,9 +1,13 @@
 import assert from "node:assert/strict";
+import { describe, it } from "node:test";
 import {
   LOGIN_OTP_NO_ACCOUNT_MESSAGE,
   LOGIN_OTP_UNVERIFIED_MESSAGE,
 } from "./errors";
-import { describe, it } from "node:test";
+import {
+  buildLoginOtpRequestBody,
+  evaluateLoginOtpEligibility,
+} from "./login-otp";
 
 describe("login OTP messages", () => {
   it("uses a distinct no-account message", () => {
@@ -22,5 +26,45 @@ describe("login OTP error mapping", () => {
       mapAuthErrorMessage("Signups not allowed for otp"),
       LOGIN_OTP_NO_ACCOUNT_MESSAGE
     );
+  });
+});
+
+describe("login OTP eligibility", () => {
+  it("allows verified existing users", () => {
+    assert.deepEqual(
+      evaluateLoginOtpEligibility({ registered: true, confirmed: true }),
+      { allowed: true }
+    );
+  });
+
+  it("blocks unverified users before OTP send or verify", () => {
+    assert.deepEqual(
+      evaluateLoginOtpEligibility({ registered: true, confirmed: false }),
+      {
+        allowed: false,
+        message: LOGIN_OTP_UNVERIFIED_MESSAGE,
+        status: 403,
+      }
+    );
+  });
+
+  it("blocks new users before OTP send or verify", () => {
+    assert.deepEqual(
+      evaluateLoginOtpEligibility({ registered: false, confirmed: false }),
+      {
+        allowed: false,
+        message: LOGIN_OTP_NO_ACCOUNT_MESSAGE,
+        status: 404,
+      }
+    );
+  });
+});
+
+describe("login OTP request", () => {
+  it("never asks Supabase to create a user", () => {
+    assert.deepEqual(buildLoginOtpRequestBody(" User@Example.COM "), {
+      email: "user@example.com",
+      create_user: false,
+    });
   });
 });

@@ -1,5 +1,9 @@
 @import "tailwindcss";
 
+html {
+  overflow-x: hidden;
+}
+
 html,
 body {
   margin: 0;
@@ -55,6 +59,29 @@ body {
 
   .animate-pulse-glow {
     animation: pulse-glow 4s ease-in-out infinite;
+  }
+
+  .dashboard-scrollbar {
+    scrollbar-width: thin;
+    scrollbar-color: rgba(255, 255, 255, 0.18) transparent;
+  }
+
+  .dashboard-scrollbar::-webkit-scrollbar {
+    width: 6px;
+    height: 6px;
+  }
+
+  .dashboard-scrollbar::-webkit-scrollbar-thumb {
+    border-radius: 9999px;
+    background: rgba(255, 255, 255, 0.18);
+  }
+
+  .table-scroll-hint {
+    @apply mb-2 text-xs text-zinc-500 sm:hidden;
+  }
+
+  .table-scroll-container {
+    @apply -mx-4 overflow-x-auto px-4 sm:mx-0 sm:px-0;
   }
 }
 

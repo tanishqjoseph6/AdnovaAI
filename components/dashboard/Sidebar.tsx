@@ -92,7 +92,7 @@ export default function Sidebar({ open, onClose }: SidebarProps) {
       <aside
         id="dashboard-sidebar"
         aria-label="Dashboard navigation"
-        className={`fixed inset-y-0 left-0 z-50 flex w-[min(16rem,85vw)] flex-col border-r border-white/[0.06] bg-[#050118]/95 backdrop-blur-xl transition-transform duration-300 ease-out lg:static lg:z-auto lg:w-64 lg:shrink-0 lg:translate-x-0 ${
+        className={`fixed inset-y-0 left-0 z-50 flex w-[min(18rem,90vw)] flex-col border-r border-white/[0.06] bg-[#050118]/95 backdrop-blur-xl transition-transform duration-300 ease-out lg:static lg:z-auto lg:w-64 lg:shrink-0 lg:translate-x-0 ${
           open ? "translate-x-0" : "-translate-x-full"
         }`}
       >

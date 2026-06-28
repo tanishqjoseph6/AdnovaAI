@@ -1,6 +1,8 @@
 import { NextResponse } from "next/server";
-import { mapAuthErrorMessage } from "@/lib/auth/errors";
-import { getPasswordResetRedirectUrl } from "@/lib/auth/password-reset";
+import {
+  FORGOT_PASSWORD_RESPONSE_MESSAGE,
+  getPasswordResetRedirectUrl,
+} from "@/lib/auth/password-reset";
 import {
   buildRateLimitBucketKey,
   getClientIp,
@@ -9,6 +11,13 @@ import { withAuthRateLimits } from "@/lib/auth/rate-limit-response";
 import { isValidEmail, normalizeEmail } from "@/lib/auth/validation";
 import { createClient } from "@/lib/supabase/server";
 
+function forgotPasswordResponse() {
+  return NextResponse.json({
+    success: true,
+    message: FORGOT_PASSWORD_RESPONSE_MESSAGE,
+  });
+}
+
 export async function POST(request: Request) {
   try {
     const body = await request.json().catch(() => ({}));
@@ -16,10 +25,7 @@ export async function POST(request: Request) {
     const normalized = normalizeEmail(email);
 
     if (!isValidEmail(normalized)) {
-      return NextResponse.json(
-        { error: "Please enter a valid email address." },
-        { status: 400 }
-      );
+      return forgotPasswordResponse();
     }
 
     const ip = getClientIp(request);
@@ -49,17 +55,11 @@ export async function POST(request: Request) {
     });
 
     if (error) {
-      return NextResponse.json(
-        { error: mapAuthErrorMessage(error.message) },
-        { status: 400 }
-      );
+      console.warn("Password reset request was not delivered:", error.message);
+      return forgotPasswordResponse();
     }
 
-    return NextResponse.json({
-      success: true,
-      message:
-        "If an account exists for this email, a password reset link has been sent.",
-    });
+    return forgotPasswordResponse();
   } catch (error) {
     console.error("Forgot password error:", error);
     return NextResponse.json(

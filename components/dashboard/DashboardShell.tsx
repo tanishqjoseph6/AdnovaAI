@@ -53,7 +53,7 @@ export default function DashboardShell({
 
       <Sidebar open={sidebarOpen} onClose={closeSidebar} />
 
-      <div className="relative flex min-w-0 flex-1 flex-col">
+      <div className="relative flex min-w-0 flex-1 flex-col overflow-x-hidden">
         <TopNavbar
           title={title}
           subtitle={subtitle}

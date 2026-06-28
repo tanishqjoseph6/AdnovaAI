@@ -5,6 +5,7 @@ import { AnimatePresence, motion } from "framer-motion";
 import { Loader2, X } from "lucide-react";
 import { useAuthToast } from "@/components/auth/AuthToast";
 import { mapAuthErrorMessage } from "@/lib/auth/errors";
+import { FORGOT_PASSWORD_RESPONSE_MESSAGE } from "@/lib/auth/password-reset";
 import { isValidEmail, normalizeEmail } from "@/lib/auth/validation";
 
 type ForgotPasswordModalProps = {
@@ -54,7 +55,8 @@ export default function ForgotPasswordModal({
     const normalized = normalizeEmail(email);
 
     if (!isValidEmail(normalized)) {
-      showToast("Please enter a valid email address.", "error");
+      showToast(FORGOT_PASSWORD_RESPONSE_MESSAGE, "success");
+      onClose();
       return;
     }
 
@@ -78,8 +80,7 @@ export default function ForgotPasswordModal({
       }
 
       showToast(
-        payload.message ??
-          "If an account exists for this email, a password reset link has been sent.",
+        payload.message ?? FORGOT_PASSWORD_RESPONSE_MESSAGE,
         "success"
       );
       onClose();

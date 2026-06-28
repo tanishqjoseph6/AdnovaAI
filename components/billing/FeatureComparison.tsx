@@ -46,16 +46,19 @@ export default function FeatureComparison({
 }: FeatureComparisonProps) {
   return (
     <section className="glass overflow-hidden rounded-2xl border border-white/[0.08]">
-      <div className="border-b border-white/[0.06] px-6 py-5 sm:px-8">
+      <div className="border-b border-white/[0.06] px-4 py-4 sm:px-6 sm:py-5 lg:px-8">
         <p className="text-xs font-medium uppercase tracking-widest text-violet-400">
           Compare
         </p>
-        <h3 className="mt-1 text-2xl font-bold tracking-tight text-white">
+        <h3 className="mt-1 text-xl font-bold tracking-tight text-white sm:text-2xl">
           Feature comparison
         </h3>
       </div>
 
-      <div className="overflow-x-auto">
+      <p className="table-scroll-hint px-4 pt-3 sm:px-6 lg:px-8">
+        Swipe horizontally to compare plans →
+      </p>
+      <div className="table-scroll-container pb-2 sm:pb-0">
         <table className="w-full min-w-[720px] border-collapse text-left">
           <thead>
             <tr className="border-b border-white/[0.06] bg-white/[0.02]">

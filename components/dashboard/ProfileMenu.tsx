@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import { createPortal } from "react-dom";
 import { usePathname, useRouter } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
 import { AnimatePresence, motion } from "framer-motion";
@@ -11,6 +12,7 @@ import {
   Settings,
   User,
 } from "lucide-react";
+import { useIsDesktopNav } from "@/hooks/useMediaQuery";
 import { useUserAvatar } from "@/hooks/useUserAvatar";
 import { invalidateCreditsCache } from "@/hooks/useCredits";
 import { supabase } from "@/lib/supabase";
@@ -96,13 +98,80 @@ function MenuLink({
   );
 }
 
+type ProfilePanelProps = {
+  displayName: string;
+  initials: string;
+  pathname: string;
+  isSigningOut: boolean;
+  onNavigate: () => void;
+  onSignOut: () => void;
+  className?: string;
+};
+
+function ProfilePanel({
+  displayName,
+  initials,
+  pathname,
+  isSigningOut,
+  onNavigate,
+  onSignOut,
+  className = "",
+}: ProfilePanelProps) {
+  return (
+    <div
+      className={`overflow-hidden rounded-2xl border border-white/10 bg-[#0a0618]/95 shadow-2xl shadow-violet-500/10 backdrop-blur-xl ${className}`}
+      role="menu"
+      aria-label="Account menu"
+    >
+      {(displayName || initials) && (
+        <div className="border-b border-white/[0.06] px-4 py-3">
+          <p className="truncate text-sm font-semibold text-white">
+            {displayName || "Account"}
+          </p>
+          <p className="text-xs text-zinc-500">Manage your account</p>
+        </div>
+      )}
+
+      <div className="p-2">
+        {MENU_ITEMS.map((item) => (
+          <MenuLink
+            key={item.id}
+            item={item}
+            active={item.isActive?.(pathname) ?? false}
+            onNavigate={onNavigate}
+          />
+        ))}
+      </div>
+
+      <div className="border-t border-white/[0.06] p-2">
+        <button
+          type="button"
+          onClick={onSignOut}
+          disabled={isSigningOut}
+          className="flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium text-red-300 transition hover:bg-red-500/10 disabled:cursor-not-allowed disabled:opacity-60"
+          role="menuitem"
+        >
+          <LogOut className="h-4 w-4 shrink-0" aria-hidden />
+          {isSigningOut ? "Signing out…" : "Sign Out"}
+        </button>
+      </div>
+    </div>
+  );
+}
+
 export default function ProfileMenu() {
   const router = useRouter();
   const pathname = usePathname();
   const { initials, displayName } = useUserAvatar();
   const [open, setOpen] = useState(false);
+  const [mounted, setMounted] = useState(false);
   const [isSigningOut, setIsSigningOut] = useState(false);
   const containerRef = useRef<HTMLDivElement>(null);
+  const isDesktopNav = useIsDesktopNav();
+
+  useEffect(() => {
+    setMounted(true);
+  }, []);
 
   useEffect(() => {
     if (!open) {
@@ -114,6 +183,10 @@ export default function ProfileMenu() {
         containerRef.current &&
         !containerRef.current.contains(event.target as Node)
       ) {
+        const target = event.target as HTMLElement;
+        if (target.closest("[data-profile-panel]")) {
+          return;
+        }
         setOpen(false);
       }
     }
@@ -133,6 +206,19 @@ export default function ProfileMenu() {
     };
   }, [open]);
 
+  useEffect(() => {
+    if (!open || isDesktopNav) {
+      return;
+    }
+
+    const previousOverflow = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+
+    return () => {
+      document.body.style.overflow = previousOverflow;
+    };
+  }, [open, isDesktopNav]);
+
   async function handleSignOut() {
     if (isSigningOut) {
       return;
@@ -151,8 +237,43 @@ export default function ProfileMenu() {
     }
   }
 
+  const panelProps = {
+    displayName,
+    initials,
+    pathname,
+    isSigningOut,
+    onNavigate: () => setOpen(false),
+    onSignOut: () => void handleSignOut(),
+  };
+
+  const mobilePanel =
+    mounted &&
+    open &&
+    !isDesktopNav &&
+    createPortal(
+      <>
+        <button
+          type="button"
+          aria-label="Close account menu"
+          className="fixed inset-0 z-[55] bg-black/50 backdrop-blur-[1px]"
+          onClick={() => setOpen(false)}
+        />
+        <motion.div
+          data-profile-panel
+          initial={{ opacity: 0, y: -8, scale: 0.98 }}
+          animate={{ opacity: 1, y: 0, scale: 1 }}
+          exit={{ opacity: 0, y: -8, scale: 0.98 }}
+          transition={{ type: "spring", stiffness: 420, damping: 32 }}
+          className="fixed left-3 right-3 top-[calc(4.25rem+env(safe-area-inset-top))] z-[60]"
+        >
+          <ProfilePanel {...panelProps} className="w-full" />
+        </motion.div>
+      </>,
+      document.body
+    );
+
   return (
-    <div ref={containerRef} className="relative">
+    <div ref={containerRef} className="relative shrink-0">
       <button
         type="button"
         onClick={() => setOpen((current) => !current)}
@@ -188,51 +309,21 @@ export default function ProfileMenu() {
       </button>
 
       <AnimatePresence>
-        {open && (
+        {open && isDesktopNav && (
           <motion.div
+            data-profile-panel
             initial={{ opacity: 0, y: 8, scale: 0.98 }}
             animate={{ opacity: 1, y: 0, scale: 1 }}
             exit={{ opacity: 0, y: 8, scale: 0.98 }}
             transition={{ type: "spring", stiffness: 420, damping: 32 }}
-            className="absolute right-0 top-[calc(100%+0.5rem)] z-50 w-[min(100vw-2rem,16rem)] overflow-hidden rounded-2xl border border-white/10 bg-[#0a0618]/95 shadow-2xl shadow-violet-500/10 backdrop-blur-xl sm:w-56"
-            role="menu"
-            aria-label="Account menu"
+            className="absolute right-0 top-[calc(100%+0.5rem)] z-50 w-56 max-w-[calc(100vw-2rem)]"
           >
-            {(displayName || initials) && (
-              <div className="border-b border-white/[0.06] px-4 py-3">
-                <p className="truncate text-sm font-semibold text-white">
-                  {displayName || "Account"}
-                </p>
-                <p className="text-xs text-zinc-500">Manage your account</p>
-              </div>
-            )}
-
-            <div className="p-2">
-              {MENU_ITEMS.map((item) => (
-                <MenuLink
-                  key={item.id}
-                  item={item}
-                  active={item.isActive?.(pathname) ?? false}
-                  onNavigate={() => setOpen(false)}
-                />
-              ))}
-            </div>
-
-            <div className="border-t border-white/[0.06] p-2">
-              <button
-                type="button"
-                onClick={() => void handleSignOut()}
-                disabled={isSigningOut}
-                className="flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium text-red-300 transition hover:bg-red-500/10 disabled:cursor-not-allowed disabled:opacity-60"
-                role="menuitem"
-              >
-                <LogOut className="h-4 w-4 shrink-0" aria-hidden />
-                {isSigningOut ? "Signing out…" : "Sign Out"}
-              </button>
-            </div>
+            <ProfilePanel {...panelProps} />
           </motion.div>
         )}
       </AnimatePresence>
+
+      {mobilePanel}
     </div>
   );
 }

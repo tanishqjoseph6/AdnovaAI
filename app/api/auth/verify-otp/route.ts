@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { mapAuthErrorMessage } from "@/lib/auth/errors";
 import { isEmailVerified } from "@/lib/auth/email-verified";
+import { checkLoginOtpEligibility } from "@/lib/auth/login-otp";
 import { isCompleteOtp } from "@/lib/auth/otp-login";
 import {
   buildRateLimitBucketKey,
@@ -45,6 +46,14 @@ export async function POST(request: Request) {
 
     if (rateLimited) {
       return rateLimited;
+    }
+
+    const eligibility = await checkLoginOtpEligibility(normalized);
+    if (!eligibility.allowed) {
+      return NextResponse.json(
+        { error: eligibility.message },
+        { status: eligibility.status }
+      );
     }
 
     const supabase = await createClient();

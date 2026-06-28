@@ -23,7 +23,7 @@ export default function AiOutput({
 
   if (isLoading) {
     return (
-      <div className="rounded-2xl border border-white/10 bg-black/20 p-6 text-white">
+      <div className="rounded-2xl border border-white/10 bg-black/20 p-4 text-white sm:p-6">
         Generating ads...
       </div>
     );
@@ -33,12 +33,13 @@ export default function AiOutput({
     <div className="space-y-6 text-white">
 
       {/* Hooks */}
-      <div className="rounded-2xl border border-white/10 bg-black/20 p-6">
-        <div className="mb-4 flex items-center justify-between">
-          <h2 className="text-xl font-bold">Hooks</h2>
+      <div className="rounded-2xl border border-white/10 bg-black/20 p-4 sm:p-6">
+        <div className="mb-4 flex flex-wrap items-center justify-between gap-2">
+          <h2 className="min-w-0 text-lg font-bold sm:text-xl">Hooks</h2>
           <CopyButton
             text={hooks.join("\n")}
             label="Copy Hooks"
+            className="shrink-0"
           />
         </div>
 
@@ -55,12 +56,13 @@ export default function AiOutput({
       </div>
 
       {/* Captions */}
-      <div className="rounded-2xl border border-white/10 bg-black/20 p-6">
-        <div className="mb-4 flex items-center justify-between">
-          <h2 className="text-xl font-bold">Captions</h2>
+      <div className="rounded-2xl border border-white/10 bg-black/20 p-4 sm:p-6">
+        <div className="mb-4 flex flex-wrap items-center justify-between gap-2">
+          <h2 className="min-w-0 text-lg font-bold sm:text-xl">Captions</h2>
           <CopyButton
             text={captions.join("\n")}
             label="Copy Captions"
+            className="shrink-0"
           />
         </div>
 
@@ -77,12 +79,13 @@ export default function AiOutput({
       </div>
 
       {/* CTAs */}
-      <div className="rounded-2xl border border-white/10 bg-black/20 p-6">
-        <div className="mb-4 flex items-center justify-between">
-          <h2 className="text-xl font-bold">CTAs</h2>
+      <div className="rounded-2xl border border-white/10 bg-black/20 p-4 sm:p-6">
+        <div className="mb-4 flex flex-wrap items-center justify-between gap-2">
+          <h2 className="min-w-0 text-lg font-bold sm:text-xl">CTAs</h2>
           <CopyButton
             text={ctas.join("\n")}
             label="Copy CTAs"
+            className="shrink-0"
           />
         </div>
 
@@ -99,16 +102,17 @@ export default function AiOutput({
       </div>
 
       {/* UGC Script */}
-      <div className="rounded-2xl border border-white/10 bg-black/20 p-6">
-        <div className="mb-4 flex items-center justify-between">
-          <h2 className="text-xl font-bold">UGC Script</h2>
+      <div className="rounded-2xl border border-white/10 bg-black/20 p-4 sm:p-6">
+        <div className="mb-4 flex flex-wrap items-center justify-between gap-2">
+          <h2 className="min-w-0 text-lg font-bold sm:text-xl">UGC Script</h2>
           <CopyButton
             text={ugcScript}
             label="Copy Script"
+            className="shrink-0"
           />
         </div>
 
-        <div className="rounded-xl bg-white/5 p-4 text-sm whitespace-pre-wrap">
+        <div className="overflow-x-auto rounded-xl bg-white/5 p-4 text-sm whitespace-pre-wrap break-words">
           {ugcScript}
         </div>
       </div>

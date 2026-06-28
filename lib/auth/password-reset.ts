@@ -27,3 +27,6 @@ export const RESET_LINK_EXPIRED_MESSAGE =
 
 export const RESET_SUCCESS_MESSAGE =
   "Your password has been updated. You can now sign in.";
+
+export const FORGOT_PASSWORD_RESPONSE_MESSAGE =
+  "If an account exists for this email, a password reset link has been sent.";

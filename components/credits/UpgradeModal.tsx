@@ -35,7 +35,7 @@ export default function UpgradeModal({ open, onClose }: UpgradeModalProps) {
 
   return (
     <div
-      className="fixed inset-0 z-50 flex items-center justify-center p-4"
+      className="fixed inset-0 z-50 flex items-end justify-center p-3 sm:items-center sm:p-4"
       role="dialog"
       aria-modal="true"
       aria-labelledby="upgrade-modal-title"
@@ -47,7 +47,7 @@ export default function UpgradeModal({ open, onClose }: UpgradeModalProps) {
         onClick={onClose}
       />
 
-      <div className="relative w-full max-w-md overflow-hidden rounded-2xl border border-white/10 bg-[#0a0520] p-6 shadow-2xl shadow-violet-500/10 sm:p-8">
+      <div className="relative max-h-[calc(100dvh-1.5rem)] w-full max-w-md overflow-y-auto rounded-2xl border border-white/10 bg-[#0a0520] p-5 shadow-2xl shadow-violet-500/10 sm:max-h-[90dvh] sm:p-8">
         <div className="pointer-events-none absolute -right-16 -top-16 h-40 w-40 rounded-full bg-violet-600/20 blur-3xl" />
         <div className="pointer-events-none absolute -bottom-16 -left-10 h-36 w-36 rounded-full bg-cyan-500/15 blur-3xl" />
 
