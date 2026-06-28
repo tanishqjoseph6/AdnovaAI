@@ -1,5 +1,6 @@
 import type { PlanId, SubscriptionStatus, PaidPlanId } from "@/lib/billing/plans";
 import { PLANS } from "@/lib/billing/plans";
+import { DUPLICATE_EMAIL_MESSAGE } from "@/lib/auth/errors";
 import { syncCreditsWithProfilePlan } from "@/lib/credits/server";
 import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
@@ -93,7 +94,7 @@ export async function ensureUserProfile(
     }
 
     if (existingProfile) {
-      throw new Error("An account already exists with this email.");
+      throw new Error(DUPLICATE_EMAIL_MESSAGE);
     }
   }
 

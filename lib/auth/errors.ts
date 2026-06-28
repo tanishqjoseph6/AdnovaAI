@@ -1,4 +1,5 @@
-const DUPLICATE_EMAIL_MESSAGE = "An account already exists with this email.";
+const DUPLICATE_EMAIL_MESSAGE =
+  "An account already exists with this email. Please log in.";
 
 const AUTH_ERROR_MAP: Record<string, string> = {
   "User already registered": DUPLICATE_EMAIL_MESSAGE,
@@ -26,6 +27,8 @@ const AUTH_ERROR_MAP: Record<string, string> = {
     "This code has expired. Please request a new one.",
   "signups not allowed":
     "No account found for this email. Please sign up first.",
+  "duplicate_email":
+    "An account already exists with this email. Please log in.",
 };
 
 const GENERIC_AUTH_ERROR = "Something went wrong. Please try again.";

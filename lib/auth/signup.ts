@@ -1,56 +1,11 @@
 import { DUPLICATE_EMAIL_MESSAGE } from "@/lib/auth/errors";
+import { checkSignupEligibility } from "@/lib/auth/account-eligibility";
 import { normalizeEmail, validateSignupInput } from "@/lib/auth/validation";
-import { createAdminClient } from "@/lib/supabase/admin";
 import { createClient } from "@/lib/supabase/server";
 
 export type SignupResult =
   | { ok: true; requiresVerification: true }
   | { ok: false; error: string; status: number };
-
-function hasAdminCredentials(): boolean {
-  return Boolean(
-    process.env.NEXT_PUBLIC_SUPABASE_URL && process.env.SUPABASE_SERVICE_ROLE_KEY
-  );
-}
-
-async function emailExistsInProfiles(email: string): Promise<boolean> {
-  if (!hasAdminCredentials()) {
-    return false;
-  }
-
-  const admin = createAdminClient();
-  const { data, error } = await admin
-    .from("profiles")
-    .select("id")
-    .ilike("email", email)
-    .limit(1)
-    .maybeSingle();
-
-  if (error) {
-    console.error("Profile email lookup failed:", error);
-    return false;
-  }
-
-  return Boolean(data);
-}
-
-async function emailExistsInAuth(email: string): Promise<boolean> {
-  if (!hasAdminCredentials()) {
-    return false;
-  }
-
-  const admin = createAdminClient();
-  const { data, error } = await admin.rpc("email_is_registered", {
-    p_email: email,
-  });
-
-  if (error) {
-    console.error("Auth email lookup failed:", error);
-    return false;
-  }
-
-  return Boolean(data);
-}
 
 export async function signUpWithEmailVerification(
   email: string,
@@ -63,20 +18,13 @@ export async function signUpWithEmailVerification(
   }
 
   const normalizedEmail = normalizeEmail(email);
+  const eligibility = await checkSignupEligibility(normalizedEmail);
 
-  if (await emailExistsInProfiles(normalizedEmail)) {
+  if (!eligibility.allowed) {
     return {
       ok: false,
-      error: DUPLICATE_EMAIL_MESSAGE,
-      status: 409,
-    };
-  }
-
-  if (await emailExistsInAuth(normalizedEmail)) {
-    return {
-      ok: false,
-      error: DUPLICATE_EMAIL_MESSAGE,
-      status: 409,
+      error: eligibility.message,
+      status: eligibility.message === DUPLICATE_EMAIL_MESSAGE ? 409 : 400,
     };
   }
 
@@ -94,7 +42,8 @@ export async function signUpWithEmailVerification(
 
     if (
       message.includes("already registered") ||
-      message.includes("already been registered")
+      message.includes("already been registered") ||
+      message.includes("duplicate")
     ) {
       return {
         ok: false,

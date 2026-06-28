@@ -32,6 +32,10 @@ describe("auth errors", () => {
       mapAuthErrorMessage("User already registered"),
       DUPLICATE_EMAIL_MESSAGE
     );
+    assert.equal(
+      DUPLICATE_EMAIL_MESSAGE,
+      "An account already exists with this email. Please log in."
+    );
   });
 
   it("hides internal error details", () => {

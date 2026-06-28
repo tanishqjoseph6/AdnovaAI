@@ -5,7 +5,7 @@ import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { Loader2 } from "lucide-react";
 import PasswordInput from "@/components/auth/PasswordInput";
-import { mapAuthErrorMessage } from "@/lib/auth/errors";
+import { mapAuthErrorMessage, DUPLICATE_EMAIL_MESSAGE } from "@/lib/auth/errors";
 import { useAuthPageGuard } from "@/lib/auth/use-auth-page-guard";
 import { isValidEmail, normalizeEmail } from "@/lib/auth/validation";
 
@@ -37,6 +37,26 @@ export default function SignupPage() {
     setIsLoading(true);
 
     try {
+      const checkResponse = await fetch("/api/auth/check-email", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email: normalized }),
+      });
+
+      const checkPayload = (await checkResponse.json()) as {
+        available?: boolean;
+        message?: string | null;
+      };
+
+      if (!checkResponse.ok || checkPayload.available === false) {
+        setError(
+          mapAuthErrorMessage(
+            checkPayload.message ?? DUPLICATE_EMAIL_MESSAGE
+          )
+        );
+        return;
+      }
+
       const response = await fetch("/api/auth/signup", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
