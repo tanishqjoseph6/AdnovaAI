@@ -6,17 +6,20 @@ import { useState } from "react";
 import { Loader2 } from "lucide-react";
 import PasswordInput from "@/components/auth/PasswordInput";
 import { mapAuthErrorMessage } from "@/lib/auth/errors";
+import { useAuthPageGuard } from "@/lib/auth/use-auth-page-guard";
 import { isValidEmail, normalizeEmail } from "@/lib/auth/validation";
 
 export default function SignupPage() {
   const router = useRouter();
+  useAuthPageGuard();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [message, setMessage] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
 
-  async function handleSignup() {
+  async function handleSignup(event: React.FormEvent) {
+    event.preventDefault();
     setError(null);
     setMessage(null);
 
@@ -51,7 +54,12 @@ export default function SignupPage() {
         payload.message ??
           "Check your email to confirm your account before signing in."
       );
-      setTimeout(() => router.push("/login"), 2500);
+
+      setTimeout(() => {
+        router.push(
+          `/verify-email?email=${encodeURIComponent(normalized)}`
+        );
+      }, 2000);
     } catch {
       setError("Unable to create account. Please try again.");
     } finally {
@@ -60,14 +68,16 @@ export default function SignupPage() {
   }
 
   return (
-    <div className="flex min-h-screen items-center justify-center bg-[#030014] px-4">
-      <div className="glass w-full max-w-md rounded-2xl border border-white/10 p-8 shadow-xl shadow-violet-500/10">
-        <h1 className="text-3xl font-bold text-white">Create account</h1>
+    <div className="flex min-h-screen items-center justify-center bg-[#030014] px-4 py-8">
+      <div className="glass w-full max-w-md rounded-2xl border border-white/10 p-6 shadow-xl shadow-violet-500/10 sm:p-8">
+        <h1 className="text-2xl font-bold text-white sm:text-3xl">
+          Create account
+        </h1>
         <p className="mt-2 text-sm text-zinc-400">
           Start with Advora AI. We&apos;ll email you a verification link.
         </p>
 
-        <div className="mt-8 space-y-4">
+        <form className="mt-8 space-y-4" onSubmit={(event) => void handleSignup(event)}>
           <input
             type="email"
             autoComplete="email"
@@ -85,20 +95,25 @@ export default function SignupPage() {
           />
 
           {error && (
-            <p role="alert" className="rounded-xl border border-red-500/25 bg-red-500/10 px-4 py-3 text-sm text-red-300">
+            <p
+              role="alert"
+              className="rounded-xl border border-red-500/25 bg-red-500/10 px-4 py-3 text-sm text-red-300"
+            >
               {error}
             </p>
           )}
 
           {message && (
-            <p role="status" className="rounded-xl border border-emerald-500/25 bg-emerald-500/10 px-4 py-3 text-sm text-emerald-300">
+            <p
+              role="status"
+              className="rounded-xl border border-emerald-500/25 bg-emerald-500/10 px-4 py-3 text-sm text-emerald-300"
+            >
               {message}
             </p>
           )}
 
           <button
-            type="button"
-            onClick={() => void handleSignup()}
+            type="submit"
             disabled={isLoading}
             className="inline-flex w-full items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-cyan-400 via-violet-500 to-fuchsia-500 px-4 py-3 text-sm font-semibold text-white transition hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-60"
           >
@@ -118,7 +133,7 @@ export default function SignupPage() {
               Sign in
             </Link>
           </p>
-        </div>
+        </form>
       </div>
     </div>
   );

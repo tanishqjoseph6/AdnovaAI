@@ -13,12 +13,14 @@ import OtpLoginPanel from "@/components/auth/OtpLoginPanel";
 import PasswordInput from "@/components/auth/PasswordInput";
 import { mapAuthErrorMessage } from "@/lib/auth/errors";
 import { RESET_SUCCESS_MESSAGE } from "@/lib/auth/password-reset";
+import { useAuthPageGuard } from "@/lib/auth/use-auth-page-guard";
 import { isValidEmail, normalizeEmail } from "@/lib/auth/validation";
 
 function LoginForm() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const { showToast } = useAuthToast();
+  useAuthPageGuard();
   const [mode, setMode] = useState<LoginMode>("password");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -41,12 +43,18 @@ function LoginForm() {
     setError(null);
   }
 
-  async function handleLogin() {
+  async function handleLogin(event?: React.FormEvent) {
+    event?.preventDefault();
     setError(null);
 
     const normalized = normalizeEmail(email);
     if (!isValidEmail(normalized)) {
       setError("Please enter a valid email address.");
+      return;
+    }
+
+    if (!password) {
+      setError("Password is required.");
       return;
     }
 
@@ -102,7 +110,7 @@ function LoginForm() {
           {mode === "otp" ? (
             <OtpLoginPanel />
           ) : (
-            <div className="space-y-4">
+            <form className="space-y-4" onSubmit={(event) => void handleLogin(event)}>
               <input
                 type="email"
                 autoComplete="email"
@@ -141,8 +149,7 @@ function LoginForm() {
               )}
 
               <button
-                type="button"
-                onClick={() => void handleLogin()}
+                type="submit"
                 disabled={isLoading}
                 className="inline-flex w-full items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-cyan-400 via-violet-500 to-fuchsia-500 px-4 py-3 text-sm font-semibold text-white transition hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-60"
               >
@@ -175,7 +182,7 @@ function LoginForm() {
                   Resend it
                 </Link>
               </p>
-            </div>
+            </form>
           )}
         </div>
       </div>

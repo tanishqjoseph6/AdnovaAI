@@ -6,6 +6,7 @@ import {
 } from "@/lib/auth/rate-limit-config";
 import {
   enforceAuthRateLimit,
+  enforceAuthRateLimits,
   type RateLimitResult,
 } from "@/lib/auth/rate-limit";
 
@@ -29,6 +30,18 @@ export async function withAuthRateLimit(
   bucketKey: string
 ): Promise<NextResponse | null> {
   const result = await enforceAuthRateLimit({ action, bucketKey });
+
+  if (!result.allowed) {
+    return rateLimitExceededResponse(result);
+  }
+
+  return null;
+}
+
+export async function withAuthRateLimits(
+  checks: Array<{ action: AuthRateLimitAction; bucketKey: string }>
+): Promise<NextResponse | null> {
+  const result = await enforceAuthRateLimits(checks);
 
   if (!result.allowed) {
     return rateLimitExceededResponse(result);

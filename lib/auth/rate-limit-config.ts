@@ -2,13 +2,17 @@ export type AuthRateLimitAction =
   | "signup"
   | "login"
   | "otp_send"
-  | "forgot_password";
+  | "otp_verify"
+  | "forgot_password"
+  | "resend_verification";
 
 export const AUTH_RATE_LIMITS = {
   signup: { maxAttempts: 5, windowSeconds: 60 * 60 },
   login: { maxAttempts: 10, windowSeconds: 60 * 60 },
   otp_send: { maxAttempts: 3, windowSeconds: 10 * 60 },
+  otp_verify: { maxAttempts: 10, windowSeconds: 15 * 60 },
   forgot_password: { maxAttempts: 3, windowSeconds: 60 * 60 },
+  resend_verification: { maxAttempts: 3, windowSeconds: 60 * 60 },
 } as const satisfies Record<
   AuthRateLimitAction,
   { maxAttempts: number; windowSeconds: number }
@@ -20,7 +24,9 @@ const ACTION_LABELS: Record<AuthRateLimitAction, string> = {
   signup: "sign-up",
   login: "sign-in",
   otp_send: "verification code",
+  otp_verify: "verification code",
   forgot_password: "password reset",
+  resend_verification: "verification email",
 };
 
 export function buildRateLimitBucketKey(

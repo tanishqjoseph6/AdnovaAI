@@ -12,6 +12,7 @@ import {
   User,
 } from "lucide-react";
 import { useUserAvatar } from "@/hooks/useUserAvatar";
+import { invalidateCreditsCache } from "@/hooks/useCredits";
 import { supabase } from "@/lib/supabase";
 
 type ProfileMenuItem = {
@@ -141,6 +142,7 @@ export default function ProfileMenu() {
     setOpen(false);
 
     try {
+      invalidateCreditsCache();
       await supabase.auth.signOut();
       router.refresh();
       router.push("/login");

@@ -117,3 +117,16 @@ export async function enforceAuthRateLimit(input: {
 }): Promise<RateLimitResult> {
   return consumeAuthRateLimit(input);
 }
+
+export async function enforceAuthRateLimits(
+  checks: Array<{ action: AuthRateLimitAction; bucketKey: string }>
+): Promise<RateLimitResult> {
+  for (const check of checks) {
+    const result = await enforceAuthRateLimit(check);
+    if (!result.allowed) {
+      return result;
+    }
+  }
+
+  return { allowed: true };
+}

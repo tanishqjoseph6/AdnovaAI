@@ -49,7 +49,8 @@ export default function ForgotPasswordModal({
     };
   }, [open, onClose]);
 
-  async function handleSubmit() {
+  async function handleSubmit(event: React.FormEvent) {
+    event.preventDefault();
     const normalized = normalizeEmail(email);
 
     if (!isValidEmail(normalized)) {
@@ -134,7 +135,10 @@ export default function ForgotPasswordModal({
               new password.
             </p>
 
-            <div className="mt-6 space-y-4">
+            <form
+              className="mt-6 space-y-4"
+              onSubmit={(event) => void handleSubmit(event)}
+            >
               <input
                 type="email"
                 autoComplete="email"
@@ -145,8 +149,7 @@ export default function ForgotPasswordModal({
               />
 
               <button
-                type="button"
-                onClick={() => void handleSubmit()}
+                type="submit"
                 disabled={isSending}
                 className="inline-flex w-full items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-cyan-400 via-violet-500 to-fuchsia-500 px-4 py-3 text-sm font-semibold text-white transition hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-60"
               >
@@ -159,7 +162,7 @@ export default function ForgotPasswordModal({
                   "Send reset link"
                 )}
               </button>
-            </div>
+            </form>
           </motion.div>
         </div>
       )}

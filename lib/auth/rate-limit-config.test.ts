@@ -14,6 +14,7 @@ describe("auth rate limit config", () => {
     assert.equal(AUTH_RATE_LIMITS.otp_send.maxAttempts, 3);
     assert.equal(AUTH_RATE_LIMITS.otp_send.windowSeconds, 600);
     assert.equal(AUTH_RATE_LIMITS.forgot_password.maxAttempts, 3);
+    assert.equal(AUTH_RATE_LIMITS.resend_verification.maxAttempts, 3);
   });
 
   it("builds normalized bucket keys", () => {

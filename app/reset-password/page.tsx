@@ -12,6 +12,7 @@ import {
   RESET_SUCCESS_MESSAGE,
   validateNewPassword,
 } from "@/lib/auth/password-reset";
+import { invalidateCreditsCache } from "@/hooks/useCredits";
 import { supabase } from "@/lib/supabase";
 
 type ResetState = "loading" | "ready" | "invalid";
@@ -37,11 +38,11 @@ function ResetPasswordForm() {
 
     async function verifyRecoverySession() {
       const {
-        data: { session },
-        error: sessionError,
-      } = await supabase.auth.getSession();
+        data: { user },
+        error: userError,
+      } = await supabase.auth.getUser();
 
-      if (sessionError || !session) {
+      if (userError || !user) {
         setState("invalid");
         setError(RESET_LINK_EXPIRED_MESSAGE);
         return;
@@ -53,7 +54,8 @@ function ResetPasswordForm() {
     void verifyRecoverySession();
   }, [searchParams]);
 
-  async function handleSubmit() {
+  async function handleSubmit(event: React.FormEvent) {
+    event.preventDefault();
     setError(null);
 
     const validation = validateNewPassword(password, confirmPassword);
@@ -83,6 +85,7 @@ function ResetPasswordForm() {
         return;
       }
 
+      invalidateCreditsCache();
       await supabase.auth.signOut();
       showToast(RESET_SUCCESS_MESSAGE, "success");
       router.push("/login?reset=success");
@@ -138,7 +141,7 @@ function ResetPasswordForm() {
         Enter a strong password for your Advora AI account.
       </p>
 
-      <div className="mt-8 space-y-4">
+      <form className="mt-8 space-y-4" onSubmit={(event) => void handleSubmit(event)}>
         <PasswordInput
           placeholder="New password (min. 8 characters)"
           autoComplete="new-password"
@@ -165,8 +168,7 @@ function ResetPasswordForm() {
         )}
 
         <button
-          type="button"
-          onClick={() => void handleSubmit()}
+          type="submit"
           disabled={isSubmitting}
           className="inline-flex w-full items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-cyan-400 via-violet-500 to-fuchsia-500 px-4 py-3 text-sm font-semibold text-white transition hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-60"
         >
@@ -185,7 +187,7 @@ function ResetPasswordForm() {
             Back to sign in
           </Link>
         </p>
-      </div>
+      </form>
     </div>
   );
 }

@@ -2,9 +2,9 @@ import { NextResponse } from "next/server";
 import { mapAuthErrorMessage } from "@/lib/auth/errors";
 import {
   buildRateLimitBucketKey,
+  getClientIp,
 } from "@/lib/auth/rate-limit-config";
-import { enforceAuthRateLimit } from "@/lib/auth/rate-limit";
-import { rateLimitExceededResponse } from "@/lib/auth/rate-limit-response";
+import { withAuthRateLimits } from "@/lib/auth/rate-limit-response";
 import { isValidEmail, normalizeEmail } from "@/lib/auth/validation";
 import { createClient } from "@/lib/supabase/server";
 
@@ -21,13 +21,20 @@ export async function POST(request: Request) {
       );
     }
 
-    const rateLimit = await enforceAuthRateLimit({
-      action: "otp_send",
-      bucketKey: buildRateLimitBucketKey("email", normalized),
-    });
+    const ip = getClientIp(request);
+    const rateLimited = await withAuthRateLimits([
+      {
+        action: "otp_send",
+        bucketKey: buildRateLimitBucketKey("email", normalized),
+      },
+      {
+        action: "otp_send",
+        bucketKey: buildRateLimitBucketKey("ip", ip),
+      },
+    ]);
 
-    if (!rateLimit.allowed) {
-      return rateLimitExceededResponse(rateLimit);
+    if (rateLimited) {
+      return rateLimited;
     }
 
     const supabase = await createClient();

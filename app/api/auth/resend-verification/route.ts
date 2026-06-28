@@ -1,5 +1,10 @@
 import { NextResponse } from "next/server";
 import { mapAuthErrorMessage } from "@/lib/auth/errors";
+import {
+  buildRateLimitBucketKey,
+  getClientIp,
+} from "@/lib/auth/rate-limit-config";
+import { withAuthRateLimits } from "@/lib/auth/rate-limit-response";
 import { isValidEmail, normalizeEmail } from "@/lib/auth/validation";
 import { createClient } from "@/lib/supabase/server";
 
@@ -14,15 +19,29 @@ export async function POST(request: Request) {
     const emailFromBody =
       typeof body?.email === "string" ? normalizeEmail(body.email) : null;
 
-    const email = user?.email
-      ? normalizeEmail(user.email)
-      : emailFromBody;
+    const email = user?.email ? normalizeEmail(user.email) : emailFromBody;
 
     if (!email || !isValidEmail(email)) {
       return NextResponse.json(
         { error: "A valid email address is required." },
         { status: 400 }
       );
+    }
+
+    const ip = getClientIp(request);
+    const rateLimited = await withAuthRateLimits([
+      {
+        action: "resend_verification",
+        bucketKey: buildRateLimitBucketKey("email", email),
+      },
+      {
+        action: "resend_verification",
+        bucketKey: buildRateLimitBucketKey("ip", ip),
+      },
+    ]);
+
+    if (rateLimited) {
+      return rateLimited;
     }
 
     const origin =

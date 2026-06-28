@@ -6,13 +6,11 @@ import { useCallback, useEffect, useState } from "react";
 import { Loader2 } from "lucide-react";
 import OtpInput from "@/components/auth/OtpInput";
 import { mapAuthErrorMessage } from "@/lib/auth/errors";
-import { isEmailVerified } from "@/lib/auth/email-verified";
 import {
   isCompleteOtp,
   OTP_RESEND_COOLDOWN_SECONDS,
 } from "@/lib/auth/otp-login";
 import { isValidEmail, normalizeEmail } from "@/lib/auth/validation";
-import { supabase } from "@/lib/supabase";
 
 type OtpStep = "email" | "verify";
 
@@ -96,19 +94,24 @@ export default function OtpLoginPanel() {
     setIsVerifying(true);
 
     try {
-      const { data, error: verifyError } = await supabase.auth.verifyOtp({
-        email,
-        token: code,
-        type: "email",
+      const response = await fetch("/api/auth/verify-otp", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email, token: code }),
       });
 
-      if (verifyError) {
-        setError(mapAuthErrorMessage(verifyError.message));
+      const payload = (await response.json()) as {
+        error?: string;
+        requiresEmailVerification?: boolean;
+      };
+
+      if (!response.ok) {
+        setError(mapAuthErrorMessage(payload.error ?? "Unable to verify code."));
         setOtp("");
         return;
       }
 
-      if (data.user && !isEmailVerified(data.user)) {
+      if (payload.requiresEmailVerification) {
         router.refresh();
         router.push("/verify-email");
         return;
@@ -244,6 +247,12 @@ export default function OtpLoginPanel() {
         New to Advora?{" "}
         <Link href="/signup" className="text-cyan-300 hover:text-cyan-200">
           Create an account
+        </Link>
+      </p>
+
+      <p className="text-center text-sm text-zinc-500">
+        <Link href="/login" className="text-cyan-300 hover:text-cyan-200">
+          Use password instead
         </Link>
       </p>
     </div>

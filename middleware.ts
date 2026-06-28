@@ -10,7 +10,7 @@ export async function middleware(request: NextRequest) {
   const isDashboard = pathname.startsWith("/dashboard");
   const isVerifyEmail = pathname === "/verify-email";
 
-  if (!user && (isDashboard || isVerifyEmail)) {
+  if (!user && isDashboard) {
     const url = request.nextUrl.clone();
     url.pathname = "/login";
     return NextResponse.redirect(url);
