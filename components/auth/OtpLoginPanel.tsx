@@ -9,7 +9,6 @@ import { mapAuthErrorMessage } from "@/lib/auth/errors";
 import { isEmailVerified } from "@/lib/auth/email-verified";
 import {
   isCompleteOtp,
-  OTP_MAX_RESEND_ATTEMPTS,
   OTP_RESEND_COOLDOWN_SECONDS,
 } from "@/lib/auth/otp-login";
 import { isValidEmail, normalizeEmail } from "@/lib/auth/validation";
@@ -26,7 +25,6 @@ export default function OtpLoginPanel() {
   const [isSending, setIsSending] = useState(false);
   const [isVerifying, setIsVerifying] = useState(false);
   const [cooldown, setCooldown] = useState(0);
-  const [resendCount, setResendCount] = useState(0);
 
   useEffect(() => {
     if (cooldown <= 0) {
@@ -44,11 +42,6 @@ export default function OtpLoginPanel() {
     async (targetEmail: string, isResend = false) => {
       setError(null);
 
-      if (isResend && resendCount >= OTP_MAX_RESEND_ATTEMPTS) {
-        setError("Too many resend attempts. Please try again later.");
-        return false;
-      }
-
       if (isResend && cooldown > 0) {
         return false;
       }
@@ -56,28 +49,22 @@ export default function OtpLoginPanel() {
       setIsSending(true);
 
       try {
-        const { error: otpError } = await supabase.auth.signInWithOtp({
-          email: targetEmail,
-          options: {
-            shouldCreateUser: false,
-          },
+        const response = await fetch("/api/auth/send-otp", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ email: targetEmail }),
         });
 
-        if (otpError) {
-          setError(mapAuthErrorMessage(otpError.message));
+        const payload = (await response.json()) as { error?: string };
+
+        if (!response.ok) {
+          setError(mapAuthErrorMessage(payload.error ?? "Unable to send code."));
           return false;
         }
 
         setStep("verify");
         setOtp("");
         setCooldown(OTP_RESEND_COOLDOWN_SECONDS);
-
-        if (isResend) {
-          setResendCount((count) => count + 1);
-        } else {
-          setResendCount(1);
-        }
-
         return true;
       } catch {
         setError("Unable to send verification code. Please try again.");
@@ -86,7 +73,7 @@ export default function OtpLoginPanel() {
         setIsSending(false);
       }
     },
-    [cooldown, resendCount]
+    [cooldown]
   );
 
   async function handleSendCode() {
@@ -184,10 +171,6 @@ export default function OtpLoginPanel() {
             <p>
               Resend code in{" "}
               <span className="font-medium text-zinc-300">{cooldown}s</span>
-            </p>
-          ) : resendCount >= OTP_MAX_RESEND_ATTEMPTS ? (
-            <p className="text-amber-300/90">
-              Resend limit reached. Try again later.
             </p>
           ) : (
             <button

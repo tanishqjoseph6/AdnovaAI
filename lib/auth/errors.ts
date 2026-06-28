@@ -28,6 +28,18 @@ const AUTH_ERROR_MAP: Record<string, string> = {
     "No account found for this email. Please sign up first.",
 };
 
+const GENERIC_AUTH_ERROR = "Something went wrong. Please try again.";
+
+function isClientSafeAuthMessage(message: string): boolean {
+  if (message.length > 280) {
+    return false;
+  }
+
+  return !/(?:pgrst|jwt|sql|exception|stack|violates|rpc|postgres|supabase|internal server)/i.test(
+    message
+  );
+}
+
 export function mapAuthErrorMessage(message: string): string {
   const trimmed = message.trim();
 
@@ -37,7 +49,15 @@ export function mapAuthErrorMessage(message: string): string {
     }
   }
 
-  return trimmed || "Something went wrong. Please try again.";
+  if (!trimmed) {
+    return GENERIC_AUTH_ERROR;
+  }
+
+  if (isClientSafeAuthMessage(trimmed)) {
+    return trimmed;
+  }
+
+  return GENERIC_AUTH_ERROR;
 }
 
 export { DUPLICATE_EMAIL_MESSAGE };

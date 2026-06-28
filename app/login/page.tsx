@@ -12,10 +12,8 @@ import LoginModeToggle, {
 import OtpLoginPanel from "@/components/auth/OtpLoginPanel";
 import PasswordInput from "@/components/auth/PasswordInput";
 import { mapAuthErrorMessage } from "@/lib/auth/errors";
-import { isEmailVerified } from "@/lib/auth/email-verified";
 import { RESET_SUCCESS_MESSAGE } from "@/lib/auth/password-reset";
 import { isValidEmail, normalizeEmail } from "@/lib/auth/validation";
-import { supabase } from "@/lib/supabase";
 
 function LoginForm() {
   const router = useRouter();
@@ -55,17 +53,23 @@ function LoginForm() {
     setIsLoading(true);
 
     try {
-      const { data, error: signInError } = await supabase.auth.signInWithPassword({
-        email: normalized,
-        password,
+      const response = await fetch("/api/auth/login", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email: normalized, password }),
       });
 
-      if (signInError) {
-        setError(mapAuthErrorMessage(signInError.message));
+      const payload = (await response.json()) as {
+        error?: string;
+        requiresEmailVerification?: boolean;
+      };
+
+      if (!response.ok) {
+        setError(mapAuthErrorMessage(payload.error ?? "Unable to sign in."));
         return;
       }
 
-      if (data.user && !isEmailVerified(data.user)) {
+      if (payload.requiresEmailVerification) {
         router.refresh();
         router.push("/verify-email");
         return;

@@ -5,9 +5,7 @@ import { AnimatePresence, motion } from "framer-motion";
 import { Loader2, X } from "lucide-react";
 import { useAuthToast } from "@/components/auth/AuthToast";
 import { mapAuthErrorMessage } from "@/lib/auth/errors";
-import { getPasswordResetRedirectUrl } from "@/lib/auth/password-reset";
 import { isValidEmail, normalizeEmail } from "@/lib/auth/validation";
-import { supabase } from "@/lib/supabase";
 
 type ForgotPasswordModalProps = {
   open: boolean;
@@ -62,18 +60,25 @@ export default function ForgotPasswordModal({
     setIsSending(true);
 
     try {
-      const origin = window.location.origin;
-      const { error } = await supabase.auth.resetPasswordForEmail(normalized, {
-        redirectTo: getPasswordResetRedirectUrl(origin),
+      const response = await fetch("/api/auth/forgot-password", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email: normalized }),
       });
 
-      if (error) {
-        showToast(mapAuthErrorMessage(error.message), "error");
+      const payload = (await response.json()) as {
+        error?: string;
+        message?: string;
+      };
+
+      if (!response.ok) {
+        showToast(mapAuthErrorMessage(payload.error ?? "Unable to send reset email."), "error");
         return;
       }
 
       showToast(
-        "If an account exists for this email, a password reset link has been sent.",
+        payload.message ??
+          "If an account exists for this email, a password reset link has been sent.",
         "success"
       );
       onClose();

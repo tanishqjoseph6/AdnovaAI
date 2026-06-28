@@ -1,6 +1,7 @@
 export const OTP_LENGTH = 6;
 export const OTP_RESEND_COOLDOWN_SECONDS = 60;
-export const OTP_MAX_RESEND_ATTEMPTS = 5;
+export const OTP_SEND_WINDOW_SECONDS = 10 * 60;
+export const OTP_MAX_SENDS_PER_WINDOW = 3;
 
 export const OTP_EXPIRED_MESSAGE =
   "This code has expired. Please request a new one.";

@@ -33,6 +33,19 @@ describe("auth errors", () => {
       DUPLICATE_EMAIL_MESSAGE
     );
   });
+
+  it("hides internal error details", () => {
+    assert.equal(
+      mapAuthErrorMessage("PGRST116: JWT expired in rpc call"),
+      "Something went wrong. Please try again."
+    );
+  });
+
+  it("preserves client-safe callback messages", () => {
+    const message =
+      "Email verification failed. Please try again or request a new link.";
+    assert.equal(mapAuthErrorMessage(message), message);
+  });
 });
 
 describe("password reset", () => {
