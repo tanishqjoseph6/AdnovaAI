@@ -1,3 +1,9 @@
+export const LOGIN_OTP_NO_ACCOUNT_MESSAGE =
+  "No account found for this email. Please sign up first.";
+
+export const LOGIN_OTP_UNVERIFIED_MESSAGE =
+  "Please verify your email before signing in. Check your inbox or resend the verification email.";
+
 const DUPLICATE_EMAIL_MESSAGE =
   "An account already exists with this email. Please log in.";
 
@@ -26,7 +32,9 @@ const AUTH_ERROR_MAP: Record<string, string> = {
   "token has expired":
     "This code has expired. Please request a new one.",
   "signups not allowed":
-    "No account found for this email. Please sign up first.",
+    LOGIN_OTP_NO_ACCOUNT_MESSAGE,
+  "otp disabled":
+    LOGIN_OTP_NO_ACCOUNT_MESSAGE,
   "duplicate_email":
     "An account already exists with this email. Please log in.",
 };

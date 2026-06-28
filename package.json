@@ -15,7 +15,8 @@
     "test:auth-validation": "node --import tsx --test lib/auth/validation.test.ts",
     "test:auth-rate-limit": "node --import tsx --test lib/auth/rate-limit-config.test.ts",
     "test:auth-safe-redirect": "node --import tsx --test lib/auth/safe-redirect.test.ts",
-    "test:account-eligibility": "node --import tsx --test lib/auth/account-eligibility.test.ts"
+    "test:account-eligibility": "node --import tsx --test lib/auth/account-eligibility.test.ts",
+    "test:login-otp": "node --import tsx --test lib/auth/login-otp.test.ts"
   },
   "dependencies": {
     "@google/genai": "^0.12.0",

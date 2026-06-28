@@ -1,12 +1,14 @@
 import { NextResponse } from "next/server";
-import { mapAuthErrorMessage } from "@/lib/auth/errors";
+import {
+  checkLoginOtpEligibility,
+  sendLoginOtpEmail,
+} from "@/lib/auth/login-otp";
 import {
   buildRateLimitBucketKey,
   getClientIp,
 } from "@/lib/auth/rate-limit-config";
 import { withAuthRateLimits } from "@/lib/auth/rate-limit-response";
 import { isValidEmail, normalizeEmail } from "@/lib/auth/validation";
-import { createClient } from "@/lib/supabase/server";
 
 export async function POST(request: Request) {
   try {
@@ -37,29 +39,27 @@ export async function POST(request: Request) {
       return rateLimited;
     }
 
-    const supabase = await createClient();
-    const { error } = await supabase.auth.signInWithOtp({
-      email: normalized,
-      options: {
-        shouldCreateUser: false,
-      },
-    });
-
-    if (error) {
+    const eligibility = await checkLoginOtpEligibility(normalized);
+    if (!eligibility.allowed) {
       return NextResponse.json(
-        { error: mapAuthErrorMessage(error.message) },
-        { status: 400 }
+        { error: eligibility.message },
+        { status: eligibility.status }
       );
+    }
+
+    const result = await sendLoginOtpEmail(normalized);
+    if (!result.ok) {
+      return NextResponse.json({ error: result.error }, { status: result.status });
     }
 
     return NextResponse.json({
       success: true,
-      message: "Verification code sent. Check your inbox.",
+      message: "Login code sent. Check your inbox.",
     });
   } catch (error) {
     console.error("Send OTP error:", error);
     return NextResponse.json(
-      { error: "Unable to send verification code. Please try again." },
+      { error: "Unable to send login code. Please try again." },
       { status: 500 }
     );
   }

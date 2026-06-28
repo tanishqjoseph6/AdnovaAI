@@ -48,6 +48,7 @@ export async function POST(request: Request) {
     }
 
     const supabase = await createClient();
+    // Login OTP only — signup uses signUp(), password reset uses resetPasswordForEmail().
     const { data, error } = await supabase.auth.verifyOtp({
       email: normalized,
       token,

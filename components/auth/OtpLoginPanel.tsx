@@ -5,7 +5,7 @@ import { useRouter } from "next/navigation";
 import { useCallback, useEffect, useState } from "react";
 import { Loader2 } from "lucide-react";
 import OtpInput from "@/components/auth/OtpInput";
-import { mapAuthErrorMessage } from "@/lib/auth/errors";
+import { mapAuthErrorMessage, LOGIN_OTP_UNVERIFIED_MESSAGE } from "@/lib/auth/errors";
 import {
   isCompleteOtp,
   OTP_RESEND_COOLDOWN_SECONDS,
@@ -56,7 +56,10 @@ export default function OtpLoginPanel() {
         const payload = (await response.json()) as { error?: string };
 
         if (!response.ok) {
-          setError(mapAuthErrorMessage(payload.error ?? "Unable to send code."));
+          const message = mapAuthErrorMessage(
+            payload.error ?? "Unable to send code."
+          );
+          setError(message);
           return false;
         }
 
@@ -206,7 +209,7 @@ export default function OtpLoginPanel() {
   return (
     <div className="space-y-4">
       <p className="text-sm text-zinc-400">
-        We&apos;ll email you a secure 6-digit code. No password needed.
+        We&apos;ll email a 6-digit login code to your verified account.
       </p>
 
       <input
@@ -219,12 +222,22 @@ export default function OtpLoginPanel() {
       />
 
       {error && (
-        <p
+        <div
           role="alert"
           className="rounded-xl border border-red-500/25 bg-red-500/10 px-4 py-3 text-sm text-red-300"
         >
-          {error}
-        </p>
+          <p>{error}</p>
+          {error === LOGIN_OTP_UNVERIFIED_MESSAGE && (
+            <p className="mt-2">
+              <Link
+                href={`/verify-email?email=${encodeURIComponent(normalizeEmail(email))}`}
+                className="font-medium text-cyan-300 hover:text-cyan-200"
+              >
+                Resend verification email
+              </Link>
+            </p>
+          )}
+        </div>
       )}
 
       <button
@@ -239,7 +252,7 @@ export default function OtpLoginPanel() {
             Sending code…
           </>
         ) : (
-          "Send verification code"
+          "Send login code"
         )}
       </button>
 
