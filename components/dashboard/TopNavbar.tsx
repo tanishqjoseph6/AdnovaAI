@@ -3,7 +3,7 @@
 import Link from "next/link";
 import CreditBadge from "@/components/credits/CreditBadge";
 import NotificationBell from "@/components/notifications/NotificationBell";
-import { useUserAvatar } from "@/hooks/useUserAvatar";
+import ProfileMenu from "@/components/dashboard/ProfileMenu";
 
 type TopNavbarProps = {
   title: string;
@@ -20,8 +20,6 @@ export default function TopNavbar({
   sidebarOpen = false,
   onSidebarClose,
 }: TopNavbarProps) {
-  const { initials, displayName } = useUserAvatar();
-
   return (
     <header className="sticky top-0 z-30 border-b border-white/[0.06] bg-[#030014]/80 backdrop-blur-xl">
       <div className="flex min-h-16 flex-wrap items-center justify-between gap-3 px-4 py-3 pt-[max(0.75rem,env(safe-area-inset-top))] sm:gap-4 sm:px-6 sm:py-0 sm:pt-[max(0px,env(safe-area-inset-top))] lg:px-8">
@@ -85,20 +83,7 @@ export default function TopNavbar({
             <span className="sm:hidden">New</span>
           </Link>
 
-          <button
-            type="button"
-            className="flex shrink-0 items-center gap-2 rounded-xl border border-white/10 bg-white/[0.03] py-1.5 pl-1.5 pr-2 sm:pr-3"
-            aria-label="Account menu"
-          >
-            <span className="flex h-7 w-7 items-center justify-center rounded-lg bg-gradient-to-br from-violet-500 to-fuchsia-500 text-xs font-semibold text-white">
-              {initials}
-            </span>
-            {displayName && (
-              <span className="hidden text-sm font-medium text-zinc-300 md:inline">
-                {displayName}
-              </span>
-            )}
-          </button>
+          <ProfileMenu />
         </div>
       </div>
     </header>
