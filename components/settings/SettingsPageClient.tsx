@@ -1,12 +1,15 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { motion } from "framer-motion";
 import { Loader2 } from "lucide-react";
+import PasswordInput from "@/components/auth/PasswordInput";
 import SettingsHeader from "@/components/settings/SettingsHeader";
 import SettingsSectionCard from "@/components/settings/SettingsSectionCard";
 import SettingsToggle from "@/components/settings/SettingsToggle";
+import { mapAuthErrorMessage } from "@/lib/auth/errors";
+import { validateNewPassword } from "@/lib/auth/password-reset";
 import {
   getAvatarInitials,
   settingsInputClassName,
@@ -14,6 +17,7 @@ import {
   settingsSelectClassName,
 } from "@/lib/settings/display";
 import { validateProfileSettings } from "@/lib/settings/profile";
+import { supabase } from "@/lib/supabase";
 
 type SettingsPageClientProps = {
   defaultFullName: string;
@@ -33,6 +37,9 @@ const TONE_OPTIONS = [
 const LANGUAGE_OPTIONS = ["English", "Hindi", "Spanish", "French", "German"];
 
 const QUALITY_OPTIONS = ["High quality", "Balanced", "Fast"];
+
+const passwordInputClassName =
+  "w-full rounded-xl border border-white/10 bg-white/[0.04] px-4 py-3 pr-11 text-sm text-white placeholder:text-zinc-500 outline-none transition focus:border-violet-500/50 focus:ring-2 focus:ring-violet-500/20 disabled:cursor-not-allowed disabled:opacity-60";
 
 export default function SettingsPageClient({
   defaultFullName,
@@ -62,6 +69,99 @@ export default function SettingsPageClient({
   const [tone, setTone] = useState(TONE_OPTIONS[0]);
   const [creativeLevel, setCreativeLevel] = useState(65);
   const [quality, setQuality] = useState(QUALITY_OPTIONS[0]);
+  const [passwordModalOpen, setPasswordModalOpen] = useState(false);
+  const [currentPassword, setCurrentPassword] = useState("");
+  const [newPassword, setNewPassword] = useState("");
+  const [confirmNewPassword, setConfirmNewPassword] = useState("");
+  const [passwordError, setPasswordError] = useState<string | null>(null);
+  const [isPasswordSaving, setIsPasswordSaving] = useState(false);
+
+  useEffect(() => {
+    if (!passwordModalOpen) {
+      return;
+    }
+
+    const previousOverflow = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+
+    function onKeyDown(event: KeyboardEvent) {
+      if (event.key === "Escape" && !isPasswordSaving) {
+        closePasswordModal();
+      }
+    }
+
+    window.addEventListener("keydown", onKeyDown);
+    return () => {
+      document.body.style.overflow = previousOverflow;
+      window.removeEventListener("keydown", onKeyDown);
+    };
+  }, [passwordModalOpen, isPasswordSaving]);
+
+  function closePasswordModal(force = false) {
+    if (isPasswordSaving && !force) {
+      return;
+    }
+
+    setPasswordModalOpen(false);
+    setCurrentPassword("");
+    setNewPassword("");
+    setConfirmNewPassword("");
+    setPasswordError(null);
+  }
+
+  async function handlePasswordChange(event: React.FormEvent) {
+    event.preventDefault();
+    setPasswordError(null);
+
+    if (!currentPassword) {
+      setPasswordError("Enter your current password.");
+      return;
+    }
+
+    const validation = validateNewPassword(newPassword, confirmNewPassword);
+    if (!validation.ok) {
+      setPasswordError(validation.error);
+      return;
+    }
+
+    if (currentPassword === newPassword) {
+      setPasswordError("Choose a new password that is different from your current password.");
+      return;
+    }
+
+    setIsPasswordSaving(true);
+
+    try {
+      const { error: verifyError } = await supabase.auth.signInWithPassword({
+        email: defaultEmail,
+        password: currentPassword,
+      });
+
+      if (verifyError) {
+        setPasswordError("Current password is incorrect. Please try again.");
+        return;
+      }
+
+      const { error: updateError } = await supabase.auth.updateUser({
+        password: newPassword,
+      });
+
+      if (updateError) {
+        setPasswordError(mapAuthErrorMessage(updateError.message));
+        return;
+      }
+
+      closePasswordModal(true);
+      setSaveStatus({
+        type: "success",
+        message: "Password updated.",
+      });
+    } catch {
+      setPasswordError("Unable to update password. Please try again.");
+    } finally {
+      setIsPasswordSaving(false);
+    }
+  }
 
   async function handleSave(event: React.FormEvent) {
     event.preventDefault();
@@ -149,6 +249,153 @@ export default function SettingsPageClient({
           role={saveStatus.type === "success" ? "status" : "alert"}
         >
           {saveStatus.message}
+        </div>
+      )}
+      {passwordModalOpen && (
+        <div
+          className="fixed inset-0 z-[80] flex items-end justify-center p-3 sm:items-center sm:p-4"
+          role="dialog"
+          aria-modal="true"
+          aria-labelledby="change-password-title"
+        >
+          <button
+            type="button"
+            aria-label="Close change password dialog"
+            className="absolute inset-0 bg-black/70 backdrop-blur-sm"
+            onClick={() => closePasswordModal()}
+            disabled={isPasswordSaving}
+          />
+          <motion.form
+            initial={{ opacity: 0, y: 24, scale: 0.98 }}
+            animate={{ opacity: 1, y: 0, scale: 1 }}
+            transition={{ duration: 0.2 }}
+            onSubmit={(event) => void handlePasswordChange(event)}
+            className="relative max-h-[calc(100dvh-1.5rem)] w-full max-w-md overflow-y-auto rounded-2xl border border-white/10 bg-[#08031d]/95 p-5 shadow-2xl shadow-black/40 backdrop-blur-xl sm:p-6"
+          >
+            <div className="mb-5 flex items-start justify-between gap-4">
+              <div>
+                <h3
+                  id="change-password-title"
+                  className="text-lg font-semibold tracking-tight text-white"
+                >
+                  Change password
+                </h3>
+                <p className="mt-1 text-sm leading-relaxed text-zinc-500">
+                  Confirm your current password, then choose a new one.
+                </p>
+              </div>
+              <button
+                type="button"
+                onClick={() => closePasswordModal()}
+                disabled={isPasswordSaving}
+                className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg border border-white/10 text-zinc-400 transition hover:bg-white/5 hover:text-white disabled:cursor-not-allowed disabled:opacity-50"
+                aria-label="Close"
+              >
+                <svg
+                  className="h-5 w-5"
+                  fill="none"
+                  viewBox="0 0 24 24"
+                  stroke="currentColor"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M6 18L18 6M6 6l12 12"
+                  />
+                </svg>
+              </button>
+            </div>
+
+            <div className="space-y-4">
+              <div>
+                <label
+                  htmlFor="current-password"
+                  className={settingsLabelClassName}
+                >
+                  Current password
+                </label>
+                <PasswordInput
+                  id="current-password"
+                  value={currentPassword}
+                  onChange={(event) => setCurrentPassword(event.target.value)}
+                  placeholder="Current password"
+                  autoComplete="current-password"
+                  disabled={isPasswordSaving}
+                  className={passwordInputClassName}
+                />
+              </div>
+
+              <div>
+                <label htmlFor="new-password" className={settingsLabelClassName}>
+                  New password
+                </label>
+                <PasswordInput
+                  id="new-password"
+                  value={newPassword}
+                  onChange={(event) => setNewPassword(event.target.value)}
+                  placeholder="New password (min. 8 characters)"
+                  autoComplete="new-password"
+                  disabled={isPasswordSaving}
+                  className={passwordInputClassName}
+                />
+              </div>
+
+              <div>
+                <label
+                  htmlFor="confirm-new-password"
+                  className={settingsLabelClassName}
+                >
+                  Confirm password
+                </label>
+                <PasswordInput
+                  id="confirm-new-password"
+                  value={confirmNewPassword}
+                  onChange={(event) =>
+                    setConfirmNewPassword(event.target.value)
+                  }
+                  placeholder="Confirm new password"
+                  autoComplete="new-password"
+                  disabled={isPasswordSaving}
+                  className={passwordInputClassName}
+                />
+              </div>
+
+              {passwordError && (
+                <p
+                  role="alert"
+                  className="rounded-xl border border-red-500/25 bg-red-500/10 px-4 py-3 text-sm text-red-300"
+                >
+                  {passwordError}
+                </p>
+              )}
+            </div>
+
+            <div className="mt-6 flex flex-col-reverse gap-3 sm:flex-row sm:justify-end">
+              <button
+                type="button"
+                onClick={() => closePasswordModal()}
+                disabled={isPasswordSaving}
+                className="inline-flex justify-center rounded-xl border border-white/10 bg-white/[0.03] px-5 py-2.5 text-sm font-semibold text-zinc-300 transition hover:border-white/20 hover:bg-white/[0.06] disabled:cursor-not-allowed disabled:opacity-60"
+              >
+                Cancel
+              </button>
+              <button
+                type="submit"
+                disabled={isPasswordSaving}
+                className="inline-flex items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-cyan-400 via-violet-500 to-fuchsia-500 px-5 py-2.5 text-sm font-semibold text-white shadow-lg shadow-violet-500/20 transition hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-60"
+              >
+                {isPasswordSaving ? (
+                  <>
+                    <Loader2 className="h-4 w-4 animate-spin" aria-hidden />
+                    Saving…
+                  </>
+                ) : (
+                  "Save password"
+                )}
+              </button>
+            </div>
+          </motion.form>
         </div>
       )}
 
@@ -477,6 +724,10 @@ export default function SettingsPageClient({
           <div className="space-y-3">
             <button
               type="button"
+              onClick={() => {
+                setSaveStatus(null);
+                setPasswordModalOpen(true);
+              }}
               className="flex w-full items-center justify-between rounded-xl border border-white/10 bg-white/[0.03] px-4 py-3.5 text-left text-sm font-medium text-zinc-200 transition hover:border-white/20 hover:bg-white/[0.06]"
             >
               Change password
