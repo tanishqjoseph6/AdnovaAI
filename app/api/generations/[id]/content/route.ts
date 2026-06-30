@@ -56,12 +56,12 @@ export async function PATCH(request: Request, { params }: Params) {
     }
 
     const ownerKeys = [authResult.user.email ?? "", authResult.user.id];
-    const { data: generation, error: fetchError } = await supabase
+    const { data: generations, error: fetchError } = await supabase
       .from("generations")
       .select("*")
       .eq("id", id)
       .in("user_email", ownerKeys)
-      .maybeSingle();
+      .limit(2);
 
     if (fetchError) {
       console.error("Generation content fetch failed:", fetchError.message);
@@ -71,10 +71,21 @@ export async function PATCH(request: Request, { params }: Params) {
       );
     }
 
-    if (!generation) {
+    if (!generations?.length) {
       return NextResponse.json({ error: "Generation not found." }, { status: 404 });
     }
 
+    if (generations.length !== 1) {
+      console.error(
+        `Generation content fetch returned ${generations.length} rows for id ${id}.`
+      );
+      return NextResponse.json(
+        { error: "Unable to safely edit this generation." },
+        { status: 409 }
+      );
+    }
+
+    const generation = generations[0];
     const current = generationContentFromRow(generation);
     let next = current;
 
@@ -101,13 +112,12 @@ export async function PATCH(request: Request, { params }: Params) {
       next = restoreOriginalContentItem(current, body.kind, index);
     }
 
-    const { data: updated, error: updateError } = await supabase
+    const { data: updatedRows, error: updateError } = await supabase
       .from("generations")
       .update(contentToGenerationUpdate(next))
       .eq("id", id)
       .in("user_email", ownerKeys)
-      .select("*")
-      .single();
+      .select("*");
 
     if (updateError) {
       console.error("Generation content update failed:", updateError.message);
@@ -117,9 +127,27 @@ export async function PATCH(request: Request, { params }: Params) {
       );
     }
 
+    if (!updatedRows?.length) {
+      console.error(`Generation content update returned no rows for id ${id}.`);
+      return NextResponse.json(
+        { error: "Generation not found." },
+        { status: 404 }
+      );
+    }
+
+    if (updatedRows.length !== 1) {
+      console.error(
+        `Generation content update returned ${updatedRows.length} rows for id ${id}.`
+      );
+      return NextResponse.json(
+        { error: "Unable to safely save this edit." },
+        { status: 409 }
+      );
+    }
+
     return NextResponse.json({
       success: true,
-      content: generationContentFromRow(updated),
+      content: generationContentFromRow(updatedRows[0]),
     });
   } catch (error) {
     console.error("Generation content edit error:", error);
