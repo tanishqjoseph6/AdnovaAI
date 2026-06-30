@@ -115,6 +115,10 @@ export async function POST(req: Request) {
         captions,
         ctas,
         ugc_script: ugcScript,
+        original_hooks: hooks,
+        original_captions: captions,
+        original_ctas: ctas,
+        original_ugc_script: ugcScript,
       })
       .select("id, created_at")
       .single();
@@ -132,6 +136,11 @@ export async function POST(req: Request) {
       unlimited: userCredits.unlimited,
       generationId: generationRow?.id,
       generatedAt: generationRow?.created_at ?? new Date().toISOString(),
+      originalHooks: hooks,
+      originalCaptions: captions,
+      originalCtas: ctas,
+      originalUgcScript: ugcScript,
+      savedContentItems: [],
     });
   } catch (error) {
     console.error("OpenAI Error:", error);

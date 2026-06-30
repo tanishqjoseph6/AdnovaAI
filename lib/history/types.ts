@@ -10,6 +10,11 @@ export type GenerationRecord = {
   captions: string[] | null;
   ctas: string[] | null;
   ugc_script: string | null;
+  original_hooks?: string[] | null;
+  original_captions?: string[] | null;
+  original_ctas?: string[] | null;
+  original_ugc_script?: string | null;
+  saved_content_items?: string[] | null;
   user_email?: string | null;
 };
 

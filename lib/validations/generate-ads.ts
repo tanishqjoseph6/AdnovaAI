@@ -17,6 +17,11 @@ export const generateAdsResponseSchema = z.object({
   unlimited: z.boolean().optional(),
   generationId: z.string().optional(),
   generatedAt: z.string().optional(),
+  originalHooks: z.array(z.string()).optional(),
+  originalCaptions: z.array(z.string()).optional(),
+  originalCtas: z.array(z.string()).optional(),
+  originalUgcScript: z.string().optional(),
+  savedContentItems: z.array(z.string()).optional(),
 });
 
 export type GenerateAdsRequest = z.infer<typeof generateAdsRequestSchema>;

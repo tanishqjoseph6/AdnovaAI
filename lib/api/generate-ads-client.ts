@@ -21,6 +21,11 @@ type RawGenerateAdsPayload = {
   unlimited?: boolean;
   generationId?: string;
   generatedAt?: string;
+  originalHooks?: string[];
+  originalCaptions?: string[];
+  originalCtas?: string[];
+  originalUgcScript?: string;
+  savedContentItems?: string[];
 };
 
 function normalizeGenerateAdsResponse(
@@ -35,6 +40,13 @@ function normalizeGenerateAdsResponse(
     unlimited: payload.unlimited,
     generationId: payload.generationId,
     generatedAt: payload.generatedAt,
+    originalHooks: payload.originalHooks ?? payload.hooks ?? payload.ad_hooks ?? [],
+    originalCaptions:
+      payload.originalCaptions ?? payload.captions ?? payload.ad_captions ?? [],
+    originalCtas: payload.originalCtas ?? payload.ctas ?? [],
+    originalUgcScript:
+      payload.originalUgcScript ?? payload.ugcScript ?? payload.ugc_script ?? "",
+    savedContentItems: payload.savedContentItems ?? [],
   };
 }
 
