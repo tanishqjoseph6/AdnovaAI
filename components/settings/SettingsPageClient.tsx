@@ -109,23 +109,29 @@ export default function SettingsPageClient({
     setPasswordError(null);
   }
 
+  function showPasswordError(message: string) {
+    setPasswordError(message);
+    setSaveStatus({ type: "error", message });
+  }
+
   async function handlePasswordChange(event: React.FormEvent) {
     event.preventDefault();
     setPasswordError(null);
+    setSaveStatus(null);
 
     if (!currentPassword) {
-      setPasswordError("Enter your current password.");
+      showPasswordError("Enter your current password.");
       return;
     }
 
     const validation = validateNewPassword(newPassword, confirmNewPassword);
     if (!validation.ok) {
-      setPasswordError(validation.error);
+      showPasswordError(validation.error);
       return;
     }
 
     if (currentPassword === newPassword) {
-      setPasswordError("Choose a new password that is different from your current password.");
+      showPasswordError("Choose a new password that is different from your current password.");
       return;
     }
 
@@ -138,7 +144,7 @@ export default function SettingsPageClient({
       });
 
       if (verifyError) {
-        setPasswordError("Current password is incorrect. Please try again.");
+        showPasswordError("Current password is incorrect. Please try again.");
         return;
       }
 
@@ -147,7 +153,7 @@ export default function SettingsPageClient({
       });
 
       if (updateError) {
-        setPasswordError(mapAuthErrorMessage(updateError.message));
+        showPasswordError(mapAuthErrorMessage(updateError.message));
         return;
       }
 
@@ -157,7 +163,7 @@ export default function SettingsPageClient({
         message: "Password updated.",
       });
     } catch {
-      setPasswordError("Unable to update password. Please try again.");
+      showPasswordError("Unable to update password. Please try again.");
     } finally {
       setIsPasswordSaving(false);
     }
