@@ -9,6 +9,7 @@ import {
   updateContentItem,
 } from "@/lib/content-editor/generation-content";
 import { isContentKind } from "@/lib/content-editor/types";
+import { createAdminClient } from "@/lib/supabase/admin";
 import { createClient } from "@/lib/supabase/server";
 
 type Params = {
@@ -16,6 +17,12 @@ type Params = {
 };
 
 type ContentUpdateAction = "update" | "delete" | "save" | "restore";
+
+function hasAdminCredentials(): boolean {
+  return Boolean(
+    process.env.NEXT_PUBLIC_SUPABASE_URL && process.env.SUPABASE_SERVICE_ROLE_KEY
+  );
+}
 
 export async function PATCH(request: Request, { params }: Params) {
   try {
@@ -56,7 +63,8 @@ export async function PATCH(request: Request, { params }: Params) {
     }
 
     const ownerKeys = [authResult.user.email ?? "", authResult.user.id];
-    const { data: generations, error: fetchError } = await supabase
+    const db = hasAdminCredentials() ? createAdminClient() : supabase;
+    const { data: generations, error: fetchError } = await db
       .from("generations")
       .select("*")
       .eq("id", id)
@@ -112,7 +120,7 @@ export async function PATCH(request: Request, { params }: Params) {
       next = restoreOriginalContentItem(current, body.kind, index);
     }
 
-    const { data: updatedRows, error: updateError } = await supabase
+    const { data: updatedRows, error: updateError } = await db
       .from("generations")
       .update(contentToGenerationUpdate(next))
       .eq("id", id)
