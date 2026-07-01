@@ -362,13 +362,25 @@ export default function BrandKitPageClient({
               {brandKit.usp ||
                 "Your USP will guide every generated hook, caption, CTA, and UGC script."}
             </p>
-            <button
-              type="button"
-              className="mt-4 rounded-xl px-4 py-2 text-sm font-semibold text-white"
-              style={{ backgroundColor: brandKit.ctaColor }}
-            >
-              {brandKit.ctaStyle} CTA preview
-            </button>
+            <div className="mt-4 inline-flex flex-col items-start gap-2">
+              <div className="flex flex-wrap items-center gap-2">
+                <button
+                  type="button"
+                  disabled
+                  aria-disabled="true"
+                  className="cursor-not-allowed rounded-xl px-4 py-2 text-sm font-semibold text-white opacity-80"
+                  style={{ backgroundColor: brandKit.ctaColor }}
+                >
+                  Coming Soon 🚀
+                </button>
+                <span className="rounded-full border border-cyan-400/25 bg-cyan-400/10 px-2.5 py-1 text-[11px] font-semibold uppercase tracking-[0.16em] text-cyan-200">
+                  Phase 3
+                </span>
+              </div>
+              <p className="text-xs leading-relaxed text-zinc-500">
+                Live CTA preview will be available in the next update.
+              </p>
+            </div>
           </div>
         </div>
       </motion.section>
