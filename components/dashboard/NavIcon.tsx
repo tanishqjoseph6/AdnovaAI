@@ -3,6 +3,7 @@ type IconName =
   | "generate"
   | "brand"
   | "referrals"
+  | "scheduler"
   | "landing"
   | "competitor"
   | "history"
@@ -62,6 +63,16 @@ export default function NavIcon({
             strokeLinecap="round"
             strokeLinejoin="round"
             d="M18 18.72a8.956 8.956 0 01-12 0m12 0a8.956 8.956 0 00-12 0m12 0V21m-12-2.28V21m12-2.28a3 3 0 10-3.75-4.63M6 18.72a3 3 0 113.75-4.63m0 0A4.48 4.48 0 0112 13.5c.83 0 1.607.224 2.25.59m-4.5 0a3 3 0 014.5 0M15 7.5a3 3 0 11-6 0 3 3 0 016 0z"
+          />
+        </svg>
+      );
+    case "scheduler":
+      return (
+        <svg {...props}>
+          <path
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            d="M6.75 3v2.25M17.25 3v2.25M3.75 8.25h16.5M5.25 5.25h13.5A1.5 1.5 0 0120.25 6.75v11.5a1.5 1.5 0 01-1.5 1.5H5.25a1.5 1.5 0 01-1.5-1.5V6.75a1.5 1.5 0 011.5-1.5zm3 6.75h2.25m3 0h2.25m-7.5 3.75h2.25m3 0h2.25"
           />
         </svg>
       );
