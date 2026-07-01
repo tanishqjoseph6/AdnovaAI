@@ -1,5 +1,9 @@
 import { DUPLICATE_EMAIL_MESSAGE } from "@/lib/auth/errors";
 import { checkSignupEligibility } from "@/lib/auth/account-eligibility";
+import {
+  tryCreateReferralCode,
+  tryRecordReferralSignup,
+} from "@/lib/referrals/server";
 import { normalizeEmail, validateSignupInput } from "@/lib/auth/validation";
 import { createClient } from "@/lib/supabase/server";
 
@@ -10,7 +14,8 @@ export type SignupResult =
 export async function signUpWithEmailVerification(
   email: string,
   password: string,
-  emailRedirectTo: string
+  emailRedirectTo: string,
+  referralCode?: string | null
 ): Promise<SignupResult> {
   const validation = validateSignupInput(email, password);
   if (!validation.ok) {
@@ -65,6 +70,21 @@ export async function signUpWithEmailVerification(
 
   if (data.session) {
     await supabase.auth.signOut();
+  }
+
+  if (data.user?.id) {
+    await tryCreateReferralCode({
+      userId: data.user.id,
+      email: normalizedEmail,
+    });
+
+    if (referralCode) {
+      await tryRecordReferralSignup({
+        referredUserId: data.user.id,
+        referredEmail: normalizedEmail,
+        referralCode,
+      });
+    }
   }
 
   return { ok: true, requiresVerification: true };

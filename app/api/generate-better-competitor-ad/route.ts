@@ -16,6 +16,7 @@ import {
   deductUserCredit,
   getUserCreditsForUser,
 } from "@/lib/credits/server";
+import { completeReferralAfterFirstGeneration } from "@/lib/referrals/server";
 import { createClient } from "@/lib/supabase/server";
 
 const openai = new OpenAI({
@@ -124,6 +125,14 @@ export async function POST(req: Request) {
 
     if (generationError) {
       console.error("generations insert error:", generationError);
+    } else {
+      try {
+        await completeReferralAfterFirstGeneration({
+          referredUserId: user.id,
+        });
+      } catch (referralError) {
+        console.error("Referral reward processing failed:", referralError);
+      }
     }
 
     if (analysisId) {

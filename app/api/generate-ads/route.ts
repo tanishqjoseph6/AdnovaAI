@@ -15,6 +15,7 @@ import {
   formatProductAnalysisForPrompt,
   normalizeProductAnalysis,
 } from "@/lib/product-analysis/types";
+import { completeReferralAfterFirstGeneration } from "@/lib/referrals/server";
 import { createClient } from "@/lib/supabase/server";
 import OpenAI from "openai";
 
@@ -125,6 +126,14 @@ export async function POST(req: Request) {
 
     if (insertError) {
       console.error("Supabase insert error:", insertError);
+    } else {
+      try {
+        await completeReferralAfterFirstGeneration({
+          referredUserId: user.id,
+        });
+      } catch (referralError) {
+        console.error("Referral reward processing failed:", referralError);
+      }
     }
 
     return NextResponse.json({

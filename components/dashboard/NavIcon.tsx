@@ -2,6 +2,7 @@ type IconName =
   | "dashboard"
   | "generate"
   | "brand"
+  | "referrals"
   | "landing"
   | "competitor"
   | "history"
@@ -51,6 +52,16 @@ export default function NavIcon({
             strokeLinecap="round"
             strokeLinejoin="round"
             d="M9.53 16.122a3 3 0 00-5.78 1.128 2.25 2.25 0 01-2.4 2.245 4.5 4.5 0 008.4-2.245c0-.399-.078-.78-.22-1.128zm0 0a15.998 15.998 0 003.388-1.62m-5.043-.025a15.994 15.994 0 011.622-3.395m3.42 3.42a15.995 15.995 0 004.764-4.648l3.876-5.814a1.5 1.5 0 00-2.4-1.813L15.376 5.39a15.996 15.996 0 00-4.648 4.763m3.42 3.42a6.776 6.776 0 00-3.42-3.42"
+          />
+        </svg>
+      );
+    case "referrals":
+      return (
+        <svg {...props}>
+          <path
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            d="M18 18.72a8.956 8.956 0 01-12 0m12 0a8.956 8.956 0 00-12 0m12 0V21m-12-2.28V21m12-2.28a3 3 0 10-3.75-4.63M6 18.72a3 3 0 113.75-4.63m0 0A4.48 4.48 0 0112 13.5c.83 0 1.607.224 2.25.59m-4.5 0a3 3 0 014.5 0M15 7.5a3 3 0 11-6 0 3 3 0 016 0z"
           />
         </svg>
       );

@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Loader2 } from "lucide-react";
 import PasswordInput from "@/components/auth/PasswordInput";
 import { mapAuthErrorMessage, DUPLICATE_EMAIL_MESSAGE } from "@/lib/auth/errors";
@@ -17,6 +17,11 @@ export default function SignupPage() {
   const [error, setError] = useState<string | null>(null);
   const [message, setMessage] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
+  const [referralCode, setReferralCode] = useState("");
+
+  useEffect(() => {
+    setReferralCode(new URLSearchParams(window.location.search).get("ref") ?? "");
+  }, []);
 
   async function handleSignup(event: React.FormEvent) {
     event.preventDefault();
@@ -60,7 +65,11 @@ export default function SignupPage() {
       const response = await fetch("/api/auth/signup", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ email: normalized, password }),
+        body: JSON.stringify({
+          email: normalized,
+          password,
+          referralCode: referralCode || undefined,
+        }),
       });
 
       const payload = await response.json();
@@ -96,6 +105,11 @@ export default function SignupPage() {
         <p className="mt-2 text-sm text-zinc-400">
           Start with Advora AI. We&apos;ll email you a verification link.
         </p>
+        {referralCode && (
+          <p className="mt-3 rounded-xl border border-cyan-400/20 bg-cyan-400/10 px-3 py-2 text-sm text-cyan-200">
+            Referral applied: {referralCode}
+          </p>
+        )}
 
         <form className="mt-8 space-y-4" onSubmit={(event) => void handleSignup(event)}>
           <input

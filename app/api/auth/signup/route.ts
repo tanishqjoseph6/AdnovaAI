@@ -7,6 +7,9 @@ export async function POST(request: Request) {
     const body = await request.json();
     const email = typeof body?.email === "string" ? body.email : "";
     const password = typeof body?.password === "string" ? body.password : "";
+    const referralCode = typeof body?.referralCode === "string"
+      ? body.referralCode
+      : undefined;
 
     const origin =
       request.headers.get("origin") ??
@@ -16,7 +19,8 @@ export async function POST(request: Request) {
     const result = await signUpWithEmailVerification(
       email,
       password,
-      `${origin}/auth/callback?next=/dashboard`
+      `${origin}/auth/callback?next=/dashboard`,
+      referralCode
     );
 
     if (!result.ok) {
