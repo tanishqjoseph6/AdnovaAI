@@ -1,6 +1,7 @@
 import { describe, it } from "node:test";
 import assert from "node:assert/strict";
 import {
+  getPaidPlanAmountMinor,
   getPlanPriceQuote,
   YEARLY_DISCOUNT_PERCENT,
 } from "./pricing";
@@ -9,8 +10,9 @@ describe("billing pricing", () => {
   it("monthly INR prices", () => {
     assert.equal(
       getPlanPriceQuote("starter", "monthly", "INR").displayAmount,
-      "₹999"
+      "₹50"
     );
+    assert.equal(getPaidPlanAmountMinor("starter", "monthly", "INR"), 5000);
     assert.equal(
       getPlanPriceQuote("pro", "monthly", "INR").displayAmount,
       "₹2,999"
@@ -21,7 +23,7 @@ describe("billing pricing", () => {
     assert.equal(YEARLY_DISCOUNT_PERCENT, 20);
     assert.equal(
       getPlanPriceQuote("starter", "yearly", "INR").displayAmount,
-      "₹9,590"
+      "₹480"
     );
     assert.equal(
       getPlanPriceQuote("pro", "yearly", "INR").displayAmount,

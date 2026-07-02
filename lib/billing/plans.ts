@@ -27,9 +27,9 @@ export const PLANS = {
     id: "starter" as const,
     name: "Starter",
     emoji: "⭐",
-    priceLabel: "₹999/month",
-    priceInr: 999,
-    amountPaise: 99900,
+    priceLabel: "₹50/month",
+    priceInr: 50,
+    amountPaise: 5000,
     generationLimit: 100,
     purchasable: true,
     features: [

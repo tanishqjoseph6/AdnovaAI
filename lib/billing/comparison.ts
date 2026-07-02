@@ -119,7 +119,7 @@ export const PRICING_TIERS: PricingTierConfig[] = [
     emoji: "⭐",
     badge: "Best Value",
     subtitle: "Perfect for creators, freelancers and small businesses.",
-    priceDisplay: "₹999",
+    priceDisplay: "₹50",
     priceSuffix: "/month",
     features: [
       `${STARTER_PLAN_CREDITS} AI generations/month`,
