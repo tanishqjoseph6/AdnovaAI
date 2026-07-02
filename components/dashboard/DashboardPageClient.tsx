@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import DashboardHero from "@/components/dashboard/DashboardHero";
+import BetaLaunchBanner from "@/components/dashboard/BetaLaunchBanner";
 import DashboardEmptyState from "@/components/dashboard/DashboardEmptyState";
 import DashboardStatsGrid from "@/components/dashboard/DashboardStatsGrid";
 import QuickActionCards from "@/components/dashboard/QuickActionCards";
@@ -106,6 +107,8 @@ export default function DashboardPageClient({
 
   return (
     <div className="space-y-10">
+      <BetaLaunchBanner />
+
       <DashboardHero userName={userName} metrics={liveMetrics} />
 
       <QuickActionCards />
