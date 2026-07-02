@@ -1,7 +1,33 @@
 -- Secure Owner/Admin/User role model.
 
 alter table public.profiles
+  add column if not exists is_admin boolean not null default false,
   add column if not exists role text not null default 'user';
+
+create table if not exists public.user_feedback (
+  id uuid primary key default gen_random_uuid(),
+  user_id uuid not null references auth.users(id) on delete cascade,
+  category text not null,
+  subject text not null,
+  message text not null,
+  screenshot_url text,
+  status text not null default 'open',
+  admin_reply text,
+  replied_at timestamptz,
+  reviewed_by uuid references auth.users(id) on delete set null,
+  created_at timestamptz not null default timezone('utc', now()),
+  updated_at timestamptz not null default timezone('utc', now())
+);
+
+create table if not exists public.notifications (
+  id uuid primary key default gen_random_uuid(),
+  user_id uuid not null references auth.users(id) on delete cascade,
+  title text not null check (char_length(title) between 1 and 120),
+  message text not null check (char_length(message) between 1 and 500),
+  is_read boolean not null default false,
+  feedback_id uuid references public.user_feedback(id) on delete cascade,
+  created_at timestamptz not null default timezone('utc', now())
+);
 
 alter table public.profiles
   drop constraint if exists profiles_role_check;
