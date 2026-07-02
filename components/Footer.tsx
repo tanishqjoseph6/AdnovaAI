@@ -14,9 +14,9 @@ const footerLinks = {
     { label: "Contact", href: "#cta" },
   ],
   Legal: [
-    { label: "Privacy", href: "#" },
-    { label: "Terms", href: "#" },
-    { label: "Security", href: "#" },
+    { label: "Privacy Policy", href: "/privacy-policy" },
+    { label: "Terms of Service", href: "/terms-of-service" },
+    { label: "Refund Policy", href: "/refund-policy" },
   ],
 };
 
@@ -58,12 +58,21 @@ export default function Footer() {
               <ul className="mt-4 space-y-3">
                 {links.map((link) => (
                   <li key={link.label}>
-                    <a
-                      href={link.href}
-                      className="text-sm text-zinc-500 transition hover:text-zinc-300"
-                    >
-                      {link.label}
-                    </a>
+                    {link.href.startsWith("/") ? (
+                      <Link
+                        href={link.href}
+                        className="text-sm text-zinc-500 transition hover:text-zinc-300"
+                      >
+                        {link.label}
+                      </Link>
+                    ) : (
+                      <a
+                        href={link.href}
+                        className="text-sm text-zinc-500 transition hover:text-zinc-300"
+                      >
+                        {link.label}
+                      </a>
+                    )}
                   </li>
                 ))}
               </ul>
