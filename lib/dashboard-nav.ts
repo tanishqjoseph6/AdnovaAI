@@ -13,7 +13,6 @@ export type NavItem = {
     | "billing"
     | "settings"
     | "admin";
-  adminOnly?: boolean;
 };
 
 export const dashboardNav: NavItem[] = [
@@ -39,10 +38,14 @@ export const dashboardNav: NavItem[] = [
   { label: "History", href: "/dashboard/history", icon: "history" },
   { label: "Billing", href: "/dashboard/billing", icon: "billing" },
   { label: "Settings", href: "/dashboard/settings", icon: "settings" },
+];
+
+export const adminNav: NavItem[] = [
+  { label: "Feedback", href: "/dashboard/admin/feedback", icon: "admin" },
+  { label: "Users", href: "/dashboard/admin/users", icon: "admin" },
   {
-    label: "Admin → Feedback",
-    href: "/dashboard/admin/feedback",
+    label: "Notifications",
+    href: "/dashboard/admin/notifications",
     icon: "admin",
-    adminOnly: true,
   },
 ];

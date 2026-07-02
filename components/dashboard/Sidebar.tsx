@@ -5,7 +5,8 @@ import { usePathname } from "next/navigation";
 import { useEffect, useMemo, useState } from "react";
 import { useCredits } from "@/hooks/useCredits";
 import { creditsProgressPercent } from "@/lib/credits/display";
-import { dashboardNav } from "@/lib/dashboard-nav";
+import { adminNav, dashboardNav } from "@/lib/dashboard-nav";
+import type { ProfileRole } from "@/lib/admin/auth";
 import NavIcon from "./NavIcon";
 
 type SidebarProps = {
@@ -76,13 +77,13 @@ function SidebarCredits({ onClose }: { onClose: () => void }) {
 export default function Sidebar({ open, onClose }: SidebarProps) {
   const pathname = usePathname();
   const { credits } = useCredits();
-  const [isAdmin, setIsAdmin] = useState(false);
+  const [role, setRole] = useState<ProfileRole>("user");
   const workspaceLabel = credits?.displayPlan
     ? `${credits.displayPlan} workspace`
     : "Workspace";
-  const visibleNav = useMemo(
-    () => dashboardNav.filter((item) => !item.adminOnly || isAdmin),
-    [isAdmin]
+  const canAccessAdmin = useMemo(
+    () => role === "owner" || role === "admin",
+    [role]
   );
 
   useEffect(() => {
@@ -93,14 +94,19 @@ export default function Sidebar({ open, onClose }: SidebarProps) {
         const response = await fetch("/api/admin/me", { cache: "no-store" });
         const payload = (await response.json().catch(() => ({}))) as {
           isAdmin?: boolean;
+          role?: ProfileRole;
         };
 
         if (active) {
-          setIsAdmin(response.ok && payload.isAdmin === true);
+          setRole(
+            response.ok && payload.isAdmin === true
+              ? (payload.role ?? "admin")
+              : "user"
+          );
         }
       } catch {
         if (active) {
-          setIsAdmin(false);
+          setRole("user");
         }
       }
     }
@@ -156,7 +162,7 @@ export default function Sidebar({ open, onClose }: SidebarProps) {
           <p className="mb-2 px-3 text-[10px] font-semibold uppercase tracking-widest text-zinc-600">
             Menu
           </p>
-          {visibleNav.map((item) => {
+          {dashboardNav.map((item) => {
             const active = isActive(pathname, item.href);
             return (
               <Link
@@ -186,6 +192,44 @@ export default function Sidebar({ open, onClose }: SidebarProps) {
               </Link>
             );
           })}
+
+          {canAccessAdmin && (
+            <div className="pt-4">
+              <p className="mb-2 px-3 text-[10px] font-semibold uppercase tracking-widest text-zinc-600">
+                🛡 Admin
+              </p>
+              {adminNav.map((item) => {
+                const active = isActive(pathname, item.href);
+                return (
+                  <Link
+                    key={item.href}
+                    href={item.href}
+                    onClick={onClose}
+                    aria-current={active ? "page" : undefined}
+                    className={`group flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium transition ${
+                      active
+                        ? "bg-gradient-to-r from-cyan-500/15 via-violet-500/15 to-fuchsia-500/10 text-white shadow-inner shadow-violet-500/5"
+                        : "text-zinc-400 hover:bg-white/[0.04] hover:text-zinc-200"
+                    }`}
+                  >
+                    <span
+                      className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-lg transition ${
+                        active
+                          ? "bg-gradient-to-br from-cyan-500/30 to-violet-500/30 text-cyan-300"
+                          : "bg-white/[0.04] text-zinc-500 group-hover:text-zinc-300"
+                      }`}
+                    >
+                      <NavIcon name={item.icon} className="h-[18px] w-[18px]" />
+                    </span>
+                    <span className="truncate">{item.label}</span>
+                    {active && (
+                      <span className="ml-auto h-1.5 w-1.5 shrink-0 rounded-full bg-cyan-400 shadow-[0_0_8px_#22d3ee]" />
+                    )}
+                  </Link>
+                );
+              })}
+            </div>
+          )}
         </nav>
 
         <div className="border-t border-white/[0.06] p-4 pb-[max(1rem,env(safe-area-inset-bottom))]">

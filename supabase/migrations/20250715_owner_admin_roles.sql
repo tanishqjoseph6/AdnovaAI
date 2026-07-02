@@ -1,0 +1,100 @@
+-- Secure Owner/Admin/User role model.
+
+alter table public.profiles
+  add column if not exists role text not null default 'user';
+
+alter table public.profiles
+  drop constraint if exists profiles_role_check;
+
+alter table public.profiles
+  add constraint profiles_role_check
+  check (role in ('owner', 'admin', 'user'));
+
+update public.profiles
+set role = 'admin'
+where role = 'user'
+  and coalesce(is_admin, false) = true;
+
+-- Bootstrap the Advora owner account if it already exists.
+-- Change this email before applying the migration if your production owner
+-- account uses a different login email.
+update public.profiles
+set role = 'owner',
+    is_admin = true
+where lower(email) = lower('tanishqjoseph52@icloud.com');
+
+create or replace function public.is_admin(user_id uuid)
+returns boolean
+language sql
+stable
+security definer
+set search_path = public
+as $$
+  select coalesce(
+    (
+      select profiles.role in ('owner', 'admin')
+      from public.profiles
+      where profiles.id = user_id
+    ),
+    false
+  );
+$$;
+
+create or replace function public.is_owner(user_id uuid)
+returns boolean
+language sql
+stable
+security definer
+set search_path = public
+as $$
+  select coalesce(
+    (
+      select profiles.role = 'owner'
+      from public.profiles
+      where profiles.id = user_id
+    ),
+    false
+  );
+$$;
+
+drop policy if exists "Admins read profiles" on public.profiles;
+create policy "Admins read profiles"
+  on public.profiles
+  for select
+  using (public.is_admin(auth.uid()));
+
+drop policy if exists "Admins read all notifications" on public.notifications;
+create policy "Admins read all notifications"
+  on public.notifications
+  for select
+  using (public.is_admin(auth.uid()));
+
+drop policy if exists "Admins update all notifications" on public.notifications;
+create policy "Admins update all notifications"
+  on public.notifications
+  for update
+  using (public.is_admin(auth.uid()))
+  with check (public.is_admin(auth.uid()));
+
+-- Prevent client-side self-promotion through direct Supabase updates.
+revoke update on public.profiles from authenticated;
+grant update (email, username, full_name, avatar_url, updated_at) on public.profiles to authenticated;
+
+-- Keep the legacy is_admin flag in sync for older code paths while role is the source of truth.
+create or replace function public.sync_profile_admin_flag()
+returns trigger
+language plpgsql
+security definer
+set search_path = public
+as $$
+begin
+  new.is_admin := new.role in ('owner', 'admin');
+  return new;
+end;
+$$;
+
+drop trigger if exists sync_profile_admin_flag_before_write on public.profiles;
+create trigger sync_profile_admin_flag_before_write
+  before insert or update on public.profiles
+  for each row
+  execute function public.sync_profile_admin_flag();

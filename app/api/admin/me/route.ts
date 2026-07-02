@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { requireAuthenticatedUser } from "@/lib/auth/require-user";
-import { isUserAdmin } from "@/lib/admin/auth";
+import { getUserRole, isAdminRole } from "@/lib/admin/auth";
 import { createClient } from "@/lib/supabase/server";
 
 export async function GET() {
@@ -11,11 +11,17 @@ export async function GET() {
       return authResult.response;
     }
 
+    const role = await getUserRole(authResult.user.id);
     return NextResponse.json({
-      isAdmin: await isUserAdmin(authResult.user.id),
+      role,
+      isAdmin: isAdminRole(role),
+      isOwner: role === "owner",
     });
   } catch (error) {
     console.error("Admin status check failed:", error);
-    return NextResponse.json({ isAdmin: false }, { status: 200 });
+    return NextResponse.json(
+      { role: "user", isAdmin: false, isOwner: false },
+      { status: 200 }
+    );
   }
 }
