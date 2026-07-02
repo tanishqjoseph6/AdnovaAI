@@ -6,10 +6,19 @@ import {
   type BillingInterval,
 } from "@/lib/billing/pricing";
 
+type RazorpayKeyMode = "live" | "test" | "unknown";
+
+export class RazorpayConfigError extends Error {
+  constructor(message: string) {
+    super(message);
+    this.name = "RazorpayConfigError";
+  }
+}
+
 function requireEnv(name: string): string {
   const value = process.env[name];
   if (!value) {
-    throw new Error(`Missing environment variable: ${name}`);
+    throw new RazorpayConfigError(`Missing environment variable: ${name}`);
   }
   return value;
 }
@@ -27,15 +36,77 @@ export function getRazorpayKeyId(): string {
 }
 
 export function getPublicRazorpayKeyId(): string {
-  return (
-    process.env.NEXT_PUBLIC_RAZORPAY_KEY_ID ?? process.env.RAZORPAY_KEY_ID ?? ""
-  );
+  return requireEnv("NEXT_PUBLIC_RAZORPAY_KEY_ID");
+}
+
+export function getRazorpayKeyMode(keyId: string): RazorpayKeyMode {
+  if (keyId.startsWith("rzp_live_")) {
+    return "live";
+  }
+
+  if (keyId.startsWith("rzp_test_")) {
+    return "test";
+  }
+
+  return "unknown";
+}
+
+export function getRazorpayConfigDiagnostics() {
+  const serverKeyId = process.env.RAZORPAY_KEY_ID ?? "";
+  const publicKeyId = process.env.NEXT_PUBLIC_RAZORPAY_KEY_ID ?? "";
+  const hasSecret = Boolean(process.env.RAZORPAY_KEY_SECRET);
+  const serverKeyMode = serverKeyId ? getRazorpayKeyMode(serverKeyId) : "unknown";
+  const publicKeyMode = publicKeyId ? getRazorpayKeyMode(publicKeyId) : "unknown";
+
+  return {
+    hasServerKeyId: Boolean(serverKeyId),
+    hasPublicKeyId: Boolean(publicKeyId),
+    hasSecret,
+    serverKeyMode,
+    publicKeyMode,
+    keyIdsMatch: Boolean(serverKeyId && publicKeyId && serverKeyId === publicKeyId),
+    isVercelProduction: process.env.VERCEL_ENV === "production",
+  };
+}
+
+export function assertRazorpayConfig(): {
+  serverKeyId: string;
+  publicKeyId: string;
+  keySecret: string;
+  mode: RazorpayKeyMode;
+} {
+  const serverKeyId = getRazorpayKeyId();
+  const publicKeyId = getPublicRazorpayKeyId();
+  const keySecret = requireEnv("RAZORPAY_KEY_SECRET");
+  const mode = getRazorpayKeyMode(serverKeyId);
+  const publicMode = getRazorpayKeyMode(publicKeyId);
+
+  if (serverKeyId !== publicKeyId) {
+    throw new RazorpayConfigError(
+      "Razorpay key mismatch: NEXT_PUBLIC_RAZORPAY_KEY_ID must exactly match RAZORPAY_KEY_ID."
+    );
+  }
+
+  if (mode !== publicMode) {
+    throw new RazorpayConfigError(
+      "Razorpay key mode mismatch: public and backend key IDs must both be test or both be live."
+    );
+  }
+
+  if (process.env.VERCEL_ENV === "production" && mode !== "live") {
+    throw new RazorpayConfigError(
+      "Production Razorpay configuration must use LIVE keys (rzp_live_...)."
+    );
+  }
+
+  return { serverKeyId, publicKeyId, keySecret, mode };
 }
 
 export function createRazorpayClient(): Razorpay {
+  const config = assertRazorpayConfig();
   return new Razorpay({
-    key_id: getRazorpayKeyId(),
-    key_secret: requireEnv("RAZORPAY_KEY_SECRET"),
+    key_id: config.serverKeyId,
+    key_secret: config.keySecret,
   });
 }
 
