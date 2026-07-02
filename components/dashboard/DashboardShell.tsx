@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useState, startTransition } from "react";
 import { usePathname } from "next/navigation";
 import { CreditsProvider } from "@/hooks/useCredits";
+import FeedbackLauncher from "./FeedbackLauncher";
 import Sidebar from "./Sidebar";
 import TopNavbar from "./TopNavbar";
 
@@ -64,6 +65,7 @@ export default function DashboardShell({
         <main className="dashboard-scrollbar flex-1 overflow-x-hidden p-4 pb-[max(1rem,env(safe-area-inset-bottom))] sm:p-6 lg:p-8">
           <div className="mx-auto w-full max-w-7xl">{children}</div>
         </main>
+        <FeedbackLauncher />
       </div>
       </div>
     </CreditsProvider>
