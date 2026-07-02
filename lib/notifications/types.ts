@@ -2,7 +2,8 @@ export type NotificationCategory =
   | "welcome"
   | "features"
   | "billing"
-  | "product";
+  | "product"
+  | "feedback";
 
 export type AppNotification = {
   id: string;

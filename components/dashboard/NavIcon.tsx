@@ -8,7 +8,8 @@ type IconName =
   | "competitor"
   | "history"
   | "billing"
-  | "settings";
+  | "settings"
+  | "admin";
 
 export default function NavIcon({
   name,
@@ -133,6 +134,21 @@ export default function NavIcon({
             strokeLinecap="round"
             strokeLinejoin="round"
             d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"
+          />
+        </svg>
+      );
+    case "admin":
+      return (
+        <svg {...props}>
+          <path
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            d="M12 3.75l7.5 3.75v4.875c0 4.142-3.002 7.965-7.5 8.875-4.498-.91-7.5-4.733-7.5-8.875V7.5L12 3.75z"
+          />
+          <path
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            d="M9.75 12.75l1.5 1.5 3.25-4"
           />
         </svg>
       );

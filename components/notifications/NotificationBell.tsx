@@ -32,6 +32,11 @@ const CATEGORY_STYLES: Record<
     accent: "text-fuchsia-300",
     bg: "bg-fuchsia-500/10 border-fuchsia-500/20",
   },
+  feedback: {
+    icon: "📩",
+    accent: "text-cyan-300",
+    bg: "bg-cyan-500/10 border-cyan-500/20",
+  },
 };
 
 function formatRelativeTime(isoDate: string): string {
@@ -148,6 +153,13 @@ function NotificationPanel({
   onRead,
   className = "",
 }: NotificationPanelProps) {
+  const unreadNotifications = notifications.filter(
+    (notification) => !notification.read
+  );
+  const readNotifications = notifications.filter(
+    (notification) => notification.read
+  );
+
   return (
     <div
       className={`flex flex-col overflow-hidden rounded-2xl border border-white/10 bg-[#0a0618]/95 shadow-2xl shadow-violet-500/10 backdrop-blur-xl ${className}`}
@@ -182,25 +194,53 @@ function NotificationPanel({
               You&apos;re all caught up.
             </p>
             <p className="mt-1 text-xs text-zinc-500">
-              No new notifications right now.
+              Replies from the Advora team will appear here.
             </p>
           </div>
         ) : (
-          <div className="space-y-1">
-            {notifications.map((notification) => (
-              <NotificationItem
-                key={notification.id}
-                notification={notification}
-                onRead={onRead}
-              />
-            ))}
+          <div className="space-y-4">
+            {unreadNotifications.length > 0 && (
+              <section>
+                <p className="px-2 pb-2 text-[11px] font-semibold uppercase tracking-[0.16em] text-cyan-300">
+                  Unread
+                </p>
+                <div className="space-y-1">
+                  {unreadNotifications.map((notification) => (
+                    <NotificationItem
+                      key={notification.id}
+                      notification={notification}
+                      onRead={onRead}
+                    />
+                  ))}
+                </div>
+              </section>
+            )}
+
+            {readNotifications.length > 0 && (
+              <section>
+                <p className="px-2 pb-2 text-[11px] font-semibold uppercase tracking-[0.16em] text-zinc-600">
+                  Read
+                </p>
+                <div className="space-y-1">
+                  {readNotifications.map((notification) => (
+                    <NotificationItem
+                      key={notification.id}
+                      notification={notification}
+                      onRead={onRead}
+                    />
+                  ))}
+                </div>
+              </section>
+            )}
           </div>
         )}
       </div>
 
       {showCaughtUp && (
         <div className="border-t border-white/[0.06] px-4 py-3 text-center">
-          <p className="text-xs text-zinc-500">You&apos;re all caught up.</p>
+              <p className="text-xs text-zinc-500">
+                Unread and read notifications are shown above.
+              </p>
         </div>
       )}
     </div>

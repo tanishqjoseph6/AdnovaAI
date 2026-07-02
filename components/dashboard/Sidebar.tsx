@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import { useEffect, useMemo, useState } from "react";
 import { useCredits } from "@/hooks/useCredits";
 import { creditsProgressPercent } from "@/lib/credits/display";
 import { dashboardNav } from "@/lib/dashboard-nav";
@@ -75,9 +76,40 @@ function SidebarCredits({ onClose }: { onClose: () => void }) {
 export default function Sidebar({ open, onClose }: SidebarProps) {
   const pathname = usePathname();
   const { credits } = useCredits();
+  const [isAdmin, setIsAdmin] = useState(false);
   const workspaceLabel = credits?.displayPlan
     ? `${credits.displayPlan} workspace`
     : "Workspace";
+  const visibleNav = useMemo(
+    () => dashboardNav.filter((item) => !item.adminOnly || isAdmin),
+    [isAdmin]
+  );
+
+  useEffect(() => {
+    let active = true;
+
+    async function loadAdminStatus() {
+      try {
+        const response = await fetch("/api/admin/me", { cache: "no-store" });
+        const payload = (await response.json().catch(() => ({}))) as {
+          isAdmin?: boolean;
+        };
+
+        if (active) {
+          setIsAdmin(response.ok && payload.isAdmin === true);
+        }
+      } catch {
+        if (active) {
+          setIsAdmin(false);
+        }
+      }
+    }
+
+    void loadAdminStatus();
+    return () => {
+      active = false;
+    };
+  }, []);
 
   return (
     <>
@@ -124,7 +156,7 @@ export default function Sidebar({ open, onClose }: SidebarProps) {
           <p className="mb-2 px-3 text-[10px] font-semibold uppercase tracking-widest text-zinc-600">
             Menu
           </p>
-          {dashboardNav.map((item) => {
+          {visibleNav.map((item) => {
             const active = isActive(pathname, item.href);
             return (
               <Link

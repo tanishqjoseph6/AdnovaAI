@@ -98,7 +98,7 @@ export async function POST(request: Request) {
         subject: validation.value.subject,
         message: validation.value.message,
         screenshot_url: screenshotUrl,
-        status: "new",
+        status: "open",
       })
       .select("id, created_at")
       .single();

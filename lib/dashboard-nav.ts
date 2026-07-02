@@ -11,7 +11,9 @@ export type NavItem = {
     | "competitor"
     | "history"
     | "billing"
-    | "settings";
+    | "settings"
+    | "admin";
+  adminOnly?: boolean;
 };
 
 export const dashboardNav: NavItem[] = [
@@ -37,4 +39,10 @@ export const dashboardNav: NavItem[] = [
   { label: "History", href: "/dashboard/history", icon: "history" },
   { label: "Billing", href: "/dashboard/billing", icon: "billing" },
   { label: "Settings", href: "/dashboard/settings", icon: "settings" },
+  {
+    label: "Admin → Feedback",
+    href: "/dashboard/admin/feedback",
+    icon: "admin",
+    adminOnly: true,
+  },
 ];
