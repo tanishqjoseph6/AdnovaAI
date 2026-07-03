@@ -4,8 +4,9 @@ import {
   PaymentVerificationError,
 } from "@/lib/billing/payment-verification";
 import { isPaidPlan } from "@/lib/billing/plans";
-import type { BillingInterval } from "@/lib/billing/pricing";
+import type { BillingCurrency, BillingInterval } from "@/lib/billing/pricing";
 import { createRazorpayClient, verifyWebhookSignature } from "@/lib/razorpay";
+import { recordPayment } from "@/lib/billing/payments";
 import { activateSubscriptionFromPayment } from "@/lib/subscription";
 
 type RazorpayWebhookPayload = {
@@ -62,6 +63,35 @@ export async function POST(request: Request) {
   }
 
   if (event === "payment.failed") {
+    const plan = payment.notes?.plan;
+    const userId = payment.notes?.user_id;
+    const email = payment.notes?.email;
+
+    if (
+      typeof plan === "string" &&
+      isPaidPlan(plan) &&
+      typeof userId === "string" &&
+      payment.id &&
+      payment.order_id
+    ) {
+      const interval: BillingInterval =
+        payment.notes?.interval === "yearly" ? "yearly" : "monthly";
+
+      await recordPayment({
+        userId,
+        email: typeof email === "string" ? email : null,
+        plan,
+        amount: Number(payment.amount ?? 0),
+        currency: (payment.notes?.currency?.toUpperCase() === "USD"
+          ? "USD"
+          : "INR") as BillingCurrency,
+        razorpayPaymentId: payment.id,
+        razorpayOrderId: payment.order_id,
+        status: "failed",
+        billingInterval: interval,
+      });
+    }
+
     return NextResponse.json({ received: true });
   }
 
@@ -115,6 +145,20 @@ export async function POST(request: Request) {
       plan,
       paymentId: payment.id,
       orderId: payment.order_id,
+    });
+
+    await recordPayment({
+      userId,
+      email,
+      plan,
+      amount: Number(payment.amount ?? 0),
+      currency: (payment.notes?.currency?.toUpperCase() === "USD"
+        ? "USD"
+        : "INR") as BillingCurrency,
+      razorpayPaymentId: payment.id,
+      razorpayOrderId: payment.order_id,
+      status: "success",
+      billingInterval: interval,
     });
   } catch (error) {
     if (error instanceof PaymentVerificationError) {

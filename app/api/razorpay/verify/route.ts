@@ -6,8 +6,9 @@ import {
   PaymentVerificationError,
 } from "@/lib/billing/payment-verification";
 import { isPaidPlan } from "@/lib/billing/plans";
-import type { BillingInterval } from "@/lib/billing/pricing";
+import type { BillingCurrency, BillingInterval } from "@/lib/billing/pricing";
 import { createRazorpayClient, verifyPaymentSignature } from "@/lib/razorpay";
+import { recordPayment } from "@/lib/billing/payments";
 import { activateSubscriptionFromPayment } from "@/lib/subscription";
 import { createClient } from "@/lib/supabase/server";
 
@@ -117,6 +118,18 @@ export async function POST(request: Request) {
         { status: 409 }
       );
     }
+
+    await recordPayment({
+      userId: user.id,
+      email: user.email,
+      plan,
+      amount: Number(payment.amount),
+      currency: (payment.currency?.toUpperCase() === "USD" ? "USD" : "INR") as BillingCurrency,
+      razorpayPaymentId: paymentId,
+      razorpayOrderId: orderId,
+      status: "success",
+      billingInterval: interval,
+    });
 
     return NextResponse.json({
       success: true,

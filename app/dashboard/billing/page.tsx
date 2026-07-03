@@ -8,7 +8,14 @@ import PricingPlanCards from "@/components/billing/PricingPlanCards";
 import BillingTrustSection from "@/components/billing/BillingTrustSection";
 import BillingFaq from "@/components/billing/BillingFaq";
 import UpgradeProCta from "@/components/billing/UpgradeProCta";
-import { buildBillingInvoices } from "@/lib/billing/invoices";
+import {
+  buildBillingInvoices,
+  buildBillingInvoicesFromPayments,
+} from "@/lib/billing/invoices";
+import {
+  normalizePaymentRow,
+  paymentFromRow,
+} from "@/lib/billing/payments";
 import {
   ensureUserProfile,
   getUserSubscription,
@@ -40,7 +47,26 @@ export default async function BillingPage({ searchParams }: BillingPageProps) {
         purchase_date: null,
       };
 
-  const invoices = buildBillingInvoices(subscription);
+  let invoices = buildBillingInvoices(subscription);
+
+  if (user) {
+    const { data: paymentRows, error } = await supabase
+      .from("payments")
+      .select("*")
+      .eq("user_id", user.id)
+      .eq("status", "success")
+      .order("created_at", { ascending: false })
+      .limit(5);
+
+    if (!error && paymentRows && paymentRows.length > 0) {
+      const payments = paymentRows
+        .map((row) => normalizePaymentRow(row as Record<string, unknown>))
+        .filter((row): row is NonNullable<typeof row> => row !== null)
+        .map(paymentFromRow);
+
+      invoices = buildBillingInvoicesFromPayments(payments);
+    }
+  }
 
   return (
     <DashboardShell

@@ -3,7 +3,7 @@ import DashboardShell from "@/components/dashboard/DashboardShell";
 import { requireAdminPage } from "@/lib/admin/page-auth";
 
 export default async function AdminPaymentsPage() {
-  await requireAdminPage({ ownerOnly: true });
+  await requireAdminPage();
 
   return (
     <DashboardShell
