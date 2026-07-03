@@ -82,7 +82,7 @@ export default function Sidebar({ open, onClose }: SidebarProps) {
     ? `${credits.displayPlan} workspace`
     : "Workspace";
   const canAccessAdmin = useMemo(
-    () => role === "owner" || role === "admin",
+    () => role === "owner" || role === "team_member",
     [role]
   );
 
@@ -100,7 +100,7 @@ export default function Sidebar({ open, onClose }: SidebarProps) {
         if (active) {
           setRole(
             response.ok && payload.isAdmin === true
-              ? (payload.role ?? "admin")
+              ? (payload.role ?? "team_member")
               : "user"
           );
         }

@@ -32,12 +32,16 @@ create table if not exists public.notifications (
 alter table public.profiles
   drop constraint if exists profiles_role_check;
 
+update public.profiles
+set role = 'team_member'
+where role = 'admin';
+
 alter table public.profiles
   add constraint profiles_role_check
-  check (role in ('owner', 'admin', 'user'));
+  check (role in ('owner', 'team_member', 'user'));
 
 update public.profiles
-set role = 'admin'
+set role = 'team_member'
 where role = 'user'
   and coalesce(is_admin, false) = true;
 
@@ -47,7 +51,13 @@ where role = 'user'
 update public.profiles
 set role = 'owner',
     is_admin = true
-where lower(email) = lower('tanishqjoseph52@icloud.com');
+where lower(email) = lower('richietanishq@gmail.com');
+
+update public.profiles
+set role = 'user',
+    is_admin = false
+where lower(coalesce(email, '')) <> lower('richietanishq@gmail.com')
+  and role = 'owner';
 
 create or replace function public.is_admin(user_id uuid)
 returns boolean
@@ -58,7 +68,8 @@ set search_path = public
 as $$
   select coalesce(
     (
-      select profiles.role in ('owner', 'admin')
+      select lower(coalesce(profiles.email, '')) = lower('richietanishq@gmail.com')
+        or profiles.role = 'team_member'
       from public.profiles
       where profiles.id = user_id
     ),
@@ -75,7 +86,7 @@ set search_path = public
 as $$
   select coalesce(
     (
-      select profiles.role = 'owner'
+      select lower(coalesce(profiles.email, '')) = lower('richietanishq@gmail.com')
       from public.profiles
       where profiles.id = user_id
     ),
@@ -114,7 +125,15 @@ security definer
 set search_path = public
 as $$
 begin
-  new.is_admin := new.role in ('owner', 'admin');
+  if lower(coalesce(new.email, '')) = lower('richietanishq@gmail.com') then
+    new.role := 'owner';
+    new.is_admin := true;
+  else
+    if new.role = 'owner' then
+      new.role := 'user';
+    end if;
+    new.is_admin := new.role = 'team_member';
+  end if;
   return new;
 end;
 $$;

@@ -17,7 +17,9 @@ export type AdminUserView = {
 };
 
 export function normalizeProfileRole(role: unknown): ProfileRole {
-  return role === "owner" || role === "admin" || role === "user"
+  return role === "owner" ||
+    role === "team_member" ||
+    role === "user"
     ? role
     : "user";
 }

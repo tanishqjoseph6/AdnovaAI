@@ -11,7 +11,7 @@ export async function GET() {
       return authResult.response;
     }
 
-    const role = await getUserRole(authResult.user.id);
+    const role = await getUserRole(authResult.user.id, authResult.user.email);
     return NextResponse.json({
       role,
       isAdmin: isAdminRole(role),

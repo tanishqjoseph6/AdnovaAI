@@ -10,7 +10,7 @@ export default async function AdminFeedbackPage() {
     data: { user },
   } = await supabase.auth.getUser();
 
-  if (!user || !(await isUserAdmin(user.id))) {
+  if (!user || !(await isUserAdmin(user.id, user.email))) {
     notFound();
   }
 

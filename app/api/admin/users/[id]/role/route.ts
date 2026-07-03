@@ -23,9 +23,12 @@ export async function PATCH(request: Request, context: RouteContext) {
     const body = (await request.json().catch(() => ({}))) as {
       role?: unknown;
     };
-    if (body.role !== "user" && body.role !== "admin") {
+    if (
+      body.role !== "user" &&
+      body.role !== "team_member"
+    ) {
       return NextResponse.json(
-        { error: "Role must be user or admin." },
+        { error: "Role must be user or team_member." },
         { status: 400 }
       );
     }
@@ -57,7 +60,7 @@ export async function PATCH(request: Request, context: RouteContext) {
       .from("profiles")
       .update({
         role: nextRole,
-        is_admin: nextRole === "admin",
+        is_admin: nextRole === "team_member",
         updated_at: new Date().toISOString(),
       })
       .eq("id", id)

@@ -117,7 +117,11 @@ security definer
 set search_path = public
 as $$
   select coalesce(
-    (select profiles.is_admin from public.profiles where profiles.id = user_id),
+    (
+      select lower(coalesce(profiles.email, '')) = lower('richietanishq@gmail.com')
+      from public.profiles
+      where profiles.id = user_id
+    ),
     false
   );
 $$;

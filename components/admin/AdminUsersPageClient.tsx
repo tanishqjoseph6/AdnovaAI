@@ -12,8 +12,13 @@ type UsersResponse = {
 
 function roleClasses(role: ProfileRole): string {
   if (role === "owner") return "border-amber-400/25 bg-amber-400/10 text-amber-200";
-  if (role === "admin") return "border-cyan-400/25 bg-cyan-400/10 text-cyan-200";
+  if (role === "team_member") return "border-violet-400/25 bg-violet-400/10 text-violet-200";
   return "border-zinc-400/20 bg-white/[0.04] text-zinc-300";
+}
+
+function roleLabel(role: ProfileRole): string {
+  if (role === "team_member") return "Team Member";
+  return role.charAt(0).toUpperCase() + role.slice(1);
 }
 
 export default function AdminUsersPageClient() {
@@ -73,13 +78,16 @@ export default function AdminUsersPageClient() {
   const stats = useMemo(
     () => ({
       owners: users.filter((user) => user.role === "owner").length,
-      admins: users.filter((user) => user.role === "admin").length,
+      teamMembers: users.filter((user) => user.role === "team_member").length,
       users: users.filter((user) => user.role === "user").length,
     }),
     [users]
   );
 
-  async function changeRole(userId: string, role: "admin" | "user") {
+  async function changeRole(
+    userId: string,
+    role: "team_member" | "user"
+  ) {
     if (!canManageRoles || savingId) return;
 
     setSavingId(userId);
@@ -132,7 +140,7 @@ export default function AdminUsersPageClient() {
       <section className="grid gap-4 sm:grid-cols-3">
         {[
           ["Owners", stats.owners],
-          ["Admins", stats.admins],
+          ["Team Members", stats.teamMembers],
           ["Users", stats.users],
         ].map(([label, value]) => (
           <div
@@ -183,7 +191,7 @@ export default function AdminUsersPageClient() {
                     user.role
                   )}`}
                 >
-                  {user.role}
+                  {roleLabel(user.role)}
                 </span>
 
                 <div className="flex gap-2">
@@ -195,11 +203,11 @@ export default function AdminUsersPageClient() {
                     <>
                       <button
                         type="button"
-                        onClick={() => void changeRole(user.id, "admin")}
-                        disabled={savingId === user.id || user.role === "admin"}
-                        className="rounded-xl border border-cyan-400/25 bg-cyan-400/10 px-3 py-2 text-xs font-medium text-cyan-200 transition hover:border-cyan-300/40 disabled:cursor-not-allowed disabled:opacity-50"
+                        onClick={() => void changeRole(user.id, "team_member")}
+                        disabled={savingId === user.id || user.role === "team_member"}
+                        className="rounded-xl border border-violet-400/25 bg-violet-400/10 px-3 py-2 text-xs font-medium text-violet-200 transition hover:border-violet-300/40 disabled:cursor-not-allowed disabled:opacity-50"
                       >
-                        Promote
+                        Team
                       </button>
                       <button
                         type="button"
@@ -207,7 +215,7 @@ export default function AdminUsersPageClient() {
                         disabled={savingId === user.id || user.role === "user"}
                         className="rounded-xl border border-red-400/25 bg-red-400/10 px-3 py-2 text-xs font-medium text-red-200 transition hover:border-red-300/40 disabled:cursor-not-allowed disabled:opacity-50"
                       >
-                        Demote
+                        User
                       </button>
                     </>
                   ) : (

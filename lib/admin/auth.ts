@@ -10,14 +10,31 @@ export type AdminAuthSuccess = {
   role: AdminRole;
 };
 
-export type AdminRole = "owner" | "admin";
+export type AdminRole = "owner" | "team_member";
 export type ProfileRole = AdminRole | "user";
 
-export function isAdminRole(role: string | null | undefined): role is AdminRole {
-  return role === "owner" || role === "admin";
+export const OWNER_EMAIL = "richietanishq@gmail.com";
+
+export function normalizeEmail(email: string | null | undefined): string {
+  return email?.trim().toLowerCase() ?? "";
 }
 
-export async function getUserRole(userId: string): Promise<ProfileRole> {
+export function isOwnerEmail(email: string | null | undefined): boolean {
+  return normalizeEmail(email) === OWNER_EMAIL;
+}
+
+export function isAdminRole(role: string | null | undefined): role is AdminRole {
+  return role === "owner" || role === "team_member";
+}
+
+export async function getUserRole(
+  userId: string,
+  email?: string | null
+): Promise<ProfileRole> {
+  if (isOwnerEmail(email)) {
+    return "owner";
+  }
+
   const admin = createAdminClient();
   const { data, error } = await admin
     .from("profiles")
@@ -26,23 +43,33 @@ export async function getUserRole(userId: string): Promise<ProfileRole> {
     .maybeSingle();
 
   if (error) {
-    console.error("Role lookup failed:", error);
+    console.error("Role lookup failed:", {
+      userId,
+      email: normalizeEmail(email),
+      code: error.code,
+      message: error.message,
+      details: error.details,
+    });
     return "user";
   }
 
-  if (data?.role === "owner" || data?.role === "admin" || data?.role === "user") {
-    return data.role;
-  }
-
-  return data?.is_admin === true ? "admin" : "user";
+  if (data?.role === "team_member") return "team_member";
+  if (data?.is_admin === true) return "team_member";
+  return "user";
 }
 
-export async function isUserAdmin(userId: string): Promise<boolean> {
-  return isAdminRole(await getUserRole(userId));
+export async function isUserAdmin(
+  userId: string,
+  email?: string | null
+): Promise<boolean> {
+  return isAdminRole(await getUserRole(userId, email));
 }
 
-export async function isUserOwner(userId: string): Promise<boolean> {
-  return (await getUserRole(userId)) === "owner";
+export async function isUserOwner(
+  userId: string,
+  email?: string | null
+): Promise<boolean> {
+  return (await getUserRole(userId, email)) === "owner";
 }
 
 export async function requireAdminUser(options: { ownerOnly?: boolean } = {}): Promise<
@@ -54,35 +81,22 @@ export async function requireAdminUser(options: { ownerOnly?: boolean } = {}): P
     return authResult;
   }
 
-  const admin = createAdminClient();
-  const { data, error } = await admin
-    .from("profiles")
-    .select("role, is_admin")
-    .eq("id", authResult.user.id)
-    .maybeSingle();
+  const role = await getUserRole(authResult.user.id, authResult.user.email);
+  const canAccessAdmin = isAdminRole(role);
 
-  if (error) {
-    console.error("Admin auth lookup failed:", error);
-    return {
-      response: NextResponse.json(
-        { error: "Unable to verify admin access." },
-        { status: 500 }
-      ),
-    };
-  }
-
-  const role =
-    data?.role === "owner" || data?.role === "admin" || data?.role === "user"
-      ? data.role
-      : data?.is_admin === true
-        ? "admin"
-        : "user";
-
-  if (!isAdminRole(role) || (options.ownerOnly && role !== "owner")) {
+  if (!canAccessAdmin || (options.ownerOnly && role !== "owner")) {
+    console.warn("Admin authorization denied:", {
+      userId: authResult.user.id,
+      email: normalizeEmail(authResult.user.email),
+      role,
+      ownerOnly: options.ownerOnly === true,
+    });
     return {
       response: NextResponse.json({ error: "Forbidden" }, { status: 403 }),
     };
   }
+
+  const admin = createAdminClient();
 
   return { user: authResult.user, admin, role };
 }

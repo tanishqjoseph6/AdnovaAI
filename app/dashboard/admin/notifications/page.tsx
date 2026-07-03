@@ -10,7 +10,7 @@ export default async function AdminNotificationsPage() {
     data: { user },
   } = await supabase.auth.getUser();
 
-  if (!user || !(await isUserAdmin(user.id))) {
+  if (!user || !(await isUserAdmin(user.id, user.email))) {
     notFound();
   }
 

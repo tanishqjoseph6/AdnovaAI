@@ -8,7 +8,7 @@ export default async function AdminShortcutPage() {
     data: { user },
   } = await supabase.auth.getUser();
 
-  if (!user || !(await isUserAdmin(user.id))) {
+  if (!user || !(await isUserAdmin(user.id, user.email))) {
     redirect("/dashboard");
   }
 
