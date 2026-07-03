@@ -9,20 +9,20 @@ import {
 
 describe("razorpay ledger amounts", () => {
   it("parses Razorpay paise amounts", () => {
-    assert.equal(parseRazorpayAmountMinor(5000, "payment"), 5000);
+    assert.equal(parseRazorpayAmountMinor(99900, "payment"), 99900);
     assert.equal(parseRazorpayAmountMinor("99900", "payment"), 99900);
     assert.equal(parseRazorpayAmountMinor(299900, "order"), 299900);
   });
 
   it("requires payment and order amounts to match", () => {
     assert.equal(
-      resolveVerifiedRazorpayAmountMinor({ amount: 5000 }, { amount: 5000 }),
-      5000
+      resolveVerifiedRazorpayAmountMinor({ amount: 99900 }, { amount: 99900 }),
+      99900
     );
 
     assert.throws(
       () =>
-        resolveVerifiedRazorpayAmountMinor({ amount: 5000 }, { amount: 48000 }),
+        resolveVerifiedRazorpayAmountMinor({ amount: 99900 }, { amount: 959000 }),
       PaymentVerificationError
     );
   });

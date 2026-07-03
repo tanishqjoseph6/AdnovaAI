@@ -4,6 +4,10 @@ import {
   FREE_PLAN_CREDITS,
   STARTER_PLAN_CREDITS,
 } from "@/lib/credits/plan-config";
+import { getPlanPriceQuote } from "./pricing";
+
+const STARTER_INR_MONTHLY = getPlanPriceQuote("starter", "monthly", "INR");
+const PRO_INR_MONTHLY = getPlanPriceQuote("pro", "monthly", "INR");
 
 export type ComparisonValue = boolean | string;
 
@@ -119,8 +123,8 @@ export const PRICING_TIERS: PricingTierConfig[] = [
     emoji: "⭐",
     badge: "Best Value",
     subtitle: "Perfect for creators, freelancers and small businesses.",
-    priceDisplay: "₹50",
-    priceSuffix: "/month",
+    priceDisplay: STARTER_INR_MONTHLY.displayAmount,
+    priceSuffix: STARTER_INR_MONTHLY.priceSuffix,
     features: [
       `${STARTER_PLAN_CREDITS} AI generations/month`,
       "Hooks, Captions and UGC scripts",
@@ -137,8 +141,8 @@ export const PRICING_TIERS: PricingTierConfig[] = [
     emoji: "👑",
     badge: "🔥 MOST POPULAR",
     subtitle: "Unlimited AI ad generation for serious brands.",
-    priceDisplay: "₹2,999",
-    priceSuffix: "/month",
+    priceDisplay: PRO_INR_MONTHLY.displayAmount,
+    priceSuffix: PRO_INR_MONTHLY.priceSuffix,
     features: [
       "Unlimited AI generations",
       "Priority support",

@@ -6,7 +6,7 @@ export type BillingCurrency = "INR" | "USD";
 export const YEARLY_DISCOUNT_PERCENT = 20;
 
 const MONTHLY_INR: Record<PaidPlanId, number> = {
-  starter: 50,
+  starter: 999,
   pro: 2999,
 };
 

@@ -10,9 +10,9 @@ describe("billing pricing", () => {
   it("monthly INR prices", () => {
     assert.equal(
       getPlanPriceQuote("starter", "monthly", "INR").displayAmount,
-      "₹50"
+      "₹999"
     );
-    assert.equal(getPaidPlanAmountMinor("starter", "monthly", "INR"), 5000);
+    assert.equal(getPaidPlanAmountMinor("starter", "monthly", "INR"), 99900);
     assert.equal(
       getPlanPriceQuote("pro", "monthly", "INR").displayAmount,
       "₹2,999"
@@ -23,8 +23,9 @@ describe("billing pricing", () => {
     assert.equal(YEARLY_DISCOUNT_PERCENT, 20);
     assert.equal(
       getPlanPriceQuote("starter", "yearly", "INR").displayAmount,
-      "₹480"
+      "₹9,590"
     );
+    assert.equal(getPaidPlanAmountMinor("starter", "yearly", "INR"), 959000);
     assert.equal(
       getPlanPriceQuote("pro", "yearly", "INR").displayAmount,
       "₹28,790"
@@ -37,6 +38,7 @@ describe("billing pricing", () => {
       getPlanPriceQuote("starter", "monthly", "USD").displayAmount,
       "$19"
     );
+    assert.equal(getPaidPlanAmountMinor("starter", "monthly", "USD"), 1900);
     assert.equal(getPlanPriceQuote("pro", "monthly", "USD").displayAmount, "$59");
   });
 

@@ -40,7 +40,7 @@ export function parseRazorpayAmountMinor(
 
 /**
  * Prefer the captured payment amount from Razorpay and cross-check against the order.
- * Both values are in paise/cents (e.g. ₹50 → 5000, ₹999 → 99900).
+ * Both values are in paise/cents (e.g. ₹999 → 99900, ₹2,999 → 299900).
  */
 export function resolveVerifiedRazorpayAmountMinor(
   payment: RazorpayAmountSource,
