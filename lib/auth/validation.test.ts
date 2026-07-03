@@ -62,19 +62,28 @@ describe("password reset", () => {
     assert.equal(valid.ok, true);
   });
 
-  it("uses a generic forgot-password response", async () => {
+  it("uses production forgot-password messaging and redirect", async () => {
+    const previousSiteUrl = process.env.NEXT_PUBLIC_SITE_URL;
+    process.env.NEXT_PUBLIC_SITE_URL = "https://useadvora.com";
+
     const {
-      FORGOT_PASSWORD_RESPONSE_MESSAGE,
+      FORGOT_PASSWORD_SUCCESS_MESSAGE,
       getPasswordResetRedirectUrl,
     } = await import("./password-reset");
 
     assert.equal(
-      FORGOT_PASSWORD_RESPONSE_MESSAGE,
-      "If an account exists for this email, a password reset link has been sent."
+      FORGOT_PASSWORD_SUCCESS_MESSAGE,
+      "✅ Password reset link sent. Please check your email."
     );
     assert.equal(
-      getPasswordResetRedirectUrl("https://advora.example"),
-      "https://advora.example/auth/callback?next=/reset-password"
+      getPasswordResetRedirectUrl(),
+      "https://useadvora.com/auth/callback?next=/reset-password"
     );
+
+    if (previousSiteUrl === undefined) {
+      delete process.env.NEXT_PUBLIC_SITE_URL;
+    } else {
+      process.env.NEXT_PUBLIC_SITE_URL = previousSiteUrl;
+    }
   });
 });

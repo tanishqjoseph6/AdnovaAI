@@ -1,7 +1,9 @@
 import { NextResponse } from "next/server";
 import {
-  FORGOT_PASSWORD_RESPONSE_MESSAGE,
+  FORGOT_PASSWORD_ERROR_MESSAGE,
+  FORGOT_PASSWORD_SUCCESS_MESSAGE,
   getPasswordResetRedirectUrl,
+  INVALID_EMAIL_MESSAGE,
 } from "@/lib/auth/password-reset";
 import {
   buildRateLimitBucketKey,
@@ -11,10 +13,10 @@ import { withAuthRateLimits } from "@/lib/auth/rate-limit-response";
 import { isValidEmail, normalizeEmail } from "@/lib/auth/validation";
 import { createClient } from "@/lib/supabase/server";
 
-function forgotPasswordResponse() {
+function forgotPasswordSuccessResponse() {
   return NextResponse.json({
     success: true,
-    message: FORGOT_PASSWORD_RESPONSE_MESSAGE,
+    message: FORGOT_PASSWORD_SUCCESS_MESSAGE,
   });
 }
 
@@ -24,8 +26,13 @@ export async function POST(request: Request) {
     const email = typeof body?.email === "string" ? body.email : "";
     const normalized = normalizeEmail(email);
 
+    if (!normalized) {
+      return NextResponse.json({ error: INVALID_EMAIL_MESSAGE }, { status: 400 });
+    }
+
     if (!isValidEmail(normalized)) {
-      return forgotPasswordResponse();
+      console.info("[auth/forgot-password] Invalid email format submitted");
+      return NextResponse.json({ error: INVALID_EMAIL_MESSAGE }, { status: 400 });
     }
 
     const ip = getClientIp(request);
@@ -44,27 +51,28 @@ export async function POST(request: Request) {
       return rateLimited;
     }
 
-    const origin =
-      request.headers.get("origin") ??
-      process.env.NEXT_PUBLIC_APP_URL ??
-      "http://localhost:3000";
-
+    const redirectTo = getPasswordResetRedirectUrl();
     const supabase = await createClient();
+
+    console.info("[auth/forgot-password] Sending reset email", {
+      email: normalized,
+      redirectTo,
+    });
+
     const { error } = await supabase.auth.resetPasswordForEmail(normalized, {
-      redirectTo: getPasswordResetRedirectUrl(origin),
+      redirectTo,
     });
 
     if (error) {
-      console.warn("Password reset request was not delivered:", error.message);
-      return forgotPasswordResponse();
+      console.warn("[auth/forgot-password] Reset email not delivered:", error.message);
+      // Do not reveal whether the account exists.
+      return forgotPasswordSuccessResponse();
     }
 
-    return forgotPasswordResponse();
+    console.info("[auth/forgot-password] Reset email dispatched", { email: normalized });
+    return forgotPasswordSuccessResponse();
   } catch (error) {
-    console.error("Forgot password error:", error);
-    return NextResponse.json(
-      { error: "Unable to send reset email. Please try again." },
-      { status: 500 }
-    );
+    console.error("[auth/forgot-password] Unexpected error:", error);
+    return NextResponse.json({ error: FORGOT_PASSWORD_ERROR_MESSAGE }, { status: 500 });
   }
 }

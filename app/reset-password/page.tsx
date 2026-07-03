@@ -3,9 +3,10 @@
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { Suspense, useEffect, useState } from "react";
-import { KeyRound, Loader2 } from "lucide-react";
+import { CheckCircle2, KeyRound, Loader2 } from "lucide-react";
 import { AuthToastProvider, useAuthToast } from "@/components/auth/AuthToast";
 import PasswordInput from "@/components/auth/PasswordInput";
+import PasswordStrengthIndicator from "@/components/auth/PasswordStrengthIndicator";
 import { mapAuthErrorMessage } from "@/lib/auth/errors";
 import {
   RESET_LINK_EXPIRED_MESSAGE,
@@ -15,7 +16,50 @@ import {
 import { invalidateCreditsCache } from "@/hooks/useCredits";
 import { supabase } from "@/lib/supabase";
 
-type ResetState = "loading" | "ready" | "invalid";
+type ResetState = "loading" | "ready" | "invalid" | "success";
+
+const REDIRECT_DELAY_MS = 2500;
+
+async function verifyRecoverySession(): Promise<boolean> {
+  const { data: sessionData } = await supabase.auth.getSession();
+  if (sessionData.session?.user) {
+    return true;
+  }
+
+  const { data: userData, error: userError } = await supabase.auth.getUser();
+  if (!userError && userData.user) {
+    return true;
+  }
+
+  return new Promise((resolve) => {
+    let settled = false;
+
+    const finish = (valid: boolean) => {
+      if (settled) {
+        return;
+      }
+      settled = true;
+      subscription.unsubscribe();
+      window.clearTimeout(timeout);
+      resolve(valid);
+    };
+
+    const {
+      data: { subscription },
+    } = supabase.auth.onAuthStateChange((event, session) => {
+      if (
+        session?.user &&
+        (event === "PASSWORD_RECOVERY" ||
+          event === "SIGNED_IN" ||
+          event === "INITIAL_SESSION")
+      ) {
+        finish(true);
+      }
+    });
+
+    const timeout = window.setTimeout(() => finish(false), 8000);
+  });
+}
 
 function ResetPasswordForm() {
   const router = useRouter();
@@ -36,23 +80,31 @@ function ResetPasswordForm() {
       return;
     }
 
-    async function verifyRecoverySession() {
-      const {
-        data: { user },
-        error: userError,
-      } = await supabase.auth.getUser();
-
-      if (userError || !user) {
-        setState("invalid");
-        setError(RESET_LINK_EXPIRED_MESSAGE);
+    async function bootstrap() {
+      const isValid = await verifyRecoverySession();
+      if (isValid) {
+        setState("ready");
         return;
       }
 
-      setState("ready");
+      setState("invalid");
+      setError(RESET_LINK_EXPIRED_MESSAGE);
     }
 
-    void verifyRecoverySession();
+    void bootstrap();
   }, [searchParams]);
+
+  useEffect(() => {
+    if (state !== "success") {
+      return;
+    }
+
+    const timer = window.setTimeout(() => {
+      router.replace("/login?reset=success");
+    }, REDIRECT_DELAY_MS);
+
+    return () => window.clearTimeout(timer);
+  }, [state, router]);
 
   async function handleSubmit(event: React.FormEvent) {
     event.preventDefault();
@@ -73,6 +125,7 @@ function ResetPasswordForm() {
 
       if (updateError) {
         const message = mapAuthErrorMessage(updateError.message);
+        console.warn("[reset-password] Update failed:", updateError.message);
         setError(message);
         showToast(message, "error");
 
@@ -85,11 +138,13 @@ function ResetPasswordForm() {
         return;
       }
 
+      console.info("[reset-password] Password updated successfully");
       invalidateCreditsCache();
       await supabase.auth.signOut();
+      setState("success");
       showToast(RESET_SUCCESS_MESSAGE, "success");
-      router.push("/login?reset=success");
-    } catch {
+    } catch (submitError) {
+      console.error("[reset-password] Unexpected error:", submitError);
       const message = "Unable to update password. Please try again.";
       setError(message);
       showToast(message, "error");
@@ -103,6 +158,26 @@ function ResetPasswordForm() {
       <div className="glass flex w-full max-w-md flex-col items-center rounded-2xl border border-white/10 p-10 shadow-xl shadow-violet-500/10">
         <Loader2 className="h-8 w-8 animate-spin text-cyan-300" aria-hidden />
         <p className="mt-4 text-sm text-zinc-400">Verifying reset link…</p>
+      </div>
+    );
+  }
+
+  if (state === "success") {
+    return (
+      <div className="glass flex w-full max-w-md flex-col items-center rounded-2xl border border-white/10 p-10 text-center shadow-xl shadow-violet-500/10">
+        <div className="flex h-16 w-16 items-center justify-center rounded-full bg-emerald-500/15">
+          <CheckCircle2 className="h-9 w-9 text-emerald-400" aria-hidden />
+        </div>
+        <h1 className="mt-6 text-2xl font-bold text-white">Password updated</h1>
+        <p className="mt-3 text-sm leading-relaxed text-zinc-400">
+          {RESET_SUCCESS_MESSAGE}
+        </p>
+        <Link
+          href="/login"
+          className="mt-8 inline-flex w-full items-center justify-center rounded-xl bg-gradient-to-r from-cyan-400 via-violet-500 to-fuchsia-500 px-4 py-3 text-sm font-semibold text-white transition hover:opacity-90"
+        >
+          Continue to sign in
+        </Link>
       </div>
     );
   }
@@ -142,13 +217,16 @@ function ResetPasswordForm() {
       </p>
 
       <form className="mt-8 space-y-4" onSubmit={(event) => void handleSubmit(event)}>
-        <PasswordInput
-          placeholder="New password (min. 8 characters)"
-          autoComplete="new-password"
-          value={password}
-          onChange={(event) => setPassword(event.target.value)}
-          className="w-full rounded-xl border border-white/10 bg-white/[0.04] px-4 py-3 pr-11 text-sm text-white placeholder:text-zinc-500 focus:border-violet-500/50 focus:outline-none focus:ring-2 focus:ring-violet-500/20"
-        />
+        <div className="space-y-2">
+          <PasswordInput
+            placeholder="New password (min. 8 characters)"
+            autoComplete="new-password"
+            value={password}
+            onChange={(event) => setPassword(event.target.value)}
+            className="w-full rounded-xl border border-white/10 bg-white/[0.04] px-4 py-3 pr-11 text-sm text-white placeholder:text-zinc-500 focus:border-violet-500/50 focus:outline-none focus:ring-2 focus:ring-violet-500/20"
+          />
+          <PasswordStrengthIndicator password={password} />
+        </div>
 
         <PasswordInput
           placeholder="Confirm new password"
@@ -198,7 +276,10 @@ export default function ResetPasswordPage() {
       <div className="flex min-h-screen items-center justify-center bg-[#030014] px-4 py-10">
         <Suspense
           fallback={
-            <div className="text-sm text-zinc-400">Loading reset form…</div>
+            <div className="glass flex w-full max-w-md flex-col items-center rounded-2xl border border-white/10 p-10">
+              <Loader2 className="h-8 w-8 animate-spin text-cyan-300" aria-hidden />
+              <p className="mt-4 text-sm text-zinc-400">Loading reset form…</p>
+            </div>
           }
         >
           <ResetPasswordForm />

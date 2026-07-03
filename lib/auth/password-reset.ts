@@ -1,6 +1,8 @@
 import { MIN_PASSWORD_LENGTH } from "@/lib/auth/validation";
+import { resolveSiteOrigin } from "@/lib/site-url";
 
-export function getPasswordResetRedirectUrl(origin: string): string {
+export function getPasswordResetRedirectUrl(): string {
+  const origin = resolveSiteOrigin(null);
   return `${origin}/auth/callback?next=/reset-password`;
 }
 
@@ -26,7 +28,15 @@ export const RESET_LINK_EXPIRED_MESSAGE =
   "This reset link is invalid or has expired. Please request a new password reset.";
 
 export const RESET_SUCCESS_MESSAGE =
-  "Your password has been updated. You can now sign in.";
+  "🎉 Password updated successfully. Redirecting to login...";
 
-export const FORGOT_PASSWORD_RESPONSE_MESSAGE =
-  "If an account exists for this email, a password reset link has been sent.";
+export const FORGOT_PASSWORD_SUCCESS_MESSAGE =
+  "✅ Password reset link sent. Please check your email.";
+
+/** @deprecated Use FORGOT_PASSWORD_SUCCESS_MESSAGE */
+export const FORGOT_PASSWORD_RESPONSE_MESSAGE = FORGOT_PASSWORD_SUCCESS_MESSAGE;
+
+export const INVALID_EMAIL_MESSAGE = "Please enter a valid email address.";
+
+export const FORGOT_PASSWORD_ERROR_MESSAGE =
+  "Unable to send reset email. Please try again.";

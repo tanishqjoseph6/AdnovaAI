@@ -5,8 +5,13 @@ import { AnimatePresence, motion } from "framer-motion";
 import { Loader2, X } from "lucide-react";
 import { useAuthToast } from "@/components/auth/AuthToast";
 import { mapAuthErrorMessage } from "@/lib/auth/errors";
-import { FORGOT_PASSWORD_RESPONSE_MESSAGE } from "@/lib/auth/password-reset";
+import {
+  FORGOT_PASSWORD_ERROR_MESSAGE,
+  FORGOT_PASSWORD_SUCCESS_MESSAGE,
+  INVALID_EMAIL_MESSAGE,
+} from "@/lib/auth/password-reset";
 import { isValidEmail, normalizeEmail } from "@/lib/auth/validation";
+import { usePasswordResetCooldown } from "@/hooks/usePasswordResetCooldown";
 
 type ForgotPasswordModalProps = {
   open: boolean;
@@ -22,11 +27,17 @@ export default function ForgotPasswordModal({
   const { showToast } = useAuthToast();
   const [email, setEmail] = useState(initialEmail);
   const [isSending, setIsSending] = useState(false);
+  const [fieldError, setFieldError] = useState<string | null>(null);
   const dialogRef = useRef<HTMLDivElement>(null);
+  const inFlightRef = useRef(false);
+  const normalizedEmail = normalizeEmail(email);
+  const { secondsLeft, isOnCooldown, startCooldown } =
+    usePasswordResetCooldown(normalizedEmail);
 
   useEffect(() => {
     if (open) {
       setEmail(initialEmail);
+      setFieldError(null);
     }
   }, [open, initialEmail]);
 
@@ -52,14 +63,21 @@ export default function ForgotPasswordModal({
 
   async function handleSubmit(event: React.FormEvent) {
     event.preventDefault();
-    const normalized = normalizeEmail(email);
 
-    if (!isValidEmail(normalized)) {
-      showToast(FORGOT_PASSWORD_RESPONSE_MESSAGE, "success");
-      onClose();
+    if (inFlightRef.current || isSending || isOnCooldown) {
       return;
     }
 
+    const normalized = normalizeEmail(email);
+    setFieldError(null);
+
+    if (!normalized || !isValidEmail(normalized)) {
+      setFieldError(INVALID_EMAIL_MESSAGE);
+      showToast(INVALID_EMAIL_MESSAGE, "error");
+      return;
+    }
+
+    inFlightRef.current = true;
     setIsSending(true);
 
     try {
@@ -75,21 +93,28 @@ export default function ForgotPasswordModal({
       };
 
       if (!response.ok) {
-        showToast(mapAuthErrorMessage(payload.error ?? "Unable to send reset email."), "error");
+        const message = mapAuthErrorMessage(
+          payload.error ?? FORGOT_PASSWORD_ERROR_MESSAGE
+        );
+        setFieldError(message);
+        showToast(message, "error");
         return;
       }
 
-      showToast(
-        payload.message ?? FORGOT_PASSWORD_RESPONSE_MESSAGE,
-        "success"
-      );
+      showToast(payload.message ?? FORGOT_PASSWORD_SUCCESS_MESSAGE, "success");
+      startCooldown();
       onClose();
-    } catch {
-      showToast("Unable to send reset email. Please try again.", "error");
+    } catch (error) {
+      console.error("[ForgotPasswordModal] Request failed:", error);
+      setFieldError(FORGOT_PASSWORD_ERROR_MESSAGE);
+      showToast(FORGOT_PASSWORD_ERROR_MESSAGE, "error");
     } finally {
+      inFlightRef.current = false;
       setIsSending(false);
     }
   }
+
+  const isDisabled = isSending || isOnCooldown;
 
   return (
     <AnimatePresence>
@@ -140,18 +165,37 @@ export default function ForgotPasswordModal({
               className="mt-6 space-y-4"
               onSubmit={(event) => void handleSubmit(event)}
             >
-              <input
-                type="email"
-                autoComplete="email"
-                placeholder="Email address"
-                value={email}
-                onChange={(event) => setEmail(event.target.value)}
-                className="w-full rounded-xl border border-white/10 bg-white/[0.04] px-4 py-3 text-sm text-white placeholder:text-zinc-500 focus:border-violet-500/50 focus:outline-none focus:ring-2 focus:ring-violet-500/20"
-              />
+              <div>
+                <input
+                  type="email"
+                  autoComplete="email"
+                  inputMode="email"
+                  placeholder="Email address"
+                  value={email}
+                  onChange={(event) => {
+                    setEmail(event.target.value);
+                    if (fieldError) {
+                      setFieldError(null);
+                    }
+                  }}
+                  aria-invalid={fieldError ? true : undefined}
+                  aria-describedby={fieldError ? "forgot-password-error" : undefined}
+                  className="w-full rounded-xl border border-white/10 bg-white/[0.04] px-4 py-3 text-sm text-white placeholder:text-zinc-500 focus:border-violet-500/50 focus:outline-none focus:ring-2 focus:ring-violet-500/20"
+                />
+                {fieldError && (
+                  <p
+                    id="forgot-password-error"
+                    role="alert"
+                    className="mt-2 text-sm text-red-300"
+                  >
+                    {fieldError}
+                  </p>
+                )}
+              </div>
 
               <button
                 type="submit"
-                disabled={isSending}
+                disabled={isDisabled}
                 className="inline-flex w-full items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-cyan-400 via-violet-500 to-fuchsia-500 px-4 py-3 text-sm font-semibold text-white transition hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-60"
               >
                 {isSending ? (
@@ -159,10 +203,19 @@ export default function ForgotPasswordModal({
                     <Loader2 className="h-4 w-4 animate-spin" aria-hidden />
                     Sending reset link…
                   </>
+                ) : isOnCooldown ? (
+                  `Resend available in ${secondsLeft}s`
                 ) : (
                   "Send reset link"
                 )}
               </button>
+
+              {isOnCooldown && !isSending && (
+                <p className="text-center text-xs text-zinc-500">
+                  Check your inbox and spam folder. You can request another link
+                  in {secondsLeft} second{secondsLeft === 1 ? "" : "s"}.
+                </p>
+              )}
             </form>
           </motion.div>
         </div>
