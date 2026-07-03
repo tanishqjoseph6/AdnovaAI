@@ -3,10 +3,11 @@ import {
   assertWebhookPaymentEntity,
   PaymentVerificationError,
 } from "@/lib/billing/payment-verification";
-import { isPaidPlan } from "@/lib/billing/plans";
-import type { BillingCurrency, BillingInterval } from "@/lib/billing/pricing";
-import { createRazorpayClient, verifyWebhookSignature } from "@/lib/razorpay";
 import { recordPayment } from "@/lib/billing/payments";
+import { extractVerifiedPaymentDetails } from "@/lib/billing/razorpay-ledger";
+import { isPaidPlan } from "@/lib/billing/plans";
+import type { BillingInterval } from "@/lib/billing/pricing";
+import { createRazorpayClient, verifyWebhookSignature } from "@/lib/razorpay";
 import { activateSubscriptionFromPayment } from "@/lib/subscription";
 
 type RazorpayWebhookPayload = {
@@ -17,6 +18,7 @@ type RazorpayWebhookPayload = {
         id?: string;
         order_id?: string;
         amount?: number | string;
+        currency?: string;
         status?: string;
         notes?: Record<string, string>;
       };
@@ -28,14 +30,7 @@ type RazorpayWebhookPayload = {
  * POST /api/razorpay/webhook
  *
  * Backup activation path when the browser callback fails or the user closes
- * the tab before /api/razorpay/verify runs. Razorpay retries webhooks, so
- * activation must be idempotent (handled in Postgres).
- *
- * Flow:
- * 1. Verify webhook HMAC (RAZORPAY_WEBHOOK_SECRET — set per Test/Live webhook in dashboard).
- * 2. On payment.captured, validate amount + notes from the event payload.
- * 3. Optionally cross-check the order via Razorpay API.
- * 4. Atomically upgrade profiles (same function as /verify).
+ * the tab before /api/razorpay/verify runs.
  */
 export async function POST(request: Request) {
   const rawBody = await request.text();
@@ -56,16 +51,31 @@ export async function POST(request: Request) {
   }
 
   const event = payload.event;
-  const payment = payload.payload?.payment?.entity;
+  const paymentEntity = payload.payload?.payment?.entity;
 
-  if (!payment?.id || !payment.order_id) {
+  if (!paymentEntity?.id || !paymentEntity.order_id) {
     return NextResponse.json({ received: true });
   }
 
+  const razorpay = createRazorpayClient();
+
+  let payment;
+  let order;
+
+  try {
+    [payment, order] = await Promise.all([
+      razorpay.payments.fetch(paymentEntity.id),
+      razorpay.orders.fetch(paymentEntity.order_id),
+    ]);
+  } catch (error) {
+    console.error("[razorpay/webhook] Failed to fetch payment/order from Razorpay API:", error);
+    return NextResponse.json({ error: "Failed to fetch payment details" }, { status: 500 });
+  }
+
   if (event === "payment.failed") {
-    const plan = payment.notes?.plan;
-    const userId = payment.notes?.user_id;
-    const email = payment.notes?.email;
+    const plan = order.notes?.plan ?? payment.notes?.plan;
+    const userId = order.notes?.user_id ?? payment.notes?.user_id;
+    const email = order.notes?.email ?? payment.notes?.email;
 
     if (
       typeof plan === "string" &&
@@ -74,21 +84,32 @@ export async function POST(request: Request) {
       payment.id &&
       payment.order_id
     ) {
-      const interval: BillingInterval =
-        payment.notes?.interval === "yearly" ? "yearly" : "monthly";
+      const verified = extractVerifiedPaymentDetails({
+        payment: {
+          id: payment.id,
+          order_id: payment.order_id,
+          amount: payment.amount,
+          currency: payment.currency,
+          notes: payment.notes as Record<string, string | undefined>,
+        },
+        order: {
+          id: order.id,
+          amount: order.amount,
+          notes: order.notes as Record<string, string | undefined>,
+        },
+        fallbackEmail: typeof email === "string" ? email : null,
+      });
 
       await recordPayment({
-        userId,
-        email: typeof email === "string" ? email : null,
-        plan,
-        amount: Number(payment.amount ?? 0),
-        currency: (payment.notes?.currency?.toUpperCase() === "USD"
-          ? "USD"
-          : "INR") as BillingCurrency,
-        razorpayPaymentId: payment.id,
-        razorpayOrderId: payment.order_id,
+        userId: verified.userId,
+        email: verified.email,
+        plan: verified.plan,
+        amount: verified.amountMinor,
+        currency: verified.currency,
+        razorpayPaymentId: verified.razorpayPaymentId,
+        razorpayOrderId: verified.razorpayOrderId,
         status: "failed",
-        billingInterval: interval,
+        billingInterval: verified.billingInterval,
       });
     }
 
@@ -99,7 +120,7 @@ export async function POST(request: Request) {
     return NextResponse.json({ received: true });
   }
 
-  const plan = payment.notes?.plan;
+  const plan = order.notes?.plan ?? payment.notes?.plan;
 
   if (typeof plan !== "string" || !isPaidPlan(plan)) {
     return NextResponse.json({ received: true });
@@ -107,23 +128,19 @@ export async function POST(request: Request) {
 
   try {
     const interval: BillingInterval =
-      payment.notes?.interval === "yearly" ? "yearly" : "monthly";
+      order.notes?.interval === "yearly" ? "yearly" : "monthly";
 
-    const { userId, email } = assertWebhookPaymentEntity(
+    const { userId } = assertWebhookPaymentEntity(
       {
         id: payment.id,
         order_id: payment.order_id,
-        amount: payment.amount ?? 0,
+        amount: payment.amount,
         status: payment.status,
-        notes: payment.notes,
+        notes: payment.notes as Record<string, string | undefined>,
       },
       plan,
       interval
     );
-
-    // Cross-check order ownership and paid status via Razorpay API
-    const razorpay = createRazorpayClient();
-    const order = await razorpay.orders.fetch(payment.order_id);
 
     if (order.notes?.user_id !== userId || order.notes?.plan !== plan) {
       return NextResponse.json(
@@ -133,42 +150,75 @@ export async function POST(request: Request) {
     }
 
     if (order.status !== "paid") {
-      return NextResponse.json(
-        { error: "Order is not paid" },
-        { status: 400 }
-      );
+      return NextResponse.json({ error: "Order is not paid" }, { status: 400 });
     }
 
-    await activateSubscriptionFromPayment({
-      userId,
-      email,
-      plan,
-      paymentId: payment.id,
-      orderId: payment.order_id,
+    const verified = extractVerifiedPaymentDetails({
+      payment: {
+        id: payment.id,
+        order_id: payment.order_id,
+        amount: payment.amount,
+        currency: payment.currency,
+        notes: payment.notes as Record<string, string | undefined>,
+      },
+      order: {
+        id: order.id,
+        amount: order.amount,
+        notes: order.notes as Record<string, string | undefined>,
+      },
     });
 
-    await recordPayment({
-      userId,
-      email,
-      plan,
-      amount: Number(payment.amount ?? 0),
-      currency: (payment.notes?.currency?.toUpperCase() === "USD"
-        ? "USD"
-        : "INR") as BillingCurrency,
-      razorpayPaymentId: payment.id,
-      razorpayOrderId: payment.order_id,
-      status: "success",
-      billingInterval: interval,
+    console.info("[razorpay/webhook] Verified Razorpay transaction", {
+      razorpayPaymentId: verified.razorpayPaymentId,
+      razorpayOrderId: verified.razorpayOrderId,
+      amountMinor: verified.amountMinor,
+      currency: verified.currency,
+      plan: verified.plan,
+      billingInterval: verified.billingInterval,
+      userId: verified.userId,
     });
+
+    await activateSubscriptionFromPayment({
+      userId: verified.userId,
+      email: verified.email,
+      plan: verified.plan,
+      paymentId: verified.razorpayPaymentId,
+      orderId: verified.razorpayOrderId,
+    });
+
+    const recorded = await recordPayment({
+      userId: verified.userId,
+      email: verified.email,
+      plan: verified.plan,
+      amount: verified.amountMinor,
+      currency: verified.currency,
+      razorpayPaymentId: verified.razorpayPaymentId,
+      razorpayOrderId: verified.razorpayOrderId,
+      status: "success",
+      billingInterval: verified.billingInterval,
+    });
+
+    if (!recorded) {
+      console.error("[razorpay/webhook] Payment ledger write failed after verification", {
+        razorpayPaymentId: verified.razorpayPaymentId,
+        amountMinor: verified.amountMinor,
+      });
+    } else if (recorded.amount !== verified.amountMinor) {
+      console.error("[razorpay/webhook] Stored amount does not match Razorpay transaction", {
+        razorpayPaymentId: verified.razorpayPaymentId,
+        razorpayAmountMinor: verified.amountMinor,
+        storedAmountMinor: recorded.amount,
+      });
+    }
   } catch (error) {
     if (error instanceof PaymentVerificationError) {
-      console.error("Webhook payment validation error:", error.message);
+      console.error("[razorpay/webhook] Payment validation error:", error.message);
       return NextResponse.json({ error: error.message }, {
         status: error.statusCode,
       });
     }
 
-    console.error("Webhook subscription activation error:", error);
+    console.error("[razorpay/webhook] Subscription activation error:", error);
     return NextResponse.json({ error: "Failed to update subscription" }, {
       status: 500,
     });

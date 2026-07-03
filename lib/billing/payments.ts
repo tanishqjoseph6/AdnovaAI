@@ -136,52 +136,110 @@ export function normalizePaymentRow(row: Record<string, unknown>): PaymentRow | 
 
 /**
  * Idempotent payment ledger write. Safe for verify + webhook duplicate delivery.
+ * Always persists the verified Razorpay amount (paise/cents) — never plan-based defaults.
  */
 export async function recordPayment(input: RecordPaymentInput): Promise<PaymentRecord | null> {
   const admin = createAdminClient();
   const now = input.createdAt ?? new Date().toISOString();
+  const status = input.status ?? "success";
 
-  const { data, error } = await admin
+  const writePayload = {
+    user_id: input.userId,
+    email: input.email ?? null,
+    plan: input.plan,
+    amount: input.amount,
+    currency: input.currency,
+    razorpay_payment_id: input.razorpayPaymentId,
+    razorpay_order_id: input.razorpayOrderId,
+    status,
+    billing_interval: input.billingInterval ?? null,
+    updated_at: now,
+  };
+
+  console.info("[payments] Writing payment ledger row", {
+    razorpayPaymentId: input.razorpayPaymentId,
+    razorpayOrderId: input.razorpayOrderId,
+    amountMinor: input.amount,
+    currency: input.currency,
+    plan: input.plan,
+    status,
+    billingInterval: input.billingInterval ?? null,
+  });
+
+  const { data: existing, error: existingError } = await admin
     .from("payments")
-    .upsert(
-      {
-        user_id: input.userId,
-        email: input.email ?? null,
-        plan: input.plan,
-        amount: input.amount,
-        currency: input.currency,
-        razorpay_payment_id: input.razorpayPaymentId,
-        razorpay_order_id: input.razorpayOrderId,
-        status: input.status ?? "success",
-        billing_interval: input.billingInterval ?? null,
-        created_at: now,
-        updated_at: now,
-      },
-      { onConflict: "razorpay_payment_id", ignoreDuplicates: false }
-    )
-    .select("*")
-    .single();
+    .select("id, amount")
+    .eq("razorpay_payment_id", input.razorpayPaymentId)
+    .maybeSingle();
 
-  if (error) {
-    if (error.code === "23505") {
-      const { data: existing } = await admin
-        .from("payments")
-        .select("*")
-        .eq("razorpay_payment_id", input.razorpayPaymentId)
-        .maybeSingle();
-
-      if (existing) {
-        const normalized = normalizePaymentRow(existing as Record<string, unknown>);
-        return normalized ? paymentFromRow(normalized) : null;
-      }
-    }
-
-    console.error("[payments] Failed to record payment:", error.message);
+  if (existingError) {
+    console.error("[payments] Failed to look up existing payment:", existingError.message);
     return null;
   }
 
-  const normalized = normalizePaymentRow(data as Record<string, unknown>);
-  return normalized ? paymentFromRow(normalized) : null;
+  let data: Record<string, unknown> | null = null;
+  let writeError: { message: string } | null = null;
+
+  if (existing) {
+    if (existing.amount !== input.amount) {
+      console.warn("[payments] Correcting stored amount from Razorpay verification", {
+        razorpayPaymentId: input.razorpayPaymentId,
+        previousAmountMinor: existing.amount,
+        razorpayAmountMinor: input.amount,
+      });
+    }
+
+    const result = await admin
+      .from("payments")
+      .update(writePayload)
+      .eq("razorpay_payment_id", input.razorpayPaymentId)
+      .select("*")
+      .single();
+
+    data = result.data as Record<string, unknown> | null;
+    writeError = result.error;
+  } else {
+    const result = await admin
+      .from("payments")
+      .insert({
+        ...writePayload,
+        created_at: now,
+      })
+      .select("*")
+      .single();
+
+    data = result.data as Record<string, unknown> | null;
+    writeError = result.error;
+  }
+
+  if (writeError || !data) {
+    console.error("[payments] Failed to record payment:", writeError?.message ?? "No data returned");
+    return null;
+  }
+
+  const normalized = normalizePaymentRow(data);
+  if (!normalized) {
+    console.error("[payments] Recorded row failed normalization", {
+      razorpayPaymentId: input.razorpayPaymentId,
+    });
+    return null;
+  }
+
+  const recorded = paymentFromRow(normalized);
+
+  console.info("[payments] Payment ledger row saved", {
+    id: recorded.id,
+    razorpayPaymentId: recorded.razorpayPaymentId,
+    razorpayOrderId: recorded.razorpayOrderId,
+    amountMinor: recorded.amount,
+    razorpayAmountMinor: input.amount,
+    amountMatchesRazorpay: recorded.amount === input.amount,
+    currency: recorded.currency,
+    plan: recorded.plan,
+    status: recorded.status,
+  });
+
+  return recorded;
 }
 
 export async function listUserPayments(

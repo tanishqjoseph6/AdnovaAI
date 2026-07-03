@@ -5,10 +5,11 @@ import {
   assertPaymentMatchesOrder,
   PaymentVerificationError,
 } from "@/lib/billing/payment-verification";
-import { isPaidPlan } from "@/lib/billing/plans";
-import type { BillingCurrency, BillingInterval } from "@/lib/billing/pricing";
-import { createRazorpayClient, verifyPaymentSignature } from "@/lib/razorpay";
 import { recordPayment } from "@/lib/billing/payments";
+import { extractVerifiedPaymentDetails } from "@/lib/billing/razorpay-ledger";
+import { isPaidPlan } from "@/lib/billing/plans";
+import type { BillingInterval } from "@/lib/billing/pricing";
+import { createRazorpayClient, verifyPaymentSignature } from "@/lib/razorpay";
 import { activateSubscriptionFromPayment } from "@/lib/subscription";
 import { createClient } from "@/lib/supabase/server";
 
@@ -18,12 +19,6 @@ import { createClient } from "@/lib/supabase/server";
  * Checkout success handler (primary path). The browser sends Razorpay's
  * order_id, payment_id and signature after Checkout closes — we never trust
  * plan or amount from the client.
- *
- * Flow:
- * 1. Authenticate the Supabase user.
- * 2. Verify Razorpay HMAC signature (order_id|payment_id) — works in Test & Live mode.
- * 3. Fetch payment + order from Razorpay API and validate amount, status, notes.
- * 4. Atomically upgrade profiles via Postgres (idempotent for duplicate callbacks).
  */
 export async function POST(request: Request) {
   try {
@@ -54,7 +49,6 @@ export async function POST(request: Request) {
       );
     }
 
-    // Step 1: cryptographic proof the callback came from Razorpay
     if (!verifyPaymentSignature(orderId, paymentId, signature)) {
       return NextResponse.json(
         { error: "Payment verification failed. Please contact support." },
@@ -63,8 +57,6 @@ export async function POST(request: Request) {
     }
 
     const razorpay = createRazorpayClient();
-
-    // Step 2: fetch authoritative payment + order from Razorpay (never trust frontend)
     const [payment, order] = await Promise.all([
       razorpay.payments.fetch(paymentId),
       razorpay.orders.fetch(orderId),
@@ -100,36 +92,72 @@ export async function POST(request: Request) {
       interval
     );
 
-    // Step 3: atomic profile upgrade (safe if webhook already processed this payment)
+    const verified = extractVerifiedPaymentDetails({
+      payment: {
+        id: payment.id,
+        order_id: payment.order_id,
+        amount: payment.amount,
+        currency: payment.currency,
+        notes: payment.notes as Record<string, string | undefined>,
+      },
+      order: {
+        id: order.id,
+        amount: order.amount,
+        notes: orderNotes,
+      },
+      fallbackEmail: user.email,
+    });
+
+    console.info("[razorpay/verify] Verified Razorpay transaction", {
+      razorpayPaymentId: verified.razorpayPaymentId,
+      razorpayOrderId: verified.razorpayOrderId,
+      amountMinor: verified.amountMinor,
+      currency: verified.currency,
+      plan: verified.plan,
+      billingInterval: verified.billingInterval,
+      userId: verified.userId,
+    });
+
     const activation = await activateSubscriptionFromPayment({
       userId: user.id,
       email: user.email,
-      plan,
-      paymentId,
-      orderId,
+      plan: verified.plan,
+      paymentId: verified.razorpayPaymentId,
+      orderId: verified.razorpayOrderId,
     });
 
-    if (
-      activation.alreadyProcessed &&
-      activation.userId !== user.id
-    ) {
+    if (activation.alreadyProcessed && activation.userId !== user.id) {
       return NextResponse.json(
         { error: "Payment is already linked to another account." },
         { status: 409 }
       );
     }
 
-    await recordPayment({
-      userId: user.id,
-      email: user.email,
-      plan,
-      amount: Number(payment.amount),
-      currency: (payment.currency?.toUpperCase() === "USD" ? "USD" : "INR") as BillingCurrency,
-      razorpayPaymentId: paymentId,
-      razorpayOrderId: orderId,
+    const recorded = await recordPayment({
+      userId: verified.userId,
+      email: verified.email ?? user.email,
+      plan: verified.plan,
+      amount: verified.amountMinor,
+      currency: verified.currency,
+      razorpayPaymentId: verified.razorpayPaymentId,
+      razorpayOrderId: verified.razorpayOrderId,
       status: "success",
-      billingInterval: interval,
+      billingInterval: verified.billingInterval,
     });
+
+    if (!recorded) {
+      console.error("[razorpay/verify] Payment ledger write failed after verification", {
+        razorpayPaymentId: verified.razorpayPaymentId,
+        razorpayOrderId: verified.razorpayOrderId,
+        amountMinor: verified.amountMinor,
+      });
+    } else if (recorded.amount !== verified.amountMinor) {
+      console.error("[razorpay/verify] Stored amount does not match Razorpay transaction", {
+        razorpayPaymentId: verified.razorpayPaymentId,
+        razorpayAmountMinor: verified.amountMinor,
+        storedAmountMinor: recorded.amount,
+      });
+    }
 
     return NextResponse.json({
       success: true,
@@ -144,7 +172,7 @@ export async function POST(request: Request) {
       );
     }
 
-    console.error("Verify Razorpay payment error:", error);
+    console.error("[razorpay/verify] Unexpected error:", error);
     return NextResponse.json(
       {
         error:
