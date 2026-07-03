@@ -51,8 +51,12 @@ export function useNotifications() {
     void loadNotifications();
 
     const onFocus = () => void loadNotifications();
+    const interval = window.setInterval(() => void loadNotifications(), 30_000);
     window.addEventListener("focus", onFocus);
-    return () => window.removeEventListener("focus", onFocus);
+    return () => {
+      window.removeEventListener("focus", onFocus);
+      window.clearInterval(interval);
+    };
   }, [loadNotifications]);
 
   const unreadCount = useMemo(

@@ -12,5 +12,5 @@ export default async function AdminShortcutPage() {
     redirect("/dashboard");
   }
 
-  redirect("/dashboard/admin/feedback");
+  redirect("/dashboard/admin");
 }

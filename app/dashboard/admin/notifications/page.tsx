@@ -1,18 +1,9 @@
-import { notFound } from "next/navigation";
 import AdminNotificationsPageClient from "@/components/admin/AdminNotificationsPageClient";
 import DashboardShell from "@/components/dashboard/DashboardShell";
-import { isUserAdmin } from "@/lib/admin/auth";
-import { createClient } from "@/lib/supabase/server";
+import { requireAdminPage } from "@/lib/admin/page-auth";
 
 export default async function AdminNotificationsPage() {
-  const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-
-  if (!user || !(await isUserAdmin(user.id, user.email))) {
-    notFound();
-  }
+  await requireAdminPage();
 
   return (
     <DashboardShell

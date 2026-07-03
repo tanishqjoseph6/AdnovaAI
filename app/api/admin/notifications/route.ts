@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { requireAdminUser } from "@/lib/admin/auth";
+import { logAdminAction } from "@/lib/admin/audit";
 import { adminUserFromRow, type AdminUserRow } from "@/lib/admin/users";
 
 type NotificationAdminRow = {
@@ -144,6 +145,15 @@ export async function POST(request: Request) {
         { status: 500 }
       );
     }
+
+    await logAdminAction({
+      admin: authResult.admin,
+      user: authResult.user,
+      action: "notification_sent",
+      targetType: "notification",
+      targetId: data.id,
+      metadata: { userId, title },
+    });
 
     return NextResponse.json({ success: true, notification: data });
   } catch (error) {

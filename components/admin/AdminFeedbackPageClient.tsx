@@ -27,6 +27,9 @@ export default function AdminFeedbackPageClient() {
   const [drafts, setDrafts] = useState<Record<string, Draft>>({});
   const [isLoading, setIsLoading] = useState(true);
   const [savingId, setSavingId] = useState<string | null>(null);
+  const [tab, setTab] = useState<"open" | "reviewed" | "closed">("open");
+  const [category, setCategory] = useState<"all" | "bug_report" | "feature_request" | "general_feedback">("all");
+  const [search, setSearch] = useState("");
   const [toast, setToast] = useState<{
     type: "success" | "error";
     message: string;
@@ -87,6 +90,22 @@ export default function AdminFeedbackPageClient() {
       closed: tickets.filter((ticket) => ticket.status === "closed").length,
     }),
     [tickets]
+  );
+
+  const filteredTickets = useMemo(
+    () =>
+      tickets.filter((ticket) => {
+        const matchesTab = ticket.status === tab;
+        const matchesCategory = category === "all" || ticket.category === category;
+        const query = search.trim().toLowerCase();
+        const matchesSearch =
+          !query ||
+          ticket.subject.toLowerCase().includes(query) ||
+          ticket.message.toLowerCase().includes(query) ||
+          ticket.email.toLowerCase().includes(query);
+        return matchesTab && matchesCategory && matchesSearch;
+      }),
+    [category, search, tab, tickets]
   );
 
   function updateDraft(ticketId: string, patch: Partial<Draft>) {
@@ -185,20 +204,63 @@ export default function AdminFeedbackPageClient() {
         ))}
       </section>
 
+      <section className="rounded-3xl border border-white/[0.08] bg-white/[0.04] p-4 backdrop-blur-xl">
+        <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
+          <div className="flex flex-wrap gap-2">
+            {[
+              ["open", "Open"],
+              ["reviewed", "In Progress"],
+              ["closed", "Resolved"],
+            ].map(([value, label]) => (
+              <button
+                key={value}
+                type="button"
+                onClick={() => setTab(value as "open" | "reviewed" | "closed")}
+                className={`rounded-xl px-3 py-2 text-xs font-medium transition ${
+                  tab === value
+                    ? "bg-cyan-400/15 text-cyan-200 ring-1 ring-cyan-400/25"
+                    : "bg-white/[0.04] text-zinc-400 hover:text-white"
+                }`}
+              >
+                {label}
+              </button>
+            ))}
+          </div>
+          <div className="grid gap-2 sm:grid-cols-[1fr_12rem]">
+            <input
+              value={search}
+              onChange={(event) => setSearch(event.target.value)}
+              placeholder="Search tickets"
+              className="rounded-xl border border-white/10 bg-white/[0.04] px-3 py-2 text-sm text-white outline-none placeholder:text-zinc-600"
+            />
+            <select
+              value={category}
+              onChange={(event) => setCategory(event.target.value as typeof category)}
+              className="rounded-xl border border-white/10 bg-white/[0.04] px-3 py-2 text-sm text-white outline-none"
+            >
+              <option value="all" className="bg-[#09031f]">All categories</option>
+              <option value="bug_report" className="bg-[#09031f]">Bug</option>
+              <option value="feature_request" className="bg-[#09031f]">Feature</option>
+              <option value="general_feedback" className="bg-[#09031f]">General</option>
+            </select>
+          </div>
+        </div>
+      </section>
+
       {isLoading ? (
         <div className="rounded-3xl border border-white/[0.08] bg-white/[0.04] p-8 text-center text-sm text-zinc-400">
           Loading feedback...
         </div>
-      ) : tickets.length === 0 ? (
+      ) : filteredTickets.length === 0 ? (
         <div className="rounded-3xl border border-white/[0.08] bg-white/[0.04] p-8 text-center">
           <p className="text-lg font-semibold text-white">No feedback yet</p>
           <p className="mt-2 text-sm text-zinc-500">
-            Beta feedback submitted by users will appear here.
+            No tickets match this view.
           </p>
         </div>
       ) : (
         <div className="space-y-4">
-          {tickets.map((ticket) => {
+          {filteredTickets.map((ticket) => {
             const draft = drafts[ticket.id] ?? {
               status: ticket.status,
               adminReply: ticket.adminReply ?? "",

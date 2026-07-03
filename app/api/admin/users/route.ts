@@ -13,7 +13,7 @@ export async function GET(request: Request) {
     const search = searchParams.get("search")?.trim() ?? "";
     let query = authResult.admin
       .from("profiles")
-      .select("id, email, username, full_name, role")
+      .select("id, email, username, full_name, role, plan, subscription_status, account_status, created_at")
       .order("email", { ascending: true })
       .limit(100);
 
@@ -33,8 +33,37 @@ export async function GET(request: Request) {
       );
     }
 
+    const rows = (data ?? []) as AdminUserRow[];
+    const userIds = rows.map((row) => row.id);
+    const [{ data: creditsRows }, authUsersResult] = await Promise.all([
+      userIds.length > 0
+        ? authResult.admin
+            .from("user_credits")
+            .select("user_id, credits")
+            .in("user_id", userIds)
+        : Promise.resolve({ data: [] as Array<{ user_id: string; credits: number }>, error: null }),
+      authResult.admin.auth.admin.listUsers({ page: 1, perPage: 1000 }),
+    ]);
+
+    const creditsMap = new Map(
+      ((creditsRows ?? []) as Array<{ user_id: string; credits: number }>).map(
+        (row) => [row.user_id, row.credits]
+      )
+    );
+    const lastLoginMap = new Map(
+      (authUsersResult.data?.users ?? []).map((user) => [
+        user.id,
+        user.last_sign_in_at ?? null,
+      ])
+    );
+
     return NextResponse.json({
-      users: ((data ?? []) as AdminUserRow[]).map(adminUserFromRow),
+      users: rows.map((row) =>
+        adminUserFromRow(row, {
+          credits: creditsMap.get(row.id) ?? null,
+          lastLoginAt: lastLoginMap.get(row.id) ?? null,
+        })
+      ),
       viewerRole: authResult.role,
     });
   } catch (error) {

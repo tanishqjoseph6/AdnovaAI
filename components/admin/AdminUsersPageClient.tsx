@@ -27,6 +27,7 @@ export default function AdminUsersPageClient() {
   const [search, setSearch] = useState("");
   const [isLoading, setIsLoading] = useState(true);
   const [savingId, setSavingId] = useState<string | null>(null);
+  const [refreshKey, setRefreshKey] = useState(0);
   const [toast, setToast] = useState<{
     type: "success" | "error";
     message: string;
@@ -67,7 +68,7 @@ export default function AdminUsersPageClient() {
     }, 250);
 
     return () => window.clearTimeout(timer);
-  }, [search]);
+  }, [search, refreshKey]);
 
   useEffect(() => {
     if (!toast) return;
@@ -116,6 +117,78 @@ export default function AdminUsersPageClient() {
         type: "error",
         message:
           error instanceof Error ? error.message : "Unable to update role.",
+      });
+    } finally {
+      setSavingId(null);
+    }
+  }
+
+  async function runUserAction(
+    user: AdminUserView,
+    action: "suspend" | "unsuspend" | "delete" | "edit_credits" | "change_plan"
+  ) {
+    if (!canManageRoles || savingId) return;
+
+    const payload: Record<string, string | number> = { action };
+    if (action === "delete") {
+      const confirmed = window.confirm(
+        `Delete ${user.email}? This marks the account as deleted and keeps data for audit/history.`
+      );
+      if (!confirmed) return;
+    }
+
+    if (action === "suspend") {
+      const confirmed = window.confirm(`Suspend ${user.email}?`);
+      if (!confirmed) return;
+    }
+
+    if (action === "edit_credits") {
+      const value = window.prompt(
+        `Set credits for ${user.email}`,
+        String(user.credits ?? 0)
+      );
+      if (value === null) return;
+      const credits = Number(value);
+      if (!Number.isInteger(credits) || credits < 0) {
+        setToast({ type: "error", message: "Credits must be a non-negative integer." });
+        return;
+      }
+      payload.credits = credits;
+    }
+
+    if (action === "change_plan") {
+      const value = window.prompt(
+        `Set plan for ${user.email} (free, starter, pro, custom)`,
+        user.plan
+      );
+      if (value === null) return;
+      if (!["free", "starter", "pro", "custom"].includes(value)) {
+        setToast({ type: "error", message: "Plan must be free, starter, pro, or custom." });
+        return;
+      }
+      payload.plan = value;
+    }
+
+    setSavingId(user.id);
+    try {
+      const response = await fetch(
+        `/api/admin/users/${encodeURIComponent(user.id)}/actions`,
+        {
+          method: "PATCH",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(payload),
+        }
+      );
+      const result = (await response.json().catch(() => ({}))) as {
+        error?: string;
+      };
+      if (!response.ok) throw new Error(result.error ?? "Unable to update user.");
+      setToast({ type: "success", message: "User updated." });
+      setRefreshKey((current) => current + 1);
+    } catch (error) {
+      setToast({
+        type: "error",
+        message: error instanceof Error ? error.message : "Unable to update user.",
       });
     } finally {
       setSavingId(null);
@@ -179,12 +252,18 @@ export default function AdminUsersPageClient() {
             {users.map((user) => (
               <div
                 key={user.id}
-                className="grid gap-4 p-4 sm:grid-cols-[1fr_auto_auto] sm:items-center"
+                className="grid gap-4 p-4 xl:grid-cols-[1.4fr_7rem_6rem_8rem_9rem_auto] xl:items-center"
               >
                 <div className="min-w-0">
                   <p className="truncate font-medium text-white">{user.name}</p>
                   <p className="truncate text-sm text-zinc-500">{user.email}</p>
+                  <p className="mt-1 text-xs text-zinc-600">
+                    Joined {user.joinedAt ?? "Unknown"} · Last login {user.lastLoginAt ?? "Never"}
+                  </p>
                 </div>
+
+                <p className="text-sm capitalize text-zinc-300">{user.plan}</p>
+                <p className="text-sm text-zinc-300">{user.credits ?? "—"}</p>
 
                 <span
                   className={`w-fit rounded-full border px-3 py-1 text-xs font-medium capitalize ${roleClasses(
@@ -194,7 +273,29 @@ export default function AdminUsersPageClient() {
                   {roleLabel(user.role)}
                 </span>
 
-                <div className="flex gap-2">
+                <span
+                  className={`w-fit rounded-full border px-3 py-1 text-xs font-medium capitalize ${
+                    user.status === "active"
+                      ? "border-emerald-400/25 bg-emerald-400/10 text-emerald-200"
+                      : "border-red-400/25 bg-red-400/10 text-red-200"
+                  }`}
+                >
+                  {user.status}
+                </span>
+
+                <div className="flex flex-wrap gap-2">
+                  <button
+                    type="button"
+                    onClick={() =>
+                      setToast({
+                        type: "success",
+                        message: `${user.name} · ${user.email} · ${user.plan} · ${user.credits ?? 0} credits`,
+                      })
+                    }
+                    className="rounded-xl border border-white/10 bg-white/[0.04] px-3 py-2 text-xs font-medium text-zinc-300"
+                  >
+                    View
+                  </button>
                   {user.role === "owner" ? (
                     <span className="text-xs text-zinc-500">
                       Owner role is locked
@@ -216,6 +317,39 @@ export default function AdminUsersPageClient() {
                         className="rounded-xl border border-red-400/25 bg-red-400/10 px-3 py-2 text-xs font-medium text-red-200 transition hover:border-red-300/40 disabled:cursor-not-allowed disabled:opacity-50"
                       >
                         User
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => void runUserAction(user, "edit_credits")}
+                        className="rounded-xl border border-white/10 bg-white/[0.04] px-3 py-2 text-xs font-medium text-zinc-300"
+                      >
+                        Credits
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => void runUserAction(user, "change_plan")}
+                        className="rounded-xl border border-white/10 bg-white/[0.04] px-3 py-2 text-xs font-medium text-zinc-300"
+                      >
+                        Plan
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() =>
+                          void runUserAction(
+                            user,
+                            user.status === "suspended" ? "unsuspend" : "suspend"
+                          )
+                        }
+                        className="rounded-xl border border-amber-400/25 bg-amber-400/10 px-3 py-2 text-xs font-medium text-amber-200"
+                      >
+                        {user.status === "suspended" ? "Unsuspend" : "Suspend"}
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => void runUserAction(user, "delete")}
+                        className="rounded-xl border border-red-400/25 bg-red-400/10 px-3 py-2 text-xs font-medium text-red-200"
+                      >
+                        Delete
                       </button>
                     </>
                   ) : (

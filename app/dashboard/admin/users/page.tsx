@@ -1,23 +1,14 @@
-import { notFound } from "next/navigation";
 import AdminUsersPageClient from "@/components/admin/AdminUsersPageClient";
 import DashboardShell from "@/components/dashboard/DashboardShell";
-import { isUserAdmin } from "@/lib/admin/auth";
-import { createClient } from "@/lib/supabase/server";
+import { requireAdminPage } from "@/lib/admin/page-auth";
 
 export default async function AdminUsersPage() {
-  const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-
-  if (!user || !(await isUserAdmin(user.id, user.email))) {
-    notFound();
-  }
+  await requireAdminPage();
 
   return (
     <DashboardShell
       title="Admin Users"
-      subtitle="View users and manage Admin access"
+      subtitle="Search users, review plans, inspect credits, and manage roles"
     >
       <AdminUsersPageClient />
     </DashboardShell>

@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { requireAdminUser } from "@/lib/admin/auth";
+import { logAdminAction } from "@/lib/admin/audit";
 import {
   adminUserFromRow,
   normalizeProfileRole,
@@ -74,6 +75,19 @@ export async function PATCH(request: Request, context: RouteContext) {
         { status: 500 }
       );
     }
+
+    await logAdminAction({
+      admin: authResult.admin,
+      user: authResult.user,
+      action: "user_role_changed",
+      targetType: "user",
+      targetId: id,
+      metadata: {
+        previousRole: currentRole,
+        nextRole,
+        email: (existing as AdminUserRow).email,
+      },
+    });
 
     return NextResponse.json({
       success: true,

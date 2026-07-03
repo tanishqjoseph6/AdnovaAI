@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { requireAdminUser } from "@/lib/admin/auth";
+import { logAdminAction } from "@/lib/admin/audit";
 import {
   createFeedbackScreenshotSignedUrl,
   feedbackTicketFromRow,
@@ -106,6 +107,15 @@ export async function PATCH(request: Request, context: RouteContext) {
         );
       }
     }
+
+    await logAdminAction({
+      admin,
+      user,
+      action: shouldSetReplyMetadata ? "feedback_reply_added" : "feedback_updated",
+      targetType: "feedback",
+      targetId: previous.id,
+      metadata: { status, replyChanged: shouldSetReplyMetadata },
+    });
 
     const { data: profile } = await admin
       .from("profiles")

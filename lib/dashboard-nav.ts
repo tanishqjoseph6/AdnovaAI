@@ -41,11 +41,21 @@ export const dashboardNav: NavItem[] = [
 ];
 
 export const adminNav: NavItem[] = [
-  { label: "Feedback", href: "/dashboard/admin/feedback", icon: "admin" },
+  { label: "Dashboard", href: "/dashboard/admin", icon: "admin" },
   { label: "Users", href: "/dashboard/admin/users", icon: "admin" },
+  { label: "Payments", href: "/dashboard/admin/payments", icon: "admin" },
+  { label: "Feedback", href: "/dashboard/admin/feedback", icon: "admin" },
   {
     label: "Notifications",
     href: "/dashboard/admin/notifications",
     icon: "admin",
   },
+  { label: "Analytics", href: "/dashboard/admin/analytics", icon: "admin" },
+  {
+    label: "Announcements",
+    href: "/dashboard/admin/announcements",
+    icon: "admin",
+  },
+  { label: "Audit Logs", href: "/dashboard/admin/audit-logs", icon: "admin" },
+  { label: "Admin Settings", href: "/dashboard/admin/settings", icon: "admin" },
 ];
