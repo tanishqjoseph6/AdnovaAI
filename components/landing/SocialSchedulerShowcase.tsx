@@ -38,7 +38,7 @@ export default function SocialSchedulerShowcase() {
         </>
       }
       description="Schedule captions, images, and publish times for Instagram, Facebook, LinkedIn, and X — all from your Advora workspace."
-      className="bg-gradient-to-b from-transparent via-cyan-950/10 to-transparent"
+      className="bg-gradient-to-b from-transparent via-cyan-950/10 to-transparent !pb-14 md:!pb-16"
     >
       <div className="grid gap-8 lg:grid-cols-2">
         <motion.div
