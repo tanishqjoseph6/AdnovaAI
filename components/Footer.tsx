@@ -1,17 +1,18 @@
 import Link from "next/link";
+import Image from "next/image";
 
 const footerLinks = {
   Product: [
     { label: "Features", href: "#features" },
     { label: "How it works", href: "#how-it-works" },
-    { label: "Why Advora", href: "#why-advora" },
-    { label: "Get started", href: "#cta" },
+    { label: "Pricing", href: "#pricing" },
+    { label: "FAQ", href: "#faq" },
   ],
-  Company: [
-    { label: "About", href: "#" },
-    { label: "Blog", href: "#" },
-    { label: "Careers", href: "#" },
-    { label: "Contact", href: "#cta" },
+  Tools: [
+    { label: "Generate Ads", href: "/signup" },
+    { label: "Competitor Analyzer", href: "/signup" },
+    { label: "Landing Analyzer", href: "/signup" },
+    { label: "Brand Kit", href: "/signup" },
   ],
   Legal: [
     { label: "Privacy Policy", href: "/privacy-policy" },
@@ -26,30 +27,23 @@ export default function Footer() {
       <div className="mx-auto max-w-6xl px-4 py-16 sm:px-6">
         <div className="grid gap-12 md:grid-cols-2 lg:grid-cols-5">
           <div className="lg:col-span-2">
-            <Link href="/" className="flex items-center gap-2">
-              <span className="flex h-9 w-9 items-center justify-center rounded-xl bg-gradient-to-br from-cyan-400 via-violet-500 to-fuchsia-500 text-sm font-bold text-white">
-                A
-              </span>
+            <Link href="/" className="flex items-center gap-2.5">
+              <Image
+                src="/icon.png"
+                alt="Advora AI"
+                width={36}
+                height={36}
+                className="rounded-lg"
+              />
               <span className="text-lg font-semibold text-white">
                 Advora<span className="text-cyan-400">AI</span>
               </span>
             </Link>
             <p className="mt-4 max-w-sm text-sm leading-relaxed text-zinc-500">
-              The AI ad generator built for modern growth teams. Ship
-              scroll-stopping creative at the speed of your ambition.
+              The complete AI ad platform — generate creative, analyze
+              competitors, score performance, and schedule social posts from one
+              workspace.
             </p>
-            <div className="mt-6 flex gap-3">
-              {["X", "LinkedIn", "GitHub"].map((social) => (
-                <a
-                  key={social}
-                  href="#"
-                  className="flex h-9 w-9 items-center justify-center rounded-lg border border-white/10 text-xs text-zinc-500 transition hover:border-white/20 hover:text-white"
-                  aria-label={social}
-                >
-                  {social[0]}
-                </a>
-              ))}
-            </div>
           </div>
 
           {Object.entries(footerLinks).map(([category, links]) => (
@@ -84,9 +78,7 @@ export default function Footer() {
           <p className="text-sm text-zinc-600">
             © {new Date().getFullYear()} Advora AI. All rights reserved.
           </p>
-          <p className="text-sm text-zinc-600">
-            Built for marketers who move fast
-          </p>
+          <p className="text-sm text-zinc-600">Built for marketers who move fast</p>
         </div>
       </div>
     </footer>

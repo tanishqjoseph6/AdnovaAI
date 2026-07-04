@@ -2,12 +2,13 @@
 
 import { useState } from "react";
 import Link from "next/link";
+import Image from "next/image";
 
 const navLinks = [
   { href: "#features", label: "Features" },
   { href: "#how-it-works", label: "How it works" },
-  { href: "#why-advora", label: "Why Advora" },
-  { href: "#cta", label: "Get started" },
+  { href: "#pricing", label: "Pricing" },
+  { href: "#faq", label: "FAQ" },
 ];
 
 export default function Navbar() {
@@ -16,10 +17,14 @@ export default function Navbar() {
   return (
     <header className="fixed inset-x-0 top-0 z-50 border-b border-white/[0.06] bg-[#030014]/80 backdrop-blur-xl">
       <nav className="mx-auto flex max-w-6xl items-center justify-between px-4 py-4 sm:px-6">
-        <Link href="/" className="group flex items-center gap-2">
-          <span className="flex h-9 w-9 items-center justify-center rounded-xl bg-gradient-to-br from-cyan-400 via-violet-500 to-fuchsia-500 text-sm font-bold text-white shadow-lg shadow-violet-500/25">
-            A
-          </span>
+        <Link href="/" className="group flex items-center gap-2.5">
+          <Image
+            src="/icon.png"
+            alt="Advora AI"
+            width={36}
+            height={36}
+            className="rounded-lg"
+          />
           <span className="text-lg font-semibold tracking-tight text-white">
             Advora<span className="text-cyan-400">AI</span>
           </span>
@@ -83,7 +88,7 @@ export default function Navbar() {
         </button>
       </nav>
 
-      {open && (
+      {open ? (
         <div className="glass mx-4 mb-4 rounded-2xl border border-white/[0.08] p-4 md:hidden">
           <div className="flex flex-col gap-2">
             {navLinks.map((link) => (
@@ -112,7 +117,7 @@ export default function Navbar() {
             </Link>
           </div>
         </div>
-      )}
+      ) : null}
     </header>
   );
 }
