@@ -1,6 +1,6 @@
 import { type NextRequest, NextResponse } from "next/server";
 import { isEmailVerified } from "@/lib/auth/email-verified";
-import { ensureUserCredits } from "@/lib/credits/server";
+import { ensureUserCredits, maybeRefillUserCredits } from "@/lib/credits/server";
 import { markReferralOnboardingComplete } from "@/lib/referrals/server";
 import { ensureUserProfile } from "@/lib/subscription";
 import { updateSession } from "@/lib/supabase/middleware";
@@ -36,6 +36,7 @@ export async function middleware(request: NextRequest) {
         emailVerified: true,
         email: user.email,
       });
+      await maybeRefillUserCredits(user.id);
       await markReferralOnboardingComplete({
         userId: user.id,
         emailVerified: true,

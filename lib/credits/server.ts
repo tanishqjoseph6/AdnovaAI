@@ -1,8 +1,10 @@
 import { FREE_PLAN_CREDITS, STARTER_PLAN_CREDITS } from "@/lib/credits/constants";
 import { evaluateFreeCreditClaim } from "@/lib/credits/free-credit-claims";
+import { creditsLog, creditsWarn } from "@/lib/credits/logger";
 import {
   resolveMaxCreditsForProfile,
 } from "@/lib/credits/plan-config";
+import type { CreditRefillRpcResult } from "@/lib/credits/refill";
 import type {
   CreditsPlan,
   DeductCreditResult,
@@ -110,6 +112,40 @@ export async function grantFreeCreditsIfEligible(
   return Boolean(data);
 }
 
+export async function maybeRefillUserCredits(
+  userId: string
+): Promise<CreditRefillRpcResult> {
+  if (!hasAdminCredentials()) {
+    return { refilled: false, reason: "missing_service_role" };
+  }
+
+  const admin = createAdminClient();
+  const { data, error } = await admin.rpc("try_refill_user_credits", {
+    p_user_id: userId,
+  });
+
+  if (error) {
+    creditsWarn("credit_refill", "Refill RPC failed", {
+      userId,
+      error: error.message,
+    });
+    throw error;
+  }
+
+  const result = (data ?? { refilled: false }) as CreditRefillRpcResult;
+
+  if (result.refilled) {
+    creditsLog("credit_refill", "Monthly credits refilled", {
+      userId,
+      credits: result.credits,
+      billingPlan: result.billing_plan,
+      refilledAt: result.refilled_at,
+    });
+  }
+
+  return result;
+}
+
 export async function ensureUserCredits(
   userId: string,
   supabase?: SupabaseClient,
@@ -153,6 +189,7 @@ async function ensureProCreditsIfSubscribed(
       user_id: userId,
       credits: FREE_PLAN_CREDITS,
       plan: "pro",
+      last_credit_refill_at: now,
       updated_at: now,
     },
     { onConflict: "user_id", ignoreDuplicates: true }
@@ -277,10 +314,22 @@ export async function getUserCreditsForUser(
     );
   }
 
-  return getUserCredits(userId, supabase, billingProfile?.plan, {
+  await ensureUserCredits(userId, supabase, {
     emailVerified: true,
     email: options?.email,
   });
+
+  const refillResult = await maybeRefillUserCredits(userId);
+
+  const credits = await getUserCredits(userId, supabase, billingProfile?.plan, {
+    emailVerified: true,
+    email: options?.email,
+  });
+
+  return {
+    ...credits,
+    refilledJustNow: refillResult.refilled === true,
+  };
 }
 
 export function canUseCredits(credits: UserCredits): boolean {
@@ -405,6 +454,7 @@ export async function syncCreditsWithProfilePlan(
         user_id: userId,
         credits: FREE_PLAN_CREDITS,
         plan: "pro",
+        last_credit_refill_at: now,
         updated_at: now,
       },
       { onConflict: "user_id" }
@@ -422,6 +472,7 @@ export async function syncCreditsWithProfilePlan(
         user_id: userId,
         plan: "free",
         credits: STARTER_PLAN_CREDITS,
+        last_credit_refill_at: now,
         updated_at: now,
       },
       { onConflict: "user_id" }

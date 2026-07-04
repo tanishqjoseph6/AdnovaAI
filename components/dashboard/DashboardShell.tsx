@@ -2,6 +2,8 @@
 
 import { useCallback, useEffect, useState, startTransition } from "react";
 import { usePathname } from "next/navigation";
+import { AuthToastProvider } from "@/components/auth/AuthToast";
+import CreditRefillToast from "@/components/dashboard/CreditRefillToast";
 import { CreditsProvider } from "@/hooks/useCredits";
 import FeedbackLauncher from "./FeedbackLauncher";
 import Sidebar from "./Sidebar";
@@ -45,8 +47,10 @@ export default function DashboardShell({
   }, [sidebarOpen, closeSidebar]);
 
   return (
-    <CreditsProvider>
-      <div className="flex min-h-screen min-h-[100dvh] bg-[#030014] text-zinc-100">
+    <AuthToastProvider>
+      <CreditsProvider>
+        <CreditRefillToast />
+        <div className="flex min-h-screen min-h-[100dvh] bg-[#030014] text-zinc-100">
       <div className="pointer-events-none fixed inset-0 overflow-hidden">
         <div className="absolute -left-32 top-0 h-96 w-96 rounded-full bg-cyan-600/10 blur-[100px]" />
         <div className="absolute -right-32 top-1/3 h-96 w-96 rounded-full bg-violet-600/10 blur-[100px]" />
@@ -68,6 +72,7 @@ export default function DashboardShell({
         <FeedbackLauncher />
       </div>
       </div>
-    </CreditsProvider>
+      </CreditsProvider>
+    </AuthToastProvider>
   );
 }

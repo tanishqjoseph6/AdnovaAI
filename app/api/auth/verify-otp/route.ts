@@ -14,6 +14,7 @@ import {
 } from "@/lib/auth/rate-limit-config";
 import { rateLimitExceededResponse } from "@/lib/auth/rate-limit-response";
 import { isValidEmail, normalizeEmail } from "@/lib/auth/validation";
+import { maybeRefillUserCredits } from "@/lib/credits/server";
 import { createClient } from "@/lib/supabase/server";
 
 export async function POST(request: Request) {
@@ -101,11 +102,18 @@ export async function POST(request: Request) {
       userId: data.user?.id,
     });
 
+    let creditsRefilled = false;
+    if (data.user && isEmailVerified(data.user)) {
+      const refill = await maybeRefillUserCredits(data.user.id);
+      creditsRefilled = refill.refilled === true;
+    }
+
     return NextResponse.json({
       success: true,
       requiresEmailVerification: Boolean(
         data.user && !isEmailVerified(data.user)
       ),
+      creditsRefilled,
     });
   } catch (error) {
     authError("otp_verify", "Unexpected OTP verify error", {

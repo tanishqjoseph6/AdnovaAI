@@ -8,6 +8,8 @@ export type UserCredits = {
   unlimited: boolean;
   maxCredits: number | null;
   updatedAt: string;
+  /** True when credits were refilled during this fetch. */
+  refilledJustNow?: boolean;
 };
 
 export type CreditsApiResponse = UserCredits & {
