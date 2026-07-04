@@ -1,5 +1,7 @@
 import { NextResponse } from "next/server";
 import { mapAuthErrorMessage } from "@/lib/auth/errors";
+import { authError, authLog, authWarn } from "@/lib/auth/logger";
+import { getAuthCallbackUrl } from "@/lib/auth/redirects";
 import {
   buildRateLimitBucketKey,
   getClientIp,
@@ -9,6 +11,8 @@ import { isValidEmail, normalizeEmail } from "@/lib/auth/validation";
 import { createClient } from "@/lib/supabase/server";
 
 export async function POST(request: Request) {
+  const ip = getClientIp(request);
+
   try {
     const supabase = await createClient();
     const {
@@ -28,7 +32,6 @@ export async function POST(request: Request) {
       );
     }
 
-    const ip = getClientIp(request);
     const rateLimited = await withAuthRateLimits([
       {
         action: "resend_verification",
@@ -44,32 +47,44 @@ export async function POST(request: Request) {
       return rateLimited;
     }
 
-    const origin =
-      request.headers.get("origin") ??
-      process.env.NEXT_PUBLIC_APP_URL ??
-      "http://localhost:3000";
+    const emailRedirectTo = getAuthCallbackUrl("/dashboard");
+
+    authLog("resend_verification", "Resend verification requested", {
+      email,
+      emailRedirectTo,
+      ip,
+    });
 
     const { error } = await supabase.auth.resend({
       type: "signup",
       email,
       options: {
-        emailRedirectTo: `${origin}/auth/callback?next=/dashboard`,
+        emailRedirectTo,
       },
     });
 
     if (error) {
+      authWarn("resend_verification", "Resend verification failed", {
+        email,
+        error: error.message,
+      });
       return NextResponse.json(
         { error: mapAuthErrorMessage(error.message) },
         { status: 400 }
       );
     }
 
+    authLog("resend_verification", "Verification email dispatched", { email });
+
     return NextResponse.json({
       success: true,
-      message: "Verification email sent. Please check your inbox.",
+      message: "✅ Verification email sent. Please check your inbox.",
     });
   } catch (error) {
-    console.error("Resend verification error:", error);
+    authError("resend_verification", "Unexpected resend verification error", {
+      ip,
+      error: error instanceof Error ? error.message : String(error),
+    });
     return NextResponse.json(
       { error: "Unable to resend verification email. Please try again." },
       { status: 500 }

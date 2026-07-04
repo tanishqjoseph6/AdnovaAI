@@ -1,7 +1,8 @@
 import { NextResponse } from "next/server";
 import { RESET_LINK_EXPIRED_MESSAGE } from "@/lib/auth/password-reset";
+import { authError, authLog, authWarn } from "@/lib/auth/logger";
 import { resolveSafeAuthRedirect } from "@/lib/auth/safe-redirect";
-import { resolveSiteOrigin } from "@/lib/site-url";
+import { getProductionSiteUrl } from "@/lib/site-url";
 import { createClient } from "@/lib/supabase/server";
 
 export async function GET(request: Request) {
@@ -9,18 +10,27 @@ export async function GET(request: Request) {
   const code = searchParams.get("code");
   const nextParam = searchParams.get("next");
   const safeNext = resolveSafeAuthRedirect(nextParam);
-  const origin = resolveSiteOrigin(new URL(request.url).origin);
+  const origin = getProductionSiteUrl();
+
+  authLog("auth_callback", "Auth callback received", {
+    hasCode: Boolean(code),
+    next: safeNext,
+    origin,
+  });
 
   if (code) {
     const supabase = await createClient();
     const { error } = await supabase.auth.exchangeCodeForSession(code);
 
     if (!error) {
-      console.info("[auth/callback] Session established", { next: safeNext });
+      authLog("auth_callback", "Session established", { next: safeNext, origin });
       return NextResponse.redirect(`${origin}${safeNext}`);
     }
 
-    console.error("[auth/callback] Code exchange failed:", error.message);
+    authError("auth_callback", "Code exchange failed", {
+      error: error.message,
+      next: safeNext,
+    });
 
     if (safeNext === "/reset-password") {
       return NextResponse.redirect(
@@ -37,9 +47,10 @@ export async function GET(request: Request) {
   const fallbackPath =
     safeNext === "/reset-password" ? "/reset-password" : "/login";
 
-  console.warn("[auth/callback] Redirecting to fallback", {
+  authWarn("auth_callback", "Redirecting to fallback", {
     path: fallbackPath,
     reason: fallbackMessage,
+    origin,
   });
 
   return NextResponse.redirect(

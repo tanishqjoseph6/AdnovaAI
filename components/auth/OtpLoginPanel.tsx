@@ -2,8 +2,9 @@
 
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { Loader2 } from "lucide-react";
+import { useAuthToast } from "@/components/auth/AuthToast";
 import OtpInput from "@/components/auth/OtpInput";
 import { mapAuthErrorMessage, LOGIN_OTP_UNVERIFIED_MESSAGE } from "@/lib/auth/errors";
 import {
@@ -16,6 +17,7 @@ type OtpStep = "email" | "verify";
 
 export default function OtpLoginPanel() {
   const router = useRouter();
+  const { showToast } = useAuthToast();
   const [step, setStep] = useState<OtpStep>("email");
   const [email, setEmail] = useState("");
   const [otp, setOtp] = useState("");
@@ -23,6 +25,7 @@ export default function OtpLoginPanel() {
   const [isSending, setIsSending] = useState(false);
   const [isVerifying, setIsVerifying] = useState(false);
   const [cooldown, setCooldown] = useState(0);
+  const inFlightRef = useRef(false);
 
   useEffect(() => {
     if (cooldown <= 0) {
@@ -38,12 +41,16 @@ export default function OtpLoginPanel() {
 
   const sendOtp = useCallback(
     async (targetEmail: string, isResend = false) => {
-      setError(null);
+      if (inFlightRef.current || isSending) {
+        return false;
+      }
 
       if (isResend && cooldown > 0) {
         return false;
       }
 
+      inFlightRef.current = true;
+      setError(null);
       setIsSending(true);
 
       try {
@@ -53,34 +60,47 @@ export default function OtpLoginPanel() {
           body: JSON.stringify({ email: targetEmail }),
         });
 
-        const payload = (await response.json()) as { error?: string };
+        const payload = (await response.json()) as {
+          error?: string;
+          message?: string;
+        };
 
         if (!response.ok) {
           const message = mapAuthErrorMessage(
             payload.error ?? "Unable to send code."
           );
           setError(message);
+          showToast(message, "error");
           return false;
         }
 
         setStep("verify");
         setOtp("");
         setCooldown(OTP_RESEND_COOLDOWN_SECONDS);
+        showToast(
+          payload.message ?? "✅ Login code sent. Check your inbox.",
+          "success"
+        );
         return true;
       } catch {
-        setError("Unable to send verification code. Please try again.");
+        const message = "Unable to send verification code. Please try again.";
+        setError(message);
+        showToast(message, "error");
         return false;
       } finally {
+        inFlightRef.current = false;
         setIsSending(false);
       }
     },
-    [cooldown]
+    [cooldown, isSending, showToast]
   );
 
   async function handleSendCode() {
     const normalized = normalizeEmail(email);
     if (!isValidEmail(normalized)) {
-      setError("Please enter a valid email address.");
+      const message = "Please enter a valid email address.";
+      setError(message);
+      showToast(message, "error");
       return;
     }
 
@@ -109,10 +129,14 @@ export default function OtpLoginPanel() {
       };
 
       if (!response.ok) {
-        setError(mapAuthErrorMessage(payload.error ?? "Unable to verify code."));
+        const message = mapAuthErrorMessage(payload.error ?? "Unable to verify code.");
+        setError(message);
+        showToast(message, "error");
         setOtp("");
         return;
       }
+
+      showToast("Signed in successfully.", "success");
 
       if (payload.requiresEmailVerification) {
         router.refresh();
@@ -123,7 +147,9 @@ export default function OtpLoginPanel() {
       router.refresh();
       router.push("/dashboard");
     } catch {
-      setError("Unable to verify code. Please try again.");
+      const message = "Unable to verify code. Please try again.";
+      setError(message);
+      showToast(message, "error");
       setOtp("");
     } finally {
       setIsVerifying(false);
@@ -183,9 +209,16 @@ export default function OtpLoginPanel() {
               type="button"
               onClick={() => void sendOtp(email, true)}
               disabled={isSending}
-              className="font-medium text-cyan-300 transition hover:text-cyan-200 disabled:opacity-50"
+              className="inline-flex items-center justify-center gap-2 font-medium text-cyan-300 transition hover:text-cyan-200 disabled:opacity-50"
             >
-              {isSending ? "Sending…" : "Resend code"}
+              {isSending ? (
+                <>
+                  <Loader2 className="h-3.5 w-3.5 animate-spin" aria-hidden />
+                  Sending…
+                </>
+              ) : (
+                "Resend code"
+              )}
             </button>
           )}
         </div>
@@ -215,6 +248,7 @@ export default function OtpLoginPanel() {
       <input
         type="email"
         autoComplete="email"
+        inputMode="email"
         className="w-full rounded-xl border border-white/10 bg-white/[0.04] px-4 py-3 text-sm text-white placeholder:text-zinc-500 focus:border-violet-500/50 focus:outline-none focus:ring-2 focus:ring-violet-500/20"
         placeholder="Email address"
         value={email}

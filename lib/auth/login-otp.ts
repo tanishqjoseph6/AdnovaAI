@@ -3,8 +3,11 @@ import {
   LOGIN_OTP_UNVERIFIED_MESSAGE,
   mapAuthErrorMessage,
 } from "@/lib/auth/errors";
+import { authError, authLog, authWarn } from "@/lib/auth/logger";
+import { getAuthCallbackUrl } from "@/lib/auth/redirects";
 import { normalizeEmail, isValidEmail } from "@/lib/auth/validation";
 import { createAdminClient } from "@/lib/supabase/admin";
+import { createClient } from "@/lib/supabase/server";
 
 export { LOGIN_OTP_NO_ACCOUNT_MESSAGE, LOGIN_OTP_UNVERIFIED_MESSAGE };
 
@@ -17,10 +20,12 @@ type EmailLoginEligibilityRow = {
   confirmed?: boolean;
 };
 
-type LoginOtpRequestBody = {
-  email: string;
-  create_user: false;
-};
+export function getLoginOtpSendOptions() {
+  return {
+    shouldCreateUser: false as const,
+    emailRedirectTo: getAuthCallbackUrl("/dashboard"),
+  };
+}
 
 function hasAdminCredentials(): boolean {
   return Boolean(
@@ -42,7 +47,7 @@ export async function checkLoginOtpEligibility(
   }
 
   if (!hasAdminCredentials()) {
-    console.error("Login OTP eligibility check failed: missing service role key.");
+    authError("otp_eligibility", "Missing Supabase service role credentials");
     return {
       allowed: false,
       message: "Unable to send login code right now. Please try again later.",
@@ -56,7 +61,10 @@ export async function checkLoginOtpEligibility(
   });
 
   if (error) {
-    console.error("Login OTP eligibility RPC failed:", error.message);
+    authError("otp_eligibility", "RPC email_login_eligibility failed", {
+      email: normalized,
+      error: error.message,
+    });
     return {
       allowed: false,
       message: "Unable to verify account status. Please try again.",
@@ -89,63 +97,61 @@ export function evaluateLoginOtpEligibility(
   return { allowed: true };
 }
 
-export function buildLoginOtpRequestBody(email: string): LoginOtpRequestBody {
-  return {
-    email: normalizeEmail(email),
-    create_user: false,
-  };
-}
-
 type SendLoginOtpResult =
   | { ok: true }
   | { ok: false; error: string; status: number };
 
 /**
- * Sends a login OTP via GoTrue without signup redirect/data fields.
- * Signup uses signUp(); forgot password uses resetPasswordForEmail().
+ * Sends a login OTP via Supabase Auth signInWithOtp (GoTrue).
+ * Uses the official SDK — never raw fetch — with production redirect URLs.
  */
 export async function sendLoginOtpEmail(email: string): Promise<SendLoginOtpResult> {
   const normalized = normalizeEmail(email);
-  const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
-  const anonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
+  const options = getLoginOtpSendOptions();
 
-  if (!supabaseUrl || !anonKey) {
+  authLog("otp_send", "Dispatching login OTP", {
+    email: normalized,
+    emailRedirectTo: options.emailRedirectTo,
+  });
+
+  try {
+    const supabase = await createClient();
+    const { error } = await supabase.auth.signInWithOtp({
+      email: normalized,
+      options,
+    });
+
+    if (error) {
+      authWarn("otp_send", "Supabase signInWithOtp failed", {
+        email: normalized,
+        error: error.message,
+        status: error.status,
+      });
+
+      return {
+        ok: false,
+        error: mapAuthErrorMessage(error.message),
+        status:
+          typeof error.status === "number" &&
+          error.status >= 400 &&
+          error.status < 500
+            ? error.status
+            : 400,
+      };
+    }
+
+    authLog("otp_send", "Login OTP dispatched", { email: normalized });
+    return { ok: true };
+  } catch (error) {
+    authError("otp_send", "Unexpected OTP send failure", {
+      email: normalized,
+      error: error instanceof Error ? error.message : String(error),
+    });
+
     return {
       ok: false,
       error: "Unable to send login code. Please try again.",
       status: 500,
     };
   }
-
-  const response = await fetch(`${supabaseUrl}/auth/v1/otp`, {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-      apikey: anonKey,
-      Authorization: `Bearer ${anonKey}`,
-    },
-    body: JSON.stringify(buildLoginOtpRequestBody(normalized)),
-  });
-
-  const payload = (await response.json().catch(() => ({}))) as {
-    msg?: string;
-    message?: string;
-    error_description?: string;
-  };
-
-  if (!response.ok) {
-    const raw =
-      payload.msg ??
-      payload.message ??
-      payload.error_description ??
-      "Unable to send login code.";
-
-    return {
-      ok: false,
-      error: mapAuthErrorMessage(raw),
-      status: response.status >= 400 && response.status < 500 ? response.status : 400,
-    };
-  }
-
-  return { ok: true };
 }

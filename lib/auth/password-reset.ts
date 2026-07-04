@@ -1,9 +1,8 @@
 import { MIN_PASSWORD_LENGTH } from "@/lib/auth/validation";
-import { resolveSiteOrigin } from "@/lib/site-url";
+import { getPasswordResetCallbackUrl } from "@/lib/auth/redirects";
 
 export function getPasswordResetRedirectUrl(): string {
-  const origin = resolveSiteOrigin(null);
-  return `${origin}/auth/callback?next=/reset-password`;
+  return getPasswordResetCallbackUrl();
 }
 
 export function validateNewPassword(

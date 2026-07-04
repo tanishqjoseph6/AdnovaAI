@@ -77,7 +77,7 @@ describe("password reset", () => {
     );
     assert.equal(
       getPasswordResetRedirectUrl(),
-      "https://useadvora.com/auth/callback?next=/reset-password"
+      "https://useadvora.com/auth/callback?next=%2Freset-password"
     );
 
     if (previousSiteUrl === undefined) {

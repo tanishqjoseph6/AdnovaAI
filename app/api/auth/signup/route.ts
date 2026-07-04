@@ -1,5 +1,7 @@
 import { NextResponse } from "next/server";
 import { mapAuthErrorMessage } from "@/lib/auth/errors";
+import { authError, authLog, authWarn } from "@/lib/auth/logger";
+import { getAuthCallbackUrl } from "@/lib/auth/redirects";
 import { signUpWithEmailVerification } from "@/lib/auth/signup";
 
 export async function POST(request: Request) {
@@ -11,24 +13,26 @@ export async function POST(request: Request) {
       ? body.referralCode
       : undefined;
 
-    const origin =
-      request.headers.get("origin") ??
-      process.env.NEXT_PUBLIC_APP_URL ??
-      "http://localhost:3000";
+    const emailRedirectTo = getAuthCallbackUrl("/dashboard");
+
+    authLog("signup", "Signup requested", { email, emailRedirectTo });
 
     const result = await signUpWithEmailVerification(
       email,
       password,
-      `${origin}/auth/callback?next=/dashboard`,
+      emailRedirectTo,
       referralCode
     );
 
     if (!result.ok) {
+      authWarn("signup", "Signup failed", { email, error: result.error });
       return NextResponse.json(
         { error: mapAuthErrorMessage(result.error) },
         { status: result.status }
       );
     }
+
+    authLog("signup", "Signup succeeded — verification email sent", { email });
 
     return NextResponse.json({
       success: true,
@@ -36,7 +40,9 @@ export async function POST(request: Request) {
         "Check your email to confirm your account before signing in.",
     });
   } catch (error) {
-    console.error("Signup error:", error);
+    authError("signup", "Unexpected signup error", {
+      error: error instanceof Error ? error.message : String(error),
+    });
     return NextResponse.json(
       { error: "Unable to create account. Please try again." },
       { status: 500 }

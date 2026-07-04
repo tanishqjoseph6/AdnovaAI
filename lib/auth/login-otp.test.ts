@@ -5,8 +5,8 @@ import {
   LOGIN_OTP_UNVERIFIED_MESSAGE,
 } from "./errors";
 import {
-  buildLoginOtpRequestBody,
   evaluateLoginOtpEligibility,
+  getLoginOtpSendOptions,
 } from "./login-otp";
 
 describe("login OTP messages", () => {
@@ -60,11 +60,19 @@ describe("login OTP eligibility", () => {
   });
 });
 
-describe("login OTP request", () => {
-  it("never asks Supabase to create a user", () => {
-    assert.deepEqual(buildLoginOtpRequestBody(" User@Example.COM "), {
-      email: "user@example.com",
-      create_user: false,
-    });
+describe("login OTP send options", () => {
+  it("never asks Supabase to create a user", async () => {
+    const previousSiteUrl = process.env.NEXT_PUBLIC_SITE_URL;
+    process.env.NEXT_PUBLIC_SITE_URL = "https://useadvora.com";
+
+    const options = getLoginOtpSendOptions();
+    assert.equal(options.shouldCreateUser, false);
+    assert.match(options.emailRedirectTo, /^https:\/\/useadvora\.com\/auth\/callback/);
+
+    if (previousSiteUrl === undefined) {
+      delete process.env.NEXT_PUBLIC_SITE_URL;
+    } else {
+      process.env.NEXT_PUBLIC_SITE_URL = previousSiteUrl;
+    }
   });
 });

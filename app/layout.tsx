@@ -1,5 +1,6 @@
 import type { Metadata, Viewport } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
+import { getProductionSiteUrl } from "@/lib/site-url";
 import "./globals.css";
 
 export const viewport: Viewport = {
@@ -18,7 +19,7 @@ const geistMono = Geist_Mono({
   subsets: ["latin"],
 });
 
-const siteUrl = new URL(process.env.NEXT_PUBLIC_APP_URL ?? "https://advora.ai");
+const siteUrl = new URL(getProductionSiteUrl());
 const siteTitle = "Advora AI — AI Ad Generator for High-Converting Campaigns";
 const siteDescription =
   "Generate scroll-stopping ad copy, visuals, and multi-channel campaigns in seconds. AI-powered creative for Meta, Google, TikTok, and more.";

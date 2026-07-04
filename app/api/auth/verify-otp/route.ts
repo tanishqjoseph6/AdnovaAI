@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { mapAuthErrorMessage } from "@/lib/auth/errors";
 import { isEmailVerified } from "@/lib/auth/email-verified";
 import { checkLoginOtpEligibility } from "@/lib/auth/login-otp";
+import { authError, authLog, authWarn } from "@/lib/auth/logger";
 import { isCompleteOtp } from "@/lib/auth/otp-login";
 import {
   checkAuthRateLimit,
@@ -16,11 +17,15 @@ import { isValidEmail, normalizeEmail } from "@/lib/auth/validation";
 import { createClient } from "@/lib/supabase/server";
 
 export async function POST(request: Request) {
+  const ip = getClientIp(request);
+
   try {
     const body = await request.json().catch(() => ({}));
     const email = typeof body?.email === "string" ? body.email : "";
     const token = typeof body?.token === "string" ? body.token.trim() : "";
     const normalized = normalizeEmail(email);
+
+    authLog("otp_verify", "OTP verify requested", { email: normalized, ip });
 
     if (!isValidEmail(normalized)) {
       return NextResponse.json(
@@ -36,30 +41,28 @@ export async function POST(request: Request) {
       );
     }
 
-    const ip = getClientIp(request);
-    const failedLoginBuckets = [
+    const otpVerifyBuckets = [
       buildRateLimitBucketKey("email", normalized),
       buildRateLimitBucketKey("ip", ip),
     ];
 
-    for (const bucketKey of failedLoginBuckets) {
+    for (const bucketKey of otpVerifyBuckets) {
       const status = await checkAuthRateLimit({
-        action: "failed_login",
+        action: "otp_verify",
         bucketKey,
       });
       if (!status.allowed) {
+        authWarn("otp_verify", "OTP verify rate limited", { email: normalized, ip });
         return rateLimitExceededResponse(status);
       }
     }
 
     const eligibility = await checkLoginOtpEligibility(normalized);
     if (!eligibility.allowed) {
-      for (const bucketKey of failedLoginBuckets) {
-        await consumeAuthRateLimit({
-          action: "failed_login",
-          bucketKey,
-        });
-      }
+      authWarn("otp_verify", "OTP verify blocked by eligibility", {
+        email: normalized,
+        reason: eligibility.message,
+      });
 
       return NextResponse.json(
         { error: eligibility.message },
@@ -68,7 +71,6 @@ export async function POST(request: Request) {
     }
 
     const supabase = await createClient();
-    // Login OTP only — signup uses signUp(), password reset uses resetPasswordForEmail().
     const { data, error } = await supabase.auth.verifyOtp({
       email: normalized,
       token,
@@ -76,18 +78,28 @@ export async function POST(request: Request) {
     });
 
     if (error) {
-      for (const bucketKey of failedLoginBuckets) {
+      for (const bucketKey of otpVerifyBuckets) {
         await consumeAuthRateLimit({
-          action: "failed_login",
+          action: "otp_verify",
           bucketKey,
         });
       }
+
+      authWarn("otp_verify", "OTP verify failed", {
+        email: normalized,
+        error: error.message,
+      });
 
       return NextResponse.json(
         { error: mapAuthErrorMessage(error.message) },
         { status: 401 }
       );
     }
+
+    authLog("otp_verify", "OTP verify succeeded", {
+      email: normalized,
+      userId: data.user?.id,
+    });
 
     return NextResponse.json({
       success: true,
@@ -96,7 +108,10 @@ export async function POST(request: Request) {
       ),
     });
   } catch (error) {
-    console.error("Verify OTP error:", error);
+    authError("otp_verify", "Unexpected OTP verify error", {
+      ip,
+      error: error instanceof Error ? error.message : String(error),
+    });
     return NextResponse.json(
       { error: "Unable to verify code. Please try again." },
       { status: 500 }
