@@ -55,11 +55,15 @@ Do not rely on `{{ .ConfirmationURL }}` alone for OTP login.
 
 ### Reset Password (`Authentication → Email Templates → Reset Password`)
 
-Ensure the reset link uses Supabase's confirmation URL (PKCE). Users land on:
+Use Supabase's `{{ .ConfirmationURL }}` in the template. After the user clicks the link:
 
-`https://useadvora.com/auth/callback?next=/reset-password`
+1. Supabase verifies the token and redirects to your app's callback:
+   `https://useadvora.com/auth/callback?code=...&next=/reset-password`
+2. The callback exchanges the code, sets the recovery session cookie, and redirects to `/reset-password`.
+3. The user sets a new password; they are signed out and sent to `/login`.
 
-Then redirect to `/reset-password` to set a new password.
+If the link lands on the homepage with `#type=recovery` in the URL hash, the app
+automatically redirects to `/reset-password`.
 
 ### Confirm signup
 

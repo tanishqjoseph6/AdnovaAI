@@ -1,8 +1,10 @@
 import { MIN_PASSWORD_LENGTH } from "@/lib/auth/validation";
 import { getPasswordResetCallbackUrl } from "@/lib/auth/redirects";
 
-export function getPasswordResetRedirectUrl(): string {
-  return getPasswordResetCallbackUrl();
+export function getPasswordResetRedirectUrl(
+  requestOrigin?: string | null
+): string {
+  return getPasswordResetCallbackUrl(requestOrigin);
 }
 
 export function validateNewPassword(

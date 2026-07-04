@@ -1,5 +1,6 @@
 import type { Metadata, Viewport } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
+import RecoveryRedirectHandler from "@/components/auth/RecoveryRedirectHandler";
 import { getProductionSiteUrl } from "@/lib/site-url";
 import "./globals.css";
 
@@ -90,7 +91,10 @@ export default function RootLayout({
       lang="en"
       className={`${geistSans.variable} ${geistMono.variable} h-full antialiased`}
     >
-      <body className="min-h-full overflow-x-hidden antialiased">{children}</body>
+      <body className="min-h-full overflow-x-hidden antialiased">
+        <RecoveryRedirectHandler />
+        {children}
+      </body>
     </html>
   );
 }

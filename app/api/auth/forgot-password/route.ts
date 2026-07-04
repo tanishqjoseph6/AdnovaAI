@@ -59,7 +59,7 @@ export async function POST(request: Request) {
       return rateLimited;
     }
 
-    const redirectTo = getPasswordResetRedirectUrl();
+    const redirectTo = getPasswordResetRedirectUrl(new URL(request.url).origin);
     const supabase = await createClient();
 
     authLog("forgot_password", "Sending reset email via Supabase", {

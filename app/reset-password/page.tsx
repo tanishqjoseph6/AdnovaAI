@@ -13,53 +13,14 @@ import {
   RESET_SUCCESS_MESSAGE,
   validateNewPassword,
 } from "@/lib/auth/password-reset";
+import { buildAuthCallbackPath } from "@/lib/auth/recovery";
+import { establishRecoverySession } from "@/lib/auth/recovery-session";
 import { invalidateCreditsCache } from "@/hooks/useCredits";
 import { supabase } from "@/lib/supabase";
 
 type ResetState = "loading" | "ready" | "invalid" | "success";
 
 const REDIRECT_DELAY_MS = 2500;
-
-async function verifyRecoverySession(): Promise<boolean> {
-  const { data: sessionData } = await supabase.auth.getSession();
-  if (sessionData.session?.user) {
-    return true;
-  }
-
-  const { data: userData, error: userError } = await supabase.auth.getUser();
-  if (!userError && userData.user) {
-    return true;
-  }
-
-  return new Promise((resolve) => {
-    let settled = false;
-
-    const finish = (valid: boolean) => {
-      if (settled) {
-        return;
-      }
-      settled = true;
-      subscription.unsubscribe();
-      window.clearTimeout(timeout);
-      resolve(valid);
-    };
-
-    const {
-      data: { subscription },
-    } = supabase.auth.onAuthStateChange((event, session) => {
-      if (
-        session?.user &&
-        (event === "PASSWORD_RECOVERY" ||
-          event === "SIGNED_IN" ||
-          event === "INITIAL_SESSION")
-      ) {
-        finish(true);
-      }
-    });
-
-    const timeout = window.setTimeout(() => finish(false), 8000);
-  });
-}
 
 function ResetPasswordForm() {
   const router = useRouter();
@@ -80,9 +41,25 @@ function ResetPasswordForm() {
       return;
     }
 
+    const code = searchParams.get("code");
+    const tokenHash = searchParams.get("token_hash");
+    const type = searchParams.get("type");
+
+    if (code) {
+      router.replace(buildAuthCallbackPath(code, "/reset-password"));
+      return;
+    }
+
+    if (tokenHash && type === "recovery") {
+      router.replace(
+        `/auth/callback?token_hash=${encodeURIComponent(tokenHash)}&type=recovery&next=${encodeURIComponent("/reset-password")}`
+      );
+      return;
+    }
+
     async function bootstrap() {
-      const isValid = await verifyRecoverySession();
-      if (isValid) {
+      const result = await establishRecoverySession(supabase);
+      if (result.ok) {
         setState("ready");
         return;
       }
@@ -92,7 +69,7 @@ function ResetPasswordForm() {
     }
 
     void bootstrap();
-  }, [searchParams]);
+  }, [router, searchParams]);
 
   useEffect(() => {
     if (state !== "success") {
@@ -218,7 +195,11 @@ function ResetPasswordForm() {
 
       <form className="mt-8 space-y-4" onSubmit={(event) => void handleSubmit(event)}>
         <div className="space-y-2">
+          <label htmlFor="new-password" className="sr-only">
+            New password
+          </label>
           <PasswordInput
+            id="new-password"
             placeholder="New password (min. 8 characters)"
             autoComplete="new-password"
             value={password}
@@ -228,13 +209,19 @@ function ResetPasswordForm() {
           <PasswordStrengthIndicator password={password} />
         </div>
 
-        <PasswordInput
-          placeholder="Confirm new password"
-          autoComplete="new-password"
-          value={confirmPassword}
-          onChange={(event) => setConfirmPassword(event.target.value)}
-          className="w-full rounded-xl border border-white/10 bg-white/[0.04] px-4 py-3 pr-11 text-sm text-white placeholder:text-zinc-500 focus:border-violet-500/50 focus:outline-none focus:ring-2 focus:ring-violet-500/20"
-        />
+        <div className="space-y-2">
+          <label htmlFor="confirm-password" className="sr-only">
+            Confirm new password
+          </label>
+          <PasswordInput
+            id="confirm-password"
+            placeholder="Confirm new password"
+            autoComplete="new-password"
+            value={confirmPassword}
+            onChange={(event) => setConfirmPassword(event.target.value)}
+            className="w-full rounded-xl border border-white/10 bg-white/[0.04] px-4 py-3 pr-11 text-sm text-white placeholder:text-zinc-500 focus:border-violet-500/50 focus:outline-none focus:ring-2 focus:ring-violet-500/20"
+          />
+        </div>
 
         {error && (
           <p
