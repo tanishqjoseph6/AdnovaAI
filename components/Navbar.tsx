@@ -17,16 +17,24 @@ export default function Navbar() {
   return (
     <header className="fixed inset-x-0 top-0 z-50 border-b border-white/[0.06] bg-[#030014]/80 backdrop-blur-xl">
       <nav className="mx-auto flex max-w-6xl items-center justify-between px-4 py-4 sm:px-6">
-        <Link href="/" className="group flex items-center gap-2.5">
+        <Link
+          href="/"
+          aria-label="Advora AI home"
+          className="group flex items-center gap-2.5"
+        >
           <Image
             src="/icon.png"
             alt="Advora AI"
-            width={36}
-            height={36}
+            width={34}
+            height={34}
+            priority
             className="rounded-lg"
           />
-          <span className="text-lg font-semibold tracking-tight text-white">
-            Advora<span className="text-cyan-400">AI</span>
+          <span className="flex items-baseline gap-[0.15em] text-[1.35rem] font-semibold leading-none tracking-[-0.02em] text-white">
+            Advora
+            <span className="bg-gradient-to-r from-blue-500 to-cyan-400 bg-clip-text font-bold text-transparent">
+              AI
+            </span>
           </span>
         </Link>
 
