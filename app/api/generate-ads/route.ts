@@ -10,6 +10,11 @@ import {
   deductUserCredit,
   getUserCreditsForUser,
 } from "@/lib/credits/server";
+import {
+  buildAiPreferencesPromptSection,
+  resolveOpenAiGenerationConfig,
+} from "@/lib/settings/ai-preferences";
+import { getAiPreferencesForUser } from "@/lib/settings/ai-preferences-server";
 import { buildGenerateAdsPrompt } from "@/lib/product-analysis/prompt";
 import {
   formatProductAnalysisForPrompt,
@@ -64,14 +69,21 @@ export async function POST(req: Request) {
 
     const brandKit = await getBrandKitForUser(supabase, user.id);
     const brandKitSection = buildBrandKitPromptSection(brandKit);
+    const aiPreferences = await getAiPreferencesForUser(supabase, user.id);
+    const aiPreferencesSection =
+      buildAiPreferencesPromptSection(aiPreferences);
+    const generationConfig = resolveOpenAiGenerationConfig(aiPreferences);
     const prompt = buildGenerateAdsPrompt(
       productDescription,
       analysisSection,
-      brandKitSection
+      brandKitSection,
+      aiPreferencesSection
     );
 
     const response = await openai.chat.completions.create({
-      model: "gpt-4o-mini",
+      model: generationConfig.model,
+      temperature: generationConfig.temperature,
+      max_tokens: generationConfig.maxTokens,
       response_format: { type: "json_object" },
       messages: [
         {

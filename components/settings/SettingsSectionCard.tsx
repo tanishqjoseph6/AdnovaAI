@@ -14,7 +14,7 @@ export default function SettingsSectionCard({
   children,
 }: SettingsSectionCardProps) {
   return (
-    <section className="glass group rounded-2xl border border-white/[0.08] p-6 transition hover:border-white/[0.12] hover:shadow-lg hover:shadow-violet-500/5 sm:p-7">
+    <section className="glass group rounded-2xl border border-white/[0.08] bg-white/[0.02] p-5 shadow-xl shadow-black/10 backdrop-blur-xl transition duration-300 hover:border-violet-500/20 hover:shadow-violet-500/10 sm:p-7">
       <div className="flex items-start gap-3">
         {icon && (
           <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-gradient-to-br from-violet-500/20 to-cyan-500/10 text-violet-400">

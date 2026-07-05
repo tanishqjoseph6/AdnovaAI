@@ -6,6 +6,11 @@ import {
   getBrandKitForUser,
 } from "@/lib/brand-kit/server";
 import { isContentKind, isRewriteAction, REWRITE_ACTION_LABELS } from "@/lib/content-editor/types";
+import {
+  buildAiPreferencesPromptSection,
+  resolveOpenAiGenerationConfig,
+} from "@/lib/settings/ai-preferences";
+import { getAiPreferencesForUser } from "@/lib/settings/ai-preferences-server";
 import { createClient } from "@/lib/supabase/server";
 
 const openai = new OpenAI({
@@ -17,7 +22,12 @@ function buildRewritePrompt(input: {
   kind: string;
   actionLabel: string;
   brandKitSection?: string;
+  aiPreferencesSection?: string;
 }) {
+  const preferenceBlock = input.aiPreferencesSection
+    ? `\n\n${input.aiPreferencesSection}`
+    : "";
+
   return `You are Advora AI's content editor.
 
 Rewrite ONLY the selected ${input.kind}. Do not generate hooks, captions, CTAs, or scripts beyond this one selected item.
@@ -26,7 +36,7 @@ Rewrite action: ${input.actionLabel}
 
 Selected content:
 ${input.content}
-${input.brandKitSection ? `\n\n${input.brandKitSection}` : ""}
+${input.brandKitSection ? `\n\n${input.brandKitSection}` : ""}${preferenceBlock}
 
 Return ONLY valid JSON:
 {
@@ -90,9 +100,18 @@ export async function POST(request: Request) {
 
     const brandKit = await getBrandKitForUser(supabase, authResult.user.id);
     const brandKitSection = buildBrandKitPromptSection(brandKit);
+    const aiPreferences = await getAiPreferencesForUser(
+      supabase,
+      authResult.user.id
+    );
+    const aiPreferencesSection =
+      buildAiPreferencesPromptSection(aiPreferences);
+    const generationConfig = resolveOpenAiGenerationConfig(aiPreferences);
 
     const response = await openai.chat.completions.create({
-      model: "gpt-4o-mini",
+      model: generationConfig.model,
+      temperature: generationConfig.temperature,
+      max_tokens: generationConfig.maxTokens,
       response_format: { type: "json_object" },
       messages: [
         {
@@ -102,6 +121,7 @@ export async function POST(request: Request) {
             kind: body.kind,
             actionLabel: REWRITE_ACTION_LABELS[body.action],
             brandKitSection,
+            aiPreferencesSection,
           }),
         },
       ],

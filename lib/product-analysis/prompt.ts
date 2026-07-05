@@ -51,13 +51,17 @@ Content rules:
 export function buildGenerateAdsPrompt(
   productDescription: string,
   analysisSection?: string,
-  brandKitSection?: string
+  brandKitSection?: string,
+  aiPreferencesSection?: string
 ): string {
   const analysisBlock = analysisSection
     ? `\n\n${analysisSection}\n\nUse every detail in the product image analysis above — tags, USPs, audience, tone, and ad angles — to make hooks, captions, CTAs, and the UGC script more specific and accurate.`
     : "";
   const brandKitBlock = brandKitSection
     ? `\n\n${brandKitSection}\n\nBrand Kit rules are persistent user preferences. Apply them to all hooks, captions, CTAs, and the UGC script.`
+    : "";
+  const aiPreferencesBlock = aiPreferencesSection
+    ? `\n\n${aiPreferencesSection}`
     : "";
 
   return `You are an expert direct response copywriter.
@@ -70,7 +74,7 @@ Generate:
 - 1 UGC video script
 
 Product:
-${productDescription}${analysisBlock}${brandKitBlock}
+${productDescription}${analysisBlock}${brandKitBlock}${aiPreferencesBlock}
 
 Return ONLY valid JSON in this format:
 

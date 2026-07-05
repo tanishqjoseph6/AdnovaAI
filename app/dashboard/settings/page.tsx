@@ -1,5 +1,7 @@
 import DashboardShell from "@/components/dashboard/DashboardShell";
 import SettingsPageClient from "@/components/settings/SettingsPageClient";
+import { aiPreferencesToApiResponse } from "@/lib/settings/ai-preferences";
+import { getAiPreferencesForUser } from "@/lib/settings/ai-preferences-server";
 import {
   getAvatarInitials,
   getSettingsFullName,
@@ -26,6 +28,12 @@ export default async function SettingsPage() {
         .maybeSingle()
     : { data: null };
 
+  const aiPreferences = user
+    ? aiPreferencesToApiResponse(
+        await getAiPreferencesForUser(supabase, user.id)
+      )
+    : null;
+
   const fullName =
     typeof profile?.full_name === "string" && profile.full_name.trim()
       ? profile.full_name.trim()
@@ -43,7 +51,7 @@ export default async function SettingsPage() {
   return (
     <DashboardShell
       title="Settings"
-      subtitle="Manage your account, profile and preferences"
+      subtitle="Manage your account, profile and AI preferences"
     >
       <SettingsPageClient
         defaultFullName={fullName || "Advora User"}
@@ -51,6 +59,7 @@ export default async function SettingsPage() {
         defaultUsername={username}
         defaultAvatarUrl={avatarUrl}
         avatarInitials={avatarInitials}
+        initialAiPreferences={aiPreferences}
       />
     </DashboardShell>
   );

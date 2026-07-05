@@ -99,10 +99,14 @@ Rules:
 
 export function buildBetterCompetitorAdPrompt(
   analysis: Record<string, unknown>,
-  brandKitSection?: string
+  brandKitSection?: string,
+  aiPreferencesSection?: string
 ): string {
   const brandKitBlock = brandKitSection
     ? `\n\n${brandKitSection}\n\nUse the Brand Kit as the user's own brand identity while creating the improved ad.`
+    : "";
+  const aiPreferencesBlock = aiPreferencesSection
+    ? `\n\n${aiPreferencesSection}`
     : "";
 
   return `You are an elite direct-response copywriter and creative strategist.
@@ -110,7 +114,7 @@ export function buildBetterCompetitorAdPrompt(
 Using the competitor ad analysis below, write a STRONGER ad package that specifically outperforms this competitor creative — not a generic ad.
 
 Competitor analysis:
-${JSON.stringify(analysis, null, 2)}${brandKitBlock}
+${JSON.stringify(analysis, null, 2)}${brandKitBlock}${aiPreferencesBlock}
 
 Generate ALL of the following, beating the competitor on clarity, urgency, specificity, and conversion intent:
 
