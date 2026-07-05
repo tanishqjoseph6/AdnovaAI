@@ -1,3 +1,5 @@
+import { isAllowedAvatarUrl } from "@/lib/settings/avatar";
+
 export const USERNAME_MIN_LENGTH = 3;
 export const USERNAME_MAX_LENGTH = 30;
 
@@ -49,15 +51,11 @@ export function validateProfileSettings(
     };
   }
 
-  if (avatarUrl) {
-    try {
-      const url = new URL(avatarUrl);
-      if (!["http:", "https:"].includes(url.protocol)) {
-        return { ok: false, error: "Avatar URL must be a valid web URL." };
-      }
-    } catch {
-      return { ok: false, error: "Avatar URL must be a valid web URL." };
-    }
+  if (avatarUrl && !isAllowedAvatarUrl(avatarUrl)) {
+    return {
+      ok: false,
+      error: "Profile photo must be uploaded through Advora.",
+    };
   }
 
   return {

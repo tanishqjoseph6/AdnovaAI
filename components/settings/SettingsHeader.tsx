@@ -1,15 +1,18 @@
 "use client";
 
 import { motion } from "framer-motion";
+import UserAvatar from "@/components/settings/UserAvatar";
 
 type SettingsHeaderProps = {
   initials: string;
   email: string;
+  avatarUrl?: string;
 };
 
 export default function SettingsHeader({
   initials,
   email,
+  avatarUrl,
 }: SettingsHeaderProps) {
   return (
     <motion.div
@@ -28,12 +31,12 @@ export default function SettingsHeader({
       </div>
 
       <div className="flex items-center gap-3 rounded-2xl border border-white/[0.08] bg-white/[0.03] px-4 py-3">
-        <div
-          className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-cyan-400 via-violet-500 to-fuchsia-500 text-sm font-semibold text-white shadow-lg shadow-violet-500/20"
-          aria-hidden
-        >
-          {initials}
-        </div>
+        <UserAvatar
+          imageUrl={avatarUrl}
+          initials={initials}
+          className="h-11 w-11 shrink-0 rounded-full shadow-lg shadow-violet-500/20"
+          textClassName="text-sm font-semibold"
+        />
         <div className="min-w-0">
           <p className="text-xs font-medium uppercase tracking-wider text-zinc-500">
             Signed in as

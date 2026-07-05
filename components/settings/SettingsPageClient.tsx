@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { motion } from "framer-motion";
 import { Loader2, Sparkles } from "lucide-react";
 import PasswordInput from "@/components/auth/PasswordInput";
+import ProfileAvatarUpload from "@/components/settings/ProfileAvatarUpload";
 import SettingsHeader from "@/components/settings/SettingsHeader";
 import SettingsSectionCard from "@/components/settings/SettingsSectionCard";
 import SettingsSelect from "@/components/settings/SettingsSelect";
@@ -34,6 +35,7 @@ import {
   settingsLabelClassName,
   settingsSliderClassName,
 } from "@/lib/settings/display";
+import { dispatchProfileUpdated, refreshAuthSession } from "@/lib/settings/profile-events";
 import { validateProfileSettings } from "@/lib/settings/profile";
 import { supabase } from "@/lib/supabase";
 
@@ -338,6 +340,12 @@ export default function SettingsPageClient({
         getAvatarInitials(savedFullName || savedUsername, defaultEmail)
       );
       setProfileStatus({ type: "success", message: "Profile saved." });
+      await refreshAuthSession();
+      dispatchProfileUpdated({
+        avatarUrl: savedAvatarUrl ?? null,
+        fullName: savedFullName,
+        username: savedUsername,
+      });
       router.refresh();
     } catch {
       setProfileStatus({
@@ -436,7 +444,11 @@ export default function SettingsPageClient({
 
   return (
     <div className="mx-auto max-w-3xl space-y-8 pb-10">
-      <SettingsHeader initials={headerInitials} email={defaultEmail} />
+      <SettingsHeader
+        initials={headerInitials}
+        email={defaultEmail}
+        avatarUrl={avatarUrl}
+      />
 
       {toastMessage && (
         <div
@@ -635,26 +647,13 @@ export default function SettingsPageClient({
           description="Your public identity across Advora AI."
           icon={<ProfileIcon />}
         >
-          <div className="mb-6 flex items-center gap-4">
-            <div className="flex h-16 w-16 items-center justify-center overflow-hidden rounded-2xl bg-gradient-to-br from-cyan-400 via-violet-500 to-fuchsia-500 text-lg font-semibold text-white shadow-lg shadow-violet-500/25">
-              {avatarUrl ? (
-                // eslint-disable-next-line @next/next/no-img-element
-                <img
-                  src={avatarUrl}
-                  alt=""
-                  className="h-full w-full object-cover"
-                />
-              ) : (
-                headerInitials
-              )}
-            </div>
-            <div>
-              <p className="text-sm font-medium text-white">Profile photo</p>
-              <p className="mt-0.5 text-xs text-zinc-500">
-                Add an image URL or leave blank to use initials.
-              </p>
-            </div>
-          </div>
+          <ProfileAvatarUpload
+            avatarUrl={avatarUrl}
+            initials={headerInitials}
+            disabled={isSavingProfile}
+            onAvatarChange={setAvatarUrl}
+            onStatus={setProfileStatus}
+          />
 
           <form
             className="space-y-4"
@@ -705,21 +704,6 @@ export default function SettingsPageClient({
                 value={defaultEmail}
                 readOnly
                 className={`${settingsInputClassName} cursor-not-allowed opacity-70`}
-              />
-            </div>
-
-            <div>
-              <label htmlFor="avatar-url" className={settingsLabelClassName}>
-                Avatar image URL
-              </label>
-              <input
-                id="avatar-url"
-                type="url"
-                value={avatarUrl}
-                onChange={(event) => setAvatarUrl(event.target.value)}
-                disabled={isSavingProfile}
-                placeholder="https://example.com/avatar.jpg"
-                className={settingsInputClassName}
               />
             </div>
 

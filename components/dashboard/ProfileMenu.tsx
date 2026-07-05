@@ -14,6 +14,7 @@ import {
 } from "lucide-react";
 import { useIsDesktopNav } from "@/hooks/useMediaQuery";
 import { useUserAvatar } from "@/hooks/useUserAvatar";
+import UserAvatar from "@/components/settings/UserAvatar";
 import { invalidateCreditsCache } from "@/hooks/useCredits";
 import { supabase } from "@/lib/supabase";
 
@@ -162,7 +163,7 @@ function ProfilePanel({
 export default function ProfileMenu() {
   const router = useRouter();
   const pathname = usePathname();
-  const { initials, displayName } = useUserAvatar();
+  const { initials, displayName, imageUrl } = useUserAvatar();
   const [open, setOpen] = useState(false);
   const [mounted, setMounted] = useState(false);
   const [isSigningOut, setIsSigningOut] = useState(false);
@@ -282,9 +283,12 @@ export default function ProfileMenu() {
         aria-expanded={open}
         aria-haspopup="true"
       >
-        <span className="flex h-7 w-7 items-center justify-center rounded-lg bg-gradient-to-br from-violet-500 to-fuchsia-500 text-xs font-semibold text-white">
-          {initials}
-        </span>
+        <UserAvatar
+          imageUrl={imageUrl}
+          initials={initials}
+          className="h-7 w-7 rounded-lg"
+          textClassName="text-xs font-semibold"
+        />
         {displayName && (
           <span className="hidden max-w-[8rem] truncate text-sm font-medium text-zinc-300 md:inline">
             {displayName}
