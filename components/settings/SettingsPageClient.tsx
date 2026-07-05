@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState, type ReactNode } from "react";
 import { useRouter } from "next/navigation";
 import { motion } from "framer-motion";
 import { Loader2, Sparkles } from "lucide-react";
@@ -8,8 +8,13 @@ import PasswordInput from "@/components/auth/PasswordInput";
 import SettingsHeader from "@/components/settings/SettingsHeader";
 import SettingsSectionCard from "@/components/settings/SettingsSectionCard";
 import SettingsSelect from "@/components/settings/SettingsSelect";
+import { usePasswordResetCooldown } from "@/hooks/usePasswordResetCooldown";
 import { mapAuthErrorMessage } from "@/lib/auth/errors";
-import { validateNewPassword } from "@/lib/auth/password-reset";
+import {
+  FORGOT_PASSWORD_ERROR_MESSAGE,
+  validateNewPassword,
+} from "@/lib/auth/password-reset";
+import { normalizeEmail } from "@/lib/auth/validation";
 import {
   AI_AUDIENCES,
   AI_BRAND_VOICES,
@@ -47,6 +52,9 @@ type StatusMessage = {
   type: "success" | "error";
   message: string;
 };
+
+const FORGOT_PASSWORD_SUCCESS_TOAST =
+  "Password reset link sent. Please check your email.";
 
 const passwordInputClassName =
   "w-full rounded-xl border border-white/10 bg-white/[0.04] px-4 py-3 pr-11 text-sm text-white placeholder:text-zinc-500 outline-none transition focus:border-violet-500/50 focus:ring-2 focus:ring-violet-500/20 disabled:cursor-not-allowed disabled:opacity-60";
@@ -102,8 +110,17 @@ export default function SettingsPageClient({
   const [newPassword, setNewPassword] = useState("");
   const [confirmNewPassword, setConfirmNewPassword] = useState("");
   const [passwordError, setPasswordError] = useState<string | null>(null);
+  const [forgotPasswordError, setForgotPasswordError] = useState<string | null>(
+    null
+  );
   const [isPasswordSaving, setIsPasswordSaving] = useState(false);
+  const [isSendingResetEmail, setIsSendingResetEmail] = useState(false);
   const [isDeletingAccount, setIsDeletingAccount] = useState(false);
+  const resetEmailInFlightRef = useRef(false);
+  const normalizedAccountEmail = normalizeEmail(defaultEmail);
+  const { secondsLeft, isOnCooldown, startCooldown } = usePasswordResetCooldown(
+    normalizedAccountEmail
+  );
 
   useEffect(() => {
     if (!passwordModalOpen && !deleteModalOpen) {
@@ -115,7 +132,7 @@ export default function SettingsPageClient({
 
     function onKeyDown(event: KeyboardEvent) {
       if (event.key === "Escape") {
-        if (passwordModalOpen && !isPasswordSaving) {
+        if (passwordModalOpen && !isPasswordSaving && !isSendingResetEmail) {
           closePasswordModal();
         }
         if (deleteModalOpen && !isDeletingAccount) {
@@ -133,16 +150,71 @@ export default function SettingsPageClient({
     passwordModalOpen,
     deleteModalOpen,
     isPasswordSaving,
+    isSendingResetEmail,
     isDeletingAccount,
   ]);
 
   function closePasswordModal(force = false) {
-    if (isPasswordSaving && !force) return;
+    if ((isPasswordSaving || isSendingResetEmail) && !force) return;
     setPasswordModalOpen(false);
     setCurrentPassword("");
     setNewPassword("");
     setConfirmNewPassword("");
     setPasswordError(null);
+    setForgotPasswordError(null);
+  }
+
+  async function handleForgotPassword() {
+    if (
+      resetEmailInFlightRef.current ||
+      isSendingResetEmail ||
+      isPasswordSaving ||
+      isOnCooldown ||
+      !normalizedAccountEmail
+    ) {
+      return;
+    }
+
+    setForgotPasswordError(null);
+    resetEmailInFlightRef.current = true;
+    setIsSendingResetEmail(true);
+
+    try {
+      const response = await fetch("/api/auth/forgot-password", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email: normalizedAccountEmail }),
+      });
+
+      const payload = (await response.json().catch(() => ({}))) as {
+        error?: string;
+        message?: string;
+      };
+
+      if (!response.ok) {
+        const message = mapAuthErrorMessage(
+          payload.error ?? FORGOT_PASSWORD_ERROR_MESSAGE
+        );
+        setForgotPasswordError(message);
+        setProfileStatus({ type: "error", message });
+        return;
+      }
+
+      startCooldown();
+      setProfileStatus({
+        type: "success",
+        message: FORGOT_PASSWORD_SUCCESS_TOAST,
+      });
+    } catch {
+      setForgotPasswordError(FORGOT_PASSWORD_ERROR_MESSAGE);
+      setProfileStatus({
+        type: "error",
+        message: FORGOT_PASSWORD_ERROR_MESSAGE,
+      });
+    } finally {
+      resetEmailInFlightRef.current = false;
+      setIsSendingResetEmail(false);
+    }
   }
 
   function closeDeleteModal(force = false) {
@@ -382,7 +454,7 @@ export default function SettingsPageClient({
       {passwordModalOpen && (
         <ModalBackdrop
           onClose={() => closePasswordModal()}
-          disabled={isPasswordSaving}
+          disabled={isPasswordSaving || isSendingResetEmail}
           label="Close change password dialog"
         >
           <motion.form
@@ -397,7 +469,7 @@ export default function SettingsPageClient({
               title="Change password"
               description="Confirm your current password, then choose a new one."
               onClose={() => closePasswordModal()}
-              disabled={isPasswordSaving}
+              disabled={isPasswordSaving || isSendingResetEmail}
             />
             <div className="space-y-4">
               <PasswordField
@@ -407,7 +479,48 @@ export default function SettingsPageClient({
                 onChange={setCurrentPassword}
                 placeholder="Current password"
                 autoComplete="current-password"
-                disabled={isPasswordSaving}
+                disabled={isPasswordSaving || isSendingResetEmail}
+                footer={
+                  <div className="mt-2 flex flex-col items-end gap-1.5">
+                    <button
+                      type="button"
+                      onClick={() => void handleForgotPassword()}
+                      disabled={
+                        isPasswordSaving ||
+                        isSendingResetEmail ||
+                        isOnCooldown
+                      }
+                      className="group inline-flex items-center gap-1.5 text-xs font-medium text-zinc-400 transition hover:text-cyan-300 disabled:cursor-not-allowed disabled:opacity-50"
+                    >
+                      {isSendingResetEmail ? (
+                        <>
+                          <Loader2
+                            className="h-3.5 w-3.5 animate-spin text-cyan-300"
+                            aria-hidden
+                          />
+                          Sending reset link…
+                        </>
+                      ) : isOnCooldown ? (
+                        `Resend in ${secondsLeft}s`
+                      ) : (
+                        <>
+                          Forgot Password?
+                          <span
+                            aria-hidden
+                            className="inline-block transition-transform group-hover:translate-x-0.5"
+                          >
+                            →
+                          </span>
+                        </>
+                      )}
+                    </button>
+                    {forgotPasswordError ? (
+                      <p role="alert" className="text-xs text-red-300">
+                        {forgotPasswordError}
+                      </p>
+                    ) : null}
+                  </div>
+                }
               />
               <PasswordField
                 id="new-password"
@@ -416,7 +529,7 @@ export default function SettingsPageClient({
                 onChange={setNewPassword}
                 placeholder="New password (min. 8 characters)"
                 autoComplete="new-password"
-                disabled={isPasswordSaving}
+                disabled={isPasswordSaving || isSendingResetEmail}
               />
               <PasswordField
                 id="confirm-new-password"
@@ -425,7 +538,7 @@ export default function SettingsPageClient({
                 onChange={setConfirmNewPassword}
                 placeholder="Confirm new password"
                 autoComplete="new-password"
-                disabled={isPasswordSaving}
+                disabled={isPasswordSaving || isSendingResetEmail}
               />
               {passwordError && (
                 <p
@@ -442,6 +555,7 @@ export default function SettingsPageClient({
               submitLabel="Save password"
               loadingLabel="Saving…"
               isLoading={isPasswordSaving}
+              disabled={isSendingResetEmail}
             />
           </motion.form>
         </ModalBackdrop>
@@ -822,6 +936,7 @@ export default function SettingsPageClient({
             type="button"
             onClick={() => {
               setProfileStatus(null);
+              setForgotPasswordError(null);
               setPasswordModalOpen(true);
             }}
             className="flex w-full items-center justify-between rounded-xl border border-white/10 bg-white/[0.03] px-4 py-3.5 text-left text-sm font-medium text-zinc-200 transition hover:border-violet-500/30 hover:bg-white/[0.06]"
@@ -948,26 +1063,30 @@ function ModalActions({
   submitLabel,
   loadingLabel,
   isLoading,
+  disabled = false,
 }: {
   onCancel: () => void;
   cancelLabel: string;
   submitLabel: string;
   loadingLabel: string;
   isLoading: boolean;
+  disabled?: boolean;
 }) {
+  const isDisabled = isLoading || disabled;
+
   return (
     <div className="mt-6 flex flex-col-reverse gap-3 sm:flex-row sm:justify-end">
       <button
         type="button"
         onClick={onCancel}
-        disabled={isLoading}
+        disabled={isDisabled}
         className="inline-flex justify-center rounded-xl border border-white/10 bg-white/[0.03] px-5 py-2.5 text-sm font-semibold text-zinc-300 transition hover:border-white/20 hover:bg-white/[0.06] disabled:cursor-not-allowed disabled:opacity-60"
       >
         {cancelLabel}
       </button>
       <button
         type="submit"
-        disabled={isLoading}
+        disabled={isDisabled}
         className="inline-flex items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-cyan-400 via-violet-500 to-fuchsia-500 px-5 py-2.5 text-sm font-semibold text-white shadow-lg shadow-violet-500/20 transition hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-60"
       >
         {isLoading ? (
@@ -991,6 +1110,7 @@ function PasswordField({
   placeholder,
   autoComplete,
   disabled,
+  footer,
 }: {
   id: string;
   label: string;
@@ -999,6 +1119,7 @@ function PasswordField({
   placeholder: string;
   autoComplete: "current-password" | "new-password";
   disabled: boolean;
+  footer?: ReactNode;
 }) {
   return (
     <div>
@@ -1014,6 +1135,7 @@ function PasswordField({
         disabled={disabled}
         className={passwordInputClassName}
       />
+      {footer}
     </div>
   );
 }
