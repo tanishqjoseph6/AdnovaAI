@@ -3,22 +3,75 @@ import { requireAdminUser } from "@/lib/admin/auth";
 import {
   createFeedbackScreenshotSignedUrl,
   feedbackTicketFromRow,
+  isFeedbackStatus,
   type FeedbackProfile,
   type FeedbackRow,
 } from "@/lib/feedback/server";
+import {
+  isFeedbackCategory,
+  isFeedbackReaction,
+  isFeedbackRating,
+} from "@/lib/feedback/validation";
 
-export async function GET() {
+function parseSort(value: string | null): "created_desc" | "created_asc" | "rating_desc" | "rating_asc" {
+  if (
+    value === "created_asc" ||
+    value === "rating_desc" ||
+    value === "rating_asc"
+  ) {
+    return value;
+  }
+  return "created_desc";
+}
+
+export async function GET(request: Request) {
   try {
     const authResult = await requireAdminUser();
     if ("response" in authResult) {
       return authResult.response;
     }
 
+    const { searchParams } = new URL(request.url);
+    const statusParam = searchParams.get("status");
+    const categoryParam = searchParams.get("category");
+    const ratingParam = searchParams.get("rating");
+    const reactionParam = searchParams.get("reaction");
+    const query = searchParams.get("q")?.trim().toLowerCase() ?? "";
+    const sort = parseSort(searchParams.get("sort"));
+
     const { admin } = authResult;
-    const { data: feedbackRows, error: feedbackError } = await admin
-      .from("user_feedback")
-      .select("*")
-      .order("created_at", { ascending: false });
+    let dbQuery = admin.from("user_feedback").select("*");
+
+    if (statusParam && statusParam !== "all" && isFeedbackStatus(statusParam)) {
+      dbQuery = dbQuery.eq("status", statusParam);
+    }
+
+    if (categoryParam && categoryParam !== "all" && isFeedbackCategory(categoryParam)) {
+      dbQuery = dbQuery.eq("category", categoryParam);
+    }
+
+    if (ratingParam && ratingParam !== "all") {
+      const rating = Number(ratingParam);
+      if (isFeedbackRating(rating)) {
+        dbQuery = dbQuery.eq("rating", rating);
+      }
+    }
+
+    if (reactionParam && reactionParam !== "all" && isFeedbackReaction(reactionParam)) {
+      dbQuery = dbQuery.eq("reaction", reactionParam);
+    }
+
+    if (sort === "created_asc") {
+      dbQuery = dbQuery.order("created_at", { ascending: true });
+    } else if (sort === "rating_desc") {
+      dbQuery = dbQuery.order("rating", { ascending: false }).order("created_at", { ascending: false });
+    } else if (sort === "rating_asc") {
+      dbQuery = dbQuery.order("rating", { ascending: true }).order("created_at", { ascending: false });
+    } else {
+      dbQuery = dbQuery.order("created_at", { ascending: false });
+    }
+
+    const { data: feedbackRows, error: feedbackError } = await dbQuery;
 
     if (feedbackError) {
       console.error("Admin feedback fetch failed:", feedbackError);
@@ -71,7 +124,14 @@ export async function GET() {
       })
     );
 
-    return NextResponse.json({ tickets });
+    const filteredTickets = query
+      ? tickets.filter((ticket) => {
+          const haystack = `${ticket.subject} ${ticket.message} ${ticket.email} ${ticket.userName}`.toLowerCase();
+          return haystack.includes(query);
+        })
+      : tickets;
+
+    return NextResponse.json({ tickets: filteredTickets });
   } catch (error) {
     console.error("Admin feedback fetch error:", error);
     return NextResponse.json(

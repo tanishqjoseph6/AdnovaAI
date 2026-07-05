@@ -43,6 +43,8 @@ export async function POST(request: Request) {
       category: formData.get("category"),
       subject: formData.get("subject"),
       message: formData.get("message"),
+      rating: formData.get("rating"),
+      reaction: formData.get("reaction"),
     });
 
     if (!validation.ok) {
@@ -97,8 +99,10 @@ export async function POST(request: Request) {
         category: validation.value.category,
         subject: validation.value.subject,
         message: validation.value.message,
+        rating: validation.value.rating,
+        reaction: validation.value.reaction,
         screenshot_url: screenshotUrl,
-        status: "open",
+        status: "new",
       })
       .select("id, created_at")
       .single();

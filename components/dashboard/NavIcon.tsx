@@ -8,6 +8,7 @@ type IconName =
   | "competitor"
   | "history"
   | "billing"
+  | "feedback"
   | "settings"
   | "admin";
 
@@ -119,6 +120,16 @@ export default function NavIcon({
             strokeLinecap="round"
             strokeLinejoin="round"
             d="M2.25 8.25h19.5M2.25 9h19.5m-16.5 5.25h6m-6 2.25h3m-3.75 3h15a2.25 2.25 0 002.25-2.25V6.75A2.25 2.25 0 0019.5 4.5h-15a2.25 2.25 0 00-2.25 2.25v10.5A2.25 2.25 0 004.5 19.5z"
+          />
+        </svg>
+      );
+    case "feedback":
+      return (
+        <svg {...props}>
+          <path
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            d="M7.5 8.25h9m-9 3H12m-9.75 1.51c0 1.6 1.123 2.994 2.707 3.227 1.087.16 2.185.283 3.293.369V21l4.184-4.183a1.14 1.14 0 01.778-.332 48.294 48.294 0 005.83-.498c1.585-.233 2.708-1.626 2.708-3.228V6.741c0-1.602-1.123-2.995-2.707-3.228A48.394 48.394 0 0012 3c-2.392 0-4.744.175-7.043.513C3.373 3.746 2.25 5.14 2.25 6.741v6.018z"
           />
         </svg>
       );

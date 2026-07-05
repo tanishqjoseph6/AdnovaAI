@@ -11,6 +11,7 @@ export type NavItem = {
     | "competitor"
     | "history"
     | "billing"
+    | "feedback"
     | "settings"
     | "admin";
 };
@@ -36,6 +37,7 @@ export const dashboardNav: NavItem[] = [
     icon: "competitor",
   },
   { label: "History", href: "/dashboard/history", icon: "history" },
+  { label: "Feedback", href: "/dashboard/feedback", icon: "feedback" },
   { label: "Billing", href: "/dashboard/billing", icon: "billing" },
   { label: "Settings", href: "/dashboard/settings", icon: "settings" },
 ];

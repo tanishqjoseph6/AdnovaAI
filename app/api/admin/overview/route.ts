@@ -96,8 +96,12 @@ export async function GET() {
         mrr: monthlyRevenue,
         creditsUsedToday: credits.filter((row) => row.updated_at && row.updated_at >= today).length,
         totalFeedback: feedback.length,
-        openTickets: feedback.filter((ticket) => ticket.status === "open").length,
-        resolvedTickets: feedback.filter((ticket) => ticket.status === "closed" || ticket.status === "reviewed").length,
+        openTickets: feedback.filter((ticket) =>
+          ticket.status === "new" || ticket.status === "in_review"
+        ).length,
+        resolvedTickets: feedback.filter((ticket) =>
+          ticket.status === "completed" || ticket.status === "dismissed"
+        ).length,
       },
       recentPayments,
       recentFeedback,
