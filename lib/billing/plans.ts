@@ -21,7 +21,11 @@ export const PLANS = {
     amountPaise: 0,
     generationLimit: 5,
     purchasable: false,
-    features: ["5 generations / month"],
+    features: [
+      "5 generations / month",
+      "Hooks, captions, CTAs & UGC scripts",
+      "Basic AI settings",
+    ],
   },
   starter: {
     id: "starter" as const,
@@ -34,7 +38,10 @@ export const PLANS = {
     purchasable: true,
     features: [
       "100 generations / month",
-      "5 hooks, 3 captions & 1 UGC script per run",
+      "Brand Kit & brand memory",
+      "Competitor & landing analyzers",
+      "Social scheduler",
+      "Advanced AI settings",
     ],
   },
   pro: {
@@ -48,7 +55,9 @@ export const PLANS = {
     purchasable: true,
     features: [
       "Unlimited generations",
-      "Priority support",
+      "Everything in Starter",
+      "Premium AI quality",
+      "Priority processing & support",
     ],
   },
   custom: {

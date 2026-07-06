@@ -1,6 +1,12 @@
 import { NextResponse } from "next/server";
 import { requireAuthenticatedUser } from "@/lib/auth/require-user";
 import {
+  clampAiPreferencesForPlan,
+  validateAiPreferencesForPlan,
+} from "@/lib/billing/ai-preferences-plan";
+import { getUserPlanContext } from "@/lib/billing/plan-access";
+import { FEATURE_LOCKED_CODE } from "@/lib/billing/features";
+import {
   aiPreferencesToApiResponse,
   validateAiPreferences,
 } from "@/lib/settings/ai-preferences";
@@ -98,10 +104,33 @@ export async function PATCH(request: Request) {
       return NextResponse.json({ error: validation.error }, { status: 400 });
     }
 
+    const planContext = await getUserPlanContext(supabase, authResult.user.id);
+    const planValidation = validateAiPreferencesForPlan(
+      validation.value,
+      planContext.plan,
+      planContext.subscriptionStatus
+    );
+    if (!planValidation.ok) {
+      return NextResponse.json(
+        {
+          error: planValidation.error,
+          code: FEATURE_LOCKED_CODE,
+          feature: planValidation.feature,
+        },
+        { status: 403 }
+      );
+    }
+
+    const clamped = clampAiPreferencesForPlan(
+      validation.value,
+      planContext.plan,
+      planContext.subscriptionStatus
+    );
+
     const saved = await saveAiPreferencesForUser(
       supabase,
       authResult.user.id,
-      validation.value
+      clamped
     );
 
     if (!saved) {

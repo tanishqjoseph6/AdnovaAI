@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import OpenAI from "openai";
 import { requireVerifiedUser } from "@/lib/auth/require-user";
+import { requireFeatureAccess } from "@/lib/billing/plan-access";
 import { COMPETITOR_AD_ANALYSIS_PROMPT } from "@/lib/competitor-ad/prompt";
 import { normalizeCompetitorAdAnalysis } from "@/lib/competitor-ad/types";
 import { createClient } from "@/lib/supabase/server";
@@ -23,6 +24,15 @@ export async function POST(req: Request) {
       return authResult.response;
     }
     const user = authResult.user;
+
+    const featureResult = await requireFeatureAccess(
+      supabase,
+      user.id,
+      "competitor_analyzer"
+    );
+    if ("response" in featureResult) {
+      return featureResult.response;
+    }
 
     const body = (await req.json()) as {
       image?: string;

@@ -1,6 +1,9 @@
 import { NextResponse } from "next/server";
 import OpenAI from "openai";
 import { requireVerifiedUser } from "@/lib/auth/require-user";
+import { clampAiPreferencesForPlan } from "@/lib/billing/ai-preferences-plan";
+import { canAccessFeature } from "@/lib/billing/features";
+import { getUserPlanContext } from "@/lib/billing/plan-access";
 import {
   buildBrandKitPromptSection,
   getBrandKitForUser,
@@ -98,11 +101,24 @@ export async function POST(request: Request) {
       }
     }
 
-    const brandKit = await getBrandKitForUser(supabase, authResult.user.id);
+    const planContext = await getUserPlanContext(supabase, authResult.user.id);
+    const canUseBrandKit = canAccessFeature(
+      planContext.plan,
+      planContext.subscriptionStatus,
+      "brand_kit"
+    );
+    const brandKit = canUseBrandKit
+      ? await getBrandKitForUser(supabase, authResult.user.id)
+      : null;
     const brandKitSection = buildBrandKitPromptSection(brandKit);
-    const aiPreferences = await getAiPreferencesForUser(
+    const rawAiPreferences = await getAiPreferencesForUser(
       supabase,
       authResult.user.id
+    );
+    const aiPreferences = clampAiPreferencesForPlan(
+      rawAiPreferences,
+      planContext.plan,
+      planContext.subscriptionStatus
     );
     const aiPreferencesSection =
       buildAiPreferencesPromptSection(aiPreferences);

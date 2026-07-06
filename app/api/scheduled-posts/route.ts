@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { requireAuthenticatedUser } from "@/lib/auth/require-user";
+import { requireFeatureAccess } from "@/lib/billing/plan-access";
 import {
   scheduledPostFromRow,
   summarizeScheduledPosts,
@@ -13,6 +14,15 @@ export async function GET() {
     const authResult = await requireAuthenticatedUser(supabase);
     if ("response" in authResult) {
       return authResult.response;
+    }
+
+    const featureResult = await requireFeatureAccess(
+      supabase,
+      authResult.user.id,
+      "social_scheduler"
+    );
+    if ("response" in featureResult) {
+      return featureResult.response;
     }
 
     const { data, error } = await supabase
@@ -49,6 +59,15 @@ export async function POST(request: Request) {
     const authResult = await requireAuthenticatedUser(supabase);
     if ("response" in authResult) {
       return authResult.response;
+    }
+
+    const featureResult = await requireFeatureAccess(
+      supabase,
+      authResult.user.id,
+      "social_scheduler"
+    );
+    if ("response" in featureResult) {
+      return featureResult.response;
     }
 
     const body = (await request.json().catch(() => ({}))) as Record<

@@ -1,4 +1,6 @@
 import type { PlanId } from "@/lib/billing/plans";
+import type { SubscriptionStatus } from "@/lib/billing/plans";
+import type { FeatureId } from "@/lib/billing/features";
 
 export type CreditsPlan = "free" | "pro";
 
@@ -14,7 +16,10 @@ export type UserCredits = {
 
 export type CreditsApiResponse = UserCredits & {
   billingPlan: PlanId;
+  effectivePlan: PlanId;
+  subscriptionStatus: SubscriptionStatus;
   displayPlan: string;
+  featureAccess: Record<FeatureId, boolean>;
 };
 
 export type DeductCreditResult = {

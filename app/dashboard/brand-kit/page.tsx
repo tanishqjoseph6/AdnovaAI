@@ -1,4 +1,5 @@
 import BrandKitPageClient from "@/components/brand-kit/BrandKitPageClient";
+import FeatureGate from "@/components/billing/FeatureGate";
 import DashboardShell from "@/components/dashboard/DashboardShell";
 import { getBrandKitForUser } from "@/lib/brand-kit/server";
 import { createClient } from "@/lib/supabase/server";
@@ -16,7 +17,9 @@ export default async function BrandKitPage() {
       title="Brand Kit"
       subtitle="Save your brand identity once and let every future ad follow it"
     >
-      <BrandKitPageClient initialBrandKit={brandKit} />
+      <FeatureGate feature="brand_kit">
+        <BrandKitPageClient initialBrandKit={brandKit} />
+      </FeatureGate>
     </DashboardShell>
   );
 }

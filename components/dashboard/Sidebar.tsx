@@ -2,8 +2,10 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useState, type MouseEvent } from "react";
+import PremiumFeatureBadge from "@/components/billing/PremiumFeatureBadge";
 import { useCredits } from "@/hooks/useCredits";
+import { usePlanFeatures } from "@/hooks/usePlanFeatures";
 import { creditsProgressPercent } from "@/lib/credits/display";
 import { adminNav, dashboardNav } from "@/lib/dashboard-nav";
 import type { ProfileRole } from "@/lib/admin/auth";
@@ -77,6 +79,7 @@ function SidebarCredits({ onClose }: { onClose: () => void }) {
 export default function Sidebar({ open, onClose }: SidebarProps) {
   const pathname = usePathname();
   const { credits } = useCredits();
+  const { canAccess, openUpgradeModal } = usePlanFeatures();
   const [role, setRole] = useState<ProfileRole>("user");
   const workspaceLabel = credits?.displayPlan
     ? `${credits.displayPlan} workspace`
@@ -116,6 +119,20 @@ export default function Sidebar({ open, onClose }: SidebarProps) {
       active = false;
     };
   }, []);
+
+  function handleNavClick(
+    event: MouseEvent<HTMLAnchorElement>,
+    premiumFeature?: (typeof dashboardNav)[number]["premiumFeature"]
+  ) {
+    if (!premiumFeature || canAccess(premiumFeature)) {
+      onClose();
+      return;
+    }
+
+    event.preventDefault();
+    openUpgradeModal(premiumFeature);
+    onClose();
+  }
 
   return (
     <>
@@ -164,16 +181,21 @@ export default function Sidebar({ open, onClose }: SidebarProps) {
           </p>
           {dashboardNav.map((item) => {
             const active = isActive(pathname, item.href);
+            const locked =
+              item.premiumFeature && !canAccess(item.premiumFeature);
+
             return (
               <Link
                 key={item.href}
                 href={item.href}
-                onClick={onClose}
+                onClick={(event) => handleNavClick(event, item.premiumFeature)}
                 aria-current={active ? "page" : undefined}
                 className={`group flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium transition ${
                   active
                     ? "bg-gradient-to-r from-cyan-500/15 via-violet-500/15 to-fuchsia-500/10 text-white shadow-inner shadow-violet-500/5"
-                    : "text-zinc-400 hover:bg-white/[0.04] hover:text-zinc-200"
+                    : locked
+                      ? "text-zinc-500 hover:bg-white/[0.03] hover:text-zinc-400"
+                      : "text-zinc-400 hover:bg-white/[0.04] hover:text-zinc-200"
                 }`}
               >
                 <span
@@ -185,8 +207,20 @@ export default function Sidebar({ open, onClose }: SidebarProps) {
                 >
                   <NavIcon name={item.icon} className="h-[18px] w-[18px]" />
                 </span>
-                <span className="truncate">{item.label}</span>
-                {active && (
+                <span className="min-w-0 truncate">{item.label}</span>
+                {item.premiumFeature && (
+                  <span className="ml-auto flex shrink-0 items-center gap-1.5">
+                    {locked ? (
+                      <PremiumFeatureBadge variant="lock" />
+                    ) : (
+                      <PremiumFeatureBadge
+                        variant="tier"
+                        feature={item.premiumFeature}
+                      />
+                    )}
+                  </span>
+                )}
+                {active && !item.premiumFeature && (
                   <span className="ml-auto h-1.5 w-1.5 shrink-0 rounded-full bg-cyan-400 shadow-[0_0_8px_#22d3ee]" />
                 )}
               </Link>

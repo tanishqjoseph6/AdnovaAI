@@ -5,11 +5,14 @@ import { useRouter } from "next/navigation";
 import { motion } from "framer-motion";
 import { Loader2, Sparkles } from "lucide-react";
 import PasswordInput from "@/components/auth/PasswordInput";
+import PremiumFeatureBadge from "@/components/billing/PremiumFeatureBadge";
 import ProfileAvatarUpload from "@/components/settings/ProfileAvatarUpload";
 import SettingsHeader from "@/components/settings/SettingsHeader";
 import SettingsSectionCard from "@/components/settings/SettingsSectionCard";
 import SettingsSelect from "@/components/settings/SettingsSelect";
 import { usePasswordResetCooldown } from "@/hooks/usePasswordResetCooldown";
+import { usePlanFeatures } from "@/hooks/usePlanFeatures";
+import { FEATURE_LOCKED_CODE } from "@/lib/billing/features";
 import { mapAuthErrorMessage } from "@/lib/auth/errors";
 import {
   FORGOT_PASSWORD_ERROR_MESSAGE,
@@ -92,6 +95,9 @@ export default function SettingsPageClient({
   initialAiPreferences,
 }: SettingsPageClientProps) {
   const router = useRouter();
+  const { canAccess, openUpgradeModal } = usePlanFeatures();
+  const hasAdvancedAi = canAccess("advanced_ai_preferences");
+  const hasPremiumQuality = canAccess("premium_ai_quality");
   const [headerInitials, setHeaderInitials] = useState(avatarInitials);
   const [fullName, setFullName] = useState(defaultFullName);
   const [username, setUsername] = useState(defaultUsername);
@@ -373,10 +379,20 @@ export default function SettingsPageClient({
 
       const payload = (await response.json()) as {
         error?: string;
+        code?: string;
+        feature?: "advanced_ai_preferences" | "premium_ai_quality";
         preferences?: AiPreferencesApi;
       };
 
       if (!response.ok) {
+        if (payload.code === FEATURE_LOCKED_CODE && payload.feature) {
+          openUpgradeModal(
+            payload.feature === "premium_ai_quality"
+              ? "premium_ai_quality"
+              : "advanced_ai_preferences"
+          );
+          return;
+        }
         setAiStatus({
           type: "error",
           message: payload.error ?? "Unable to save AI preferences.",
@@ -752,60 +768,6 @@ export default function SettingsPageClient({
               </SettingsSelect>
 
               <SettingsSelect
-                label="Platform"
-                value={aiPreferences.platform}
-                onChange={(event) =>
-                  updateAiPreference(
-                    "platform",
-                    event.target.value as AiPreferences["platform"]
-                  )
-                }
-                disabled={isSavingAi}
-              >
-                {AI_PLATFORMS.map((option) => (
-                  <option key={option} value={option}>
-                    {option}
-                  </option>
-                ))}
-              </SettingsSelect>
-
-              <SettingsSelect
-                label="Audience"
-                value={aiPreferences.audience}
-                onChange={(event) =>
-                  updateAiPreference(
-                    "audience",
-                    event.target.value as AiPreferences["audience"]
-                  )
-                }
-                disabled={isSavingAi}
-              >
-                {AI_AUDIENCES.map((option) => (
-                  <option key={option} value={option}>
-                    {option}
-                  </option>
-                ))}
-              </SettingsSelect>
-
-              <SettingsSelect
-                label="Brand voice"
-                value={aiPreferences.brandVoice}
-                onChange={(event) =>
-                  updateAiPreference(
-                    "brandVoice",
-                    event.target.value as AiPreferences["brandVoice"]
-                  )
-                }
-                disabled={isSavingAi}
-              >
-                {AI_BRAND_VOICES.map((option) => (
-                  <option key={option} value={option}>
-                    {option}
-                  </option>
-                ))}
-              </SettingsSelect>
-
-              <SettingsSelect
                 label="Caption length"
                 value={aiPreferences.captionLength}
                 onChange={(event) =>
@@ -823,6 +785,95 @@ export default function SettingsPageClient({
                 ))}
               </SettingsSelect>
 
+              <div className="sm:col-span-2 flex items-center justify-between gap-3 rounded-xl border border-white/[0.06] bg-white/[0.02] px-4 py-3">
+                <div>
+                  <p className="text-sm font-medium text-white">Advanced AI preferences</p>
+                  <p className="text-xs text-zinc-500">
+                    Platform, audience, brand voice, creative controls &amp; more
+                  </p>
+                </div>
+                <PremiumFeatureBadge
+                  variant={hasAdvancedAi ? "tier" : "lock"}
+                  feature="advanced_ai_preferences"
+                />
+              </div>
+
+              <div
+                className={`relative sm:col-span-2 ${!hasAdvancedAi ? "cursor-pointer" : ""}`}
+                onClick={
+                  !hasAdvancedAi
+                    ? () => openUpgradeModal("advanced_ai_preferences")
+                    : undefined
+                }
+                onKeyDown={
+                  !hasAdvancedAi
+                    ? (event) => {
+                        if (event.key === "Enter" || event.key === " ") {
+                          openUpgradeModal("advanced_ai_preferences");
+                        }
+                      }
+                    : undefined
+                }
+                role={!hasAdvancedAi ? "button" : undefined}
+                tabIndex={!hasAdvancedAi ? 0 : undefined}
+              >
+                <div
+                  className={`grid gap-5 sm:grid-cols-2 ${!hasAdvancedAi ? "pointer-events-none opacity-60" : ""}`}
+                >
+              <SettingsSelect
+                label="Platform"
+                value={aiPreferences.platform}
+                onChange={(event) =>
+                  updateAiPreference(
+                    "platform",
+                    event.target.value as AiPreferences["platform"]
+                  )
+                }
+                disabled={isSavingAi || !hasAdvancedAi}
+              >
+                {AI_PLATFORMS.map((option) => (
+                  <option key={option} value={option}>
+                    {option}
+                  </option>
+                ))}
+              </SettingsSelect>
+
+              <SettingsSelect
+                label="Audience"
+                value={aiPreferences.audience}
+                onChange={(event) =>
+                  updateAiPreference(
+                    "audience",
+                    event.target.value as AiPreferences["audience"]
+                  )
+                }
+                disabled={isSavingAi || !hasAdvancedAi}
+              >
+                {AI_AUDIENCES.map((option) => (
+                  <option key={option} value={option}>
+                    {option}
+                  </option>
+                ))}
+              </SettingsSelect>
+
+              <SettingsSelect
+                label="Brand voice"
+                value={aiPreferences.brandVoice}
+                onChange={(event) =>
+                  updateAiPreference(
+                    "brandVoice",
+                    event.target.value as AiPreferences["brandVoice"]
+                  )
+                }
+                disabled={isSavingAi || !hasAdvancedAi}
+              >
+                {AI_BRAND_VOICES.map((option) => (
+                  <option key={option} value={option}>
+                    {option}
+                  </option>
+                ))}
+              </SettingsSelect>
+
               <SettingsSelect
                 label="Emoji usage"
                 value={aiPreferences.emojiUsage}
@@ -832,7 +883,7 @@ export default function SettingsPageClient({
                     event.target.value as AiPreferences["emojiUsage"]
                   )
                 }
-                disabled={isSavingAi}
+                disabled={isSavingAi || !hasAdvancedAi}
               >
                 {AI_EMOJI_USAGE.map((option) => (
                   <option key={option} value={option}>
@@ -850,7 +901,7 @@ export default function SettingsPageClient({
                     event.target.value as AiPreferences["ctaStyle"]
                   )
                 }
-                disabled={isSavingAi}
+                disabled={isSavingAi || !hasAdvancedAi}
               >
                 {AI_CTA_STYLES.map((option) => (
                   <option key={option} value={option}>
@@ -859,28 +910,7 @@ export default function SettingsPageClient({
                 ))}
               </SettingsSelect>
 
-              <SettingsSelect
-                label="Generation quality"
-                hint="Fast uses lighter models; Premium uses GPT-4o for higher quality."
-                value={aiPreferences.generationQuality}
-                onChange={(event) =>
-                  updateAiPreference(
-                    "generationQuality",
-                    event.target.value as AiPreferences["generationQuality"]
-                  )
-                }
-                disabled={isSavingAi}
-                className="sm:col-span-2"
-              >
-                {AI_GENERATION_QUALITIES.map((option) => (
-                  <option key={option} value={option}>
-                    {option}
-                  </option>
-                ))}
-              </SettingsSelect>
-            </div>
-
-            <div className="rounded-xl border border-white/[0.06] bg-white/[0.02] p-4 sm:p-5">
+            <div className="rounded-xl border border-white/[0.06] bg-white/[0.02] p-4 sm:p-5 sm:col-span-2">
               <div className="mb-4 flex items-center justify-between gap-3">
                 <label htmlFor="creative-level" className={settingsLabelClassName}>
                   Creative level
@@ -898,13 +928,54 @@ export default function SettingsPageClient({
                 onChange={(event) =>
                   updateAiPreference("creativeLevel", Number(event.target.value))
                 }
-                disabled={isSavingAi}
+                disabled={isSavingAi || !hasAdvancedAi}
                 className={settingsSliderClassName}
               />
               <div className="mt-3 flex justify-between text-xs font-medium text-zinc-500">
                 <span>Safe</span>
                 <span>Experimental</span>
               </div>
+            </div>
+                </div>
+              </div>
+
+              <div className="sm:col-span-2 flex items-center justify-between gap-3 rounded-xl border border-white/[0.06] bg-white/[0.02] px-4 py-3">
+                <div>
+                  <p className="text-sm font-medium text-white">Premium AI output</p>
+                  <p className="text-xs text-zinc-500">GPT-4o quality for highest-fidelity copy</p>
+                </div>
+                <PremiumFeatureBadge
+                  variant={hasPremiumQuality ? "tier" : "lock"}
+                  feature="premium_ai_quality"
+                />
+              </div>
+
+              <SettingsSelect
+                label="Generation quality"
+                hint="Fast uses lighter models; Premium uses GPT-4o for higher quality."
+                value={aiPreferences.generationQuality}
+                onChange={(event) => {
+                  const value = event.target.value as AiPreferences["generationQuality"];
+                  if (value === "Premium" && !hasPremiumQuality) {
+                    openUpgradeModal("premium_ai_quality");
+                    return;
+                  }
+                  updateAiPreference("generationQuality", value);
+                }}
+                disabled={isSavingAi}
+                className="sm:col-span-2"
+              >
+                {AI_GENERATION_QUALITIES.map((option) => (
+                  <option
+                    key={option}
+                    value={option}
+                    disabled={option === "Premium" && !hasPremiumQuality}
+                  >
+                    {option}
+                    {option === "Premium" && !hasPremiumQuality ? " (Pro)" : ""}
+                  </option>
+                ))}
+              </SettingsSelect>
             </div>
 
             <SaveButton loading={isSavingAi} label="Save AI preferences" />

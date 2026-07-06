@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { requireAuthenticatedUser } from "@/lib/auth/require-user";
+import { requireFeatureAccess } from "@/lib/billing/plan-access";
 import { scheduledPostFromRow } from "@/lib/social-scheduler/server";
 import { validateScheduledPostInput } from "@/lib/social-scheduler/validation";
 import { createClient } from "@/lib/supabase/server";
@@ -15,6 +16,15 @@ export async function PATCH(request: Request, context: RouteContext) {
     const authResult = await requireAuthenticatedUser(supabase);
     if ("response" in authResult) {
       return authResult.response;
+    }
+
+    const featureResult = await requireFeatureAccess(
+      supabase,
+      authResult.user.id,
+      "social_scheduler"
+    );
+    if ("response" in featureResult) {
+      return featureResult.response;
     }
 
     const body = (await request.json().catch(() => ({}))) as Record<
@@ -77,6 +87,15 @@ export async function DELETE(_request: Request, context: RouteContext) {
     const authResult = await requireAuthenticatedUser(supabase);
     if ("response" in authResult) {
       return authResult.response;
+    }
+
+    const featureResult = await requireFeatureAccess(
+      supabase,
+      authResult.user.id,
+      "social_scheduler"
+    );
+    if ("response" in featureResult) {
+      return featureResult.response;
     }
 
     const { error } = await supabase

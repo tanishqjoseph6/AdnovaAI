@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import OpenAI from "openai";
 import { requireVerifiedUser } from "@/lib/auth/require-user";
+import { requireFeatureAccess } from "@/lib/billing/plan-access";
 import {
   fetchLandingPageContent,
   normalizeLandingPageUrl,
@@ -22,6 +23,15 @@ export async function POST(req: Request) {
       return authResult.response;
     }
     const user = authResult.user;
+
+    const featureResult = await requireFeatureAccess(
+      supabase,
+      user.id,
+      "landing_analyzer"
+    );
+    if ("response" in featureResult) {
+      return featureResult.response;
+    }
 
     const body = (await req.json()) as { url?: string };
     const rawUrl = typeof body.url === "string" ? body.url : "";

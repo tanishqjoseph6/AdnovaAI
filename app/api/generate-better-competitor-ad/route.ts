@@ -1,6 +1,8 @@
 import { NextResponse } from "next/server";
 import OpenAI from "openai";
 import { requireVerifiedUser } from "@/lib/auth/require-user";
+import { clampAiPreferencesForPlan } from "@/lib/billing/ai-preferences-plan";
+import { getUserPlanContext, requireFeatureAccess } from "@/lib/billing/plan-access";
 import {
   buildBrandKitPromptSection,
   getBrandKitForUser,
@@ -37,6 +39,15 @@ export async function POST(req: Request) {
     }
     const user = authResult.user;
 
+    const featureResult = await requireFeatureAccess(
+      supabase,
+      user.id,
+      "competitor_analyzer"
+    );
+    if ("response" in featureResult) {
+      return featureResult.response;
+    }
+
     const body = (await req.json()) as {
       analysis?: CompetitorAdAnalysis;
       analysisId?: string;
@@ -60,16 +71,22 @@ export async function POST(req: Request) {
     if (!canUseCredits(userCredits)) {
       return NextResponse.json(
         {
-          error: "No credits remaining. Upgrade to Pro for unlimited generations.",
+          error: "No credits remaining. Upgrade to Starter or Pro for more generations.",
           code: CREDITS_ERROR_CODE,
         },
         { status: 403 }
       );
     }
 
+    const planContext = await getUserPlanContext(supabase, user.id);
     const brandKit = await getBrandKitForUser(supabase, user.id);
     const brandKitSection = buildBrandKitPromptSection(brandKit);
-    const aiPreferences = await getAiPreferencesForUser(supabase, user.id);
+    const rawAiPreferences = await getAiPreferencesForUser(supabase, user.id);
+    const aiPreferences = clampAiPreferencesForPlan(
+      rawAiPreferences,
+      planContext.plan,
+      planContext.subscriptionStatus
+    );
     const aiPreferencesSection =
       buildAiPreferencesPromptSection(aiPreferences);
     const generationConfig = resolveOpenAiGenerationConfig(aiPreferences);
@@ -110,7 +127,7 @@ export async function POST(req: Request) {
         return NextResponse.json(
           {
             error:
-              "No credits remaining. Upgrade to Pro for unlimited generations.",
+              "No credits remaining. Upgrade to Starter or Pro for more generations.",
             code: CREDITS_ERROR_CODE,
           },
           { status: 403 }

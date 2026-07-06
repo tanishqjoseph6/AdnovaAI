@@ -45,10 +45,82 @@ export const BILLING_COMPARISON_FEATURES: ComparisonFeature[] = [
     },
   },
   {
+    label: "CTAs per generation",
+    values: {
+      free: "3",
+      starter: "3",
+      pro: "3",
+      custom: "3",
+    },
+  },
+  {
     label: "UGC scripts",
     values: {
       free: true,
       starter: true,
+      pro: true,
+      custom: true,
+    },
+  },
+  {
+    label: "Brand Kit & brand memory",
+    values: {
+      free: false,
+      starter: true,
+      pro: true,
+      custom: true,
+    },
+  },
+  {
+    label: "Competitor Analyzer",
+    values: {
+      free: false,
+      starter: true,
+      pro: true,
+      custom: true,
+    },
+  },
+  {
+    label: "Landing Page Analyzer",
+    values: {
+      free: false,
+      starter: true,
+      pro: true,
+      custom: true,
+    },
+  },
+  {
+    label: "Social Scheduler",
+    values: {
+      free: false,
+      starter: true,
+      pro: true,
+      custom: true,
+    },
+  },
+  {
+    label: "Advanced AI preferences",
+    values: {
+      free: false,
+      starter: true,
+      pro: true,
+      custom: true,
+    },
+  },
+  {
+    label: "Premium AI output (GPT-4o)",
+    values: {
+      free: false,
+      starter: false,
+      pro: true,
+      custom: true,
+    },
+  },
+  {
+    label: "Priority processing",
+    values: {
+      free: false,
+      starter: false,
       pro: true,
       custom: true,
     },
@@ -112,7 +184,11 @@ export const PRICING_TIERS: PricingTierConfig[] = [
     displayName: "Free",
     subtitle: "Perfect for trying Advora AI",
     priceDisplay: "Free",
-    features: [`${FREE_PLAN_CREDITS} generations/month`, "Basic AI ad generation"],
+    features: [
+      `${FREE_PLAN_CREDITS} generations/month`,
+      "Hooks, captions, CTAs & UGC scripts",
+      "Basic AI settings",
+    ],
     ctaLabel: "Current Plan",
     ctaType: "current",
     variant: "free",
@@ -127,9 +203,9 @@ export const PRICING_TIERS: PricingTierConfig[] = [
     priceSuffix: STARTER_INR_MONTHLY.priceSuffix,
     features: [
       `${STARTER_PLAN_CREDITS} AI generations/month`,
-      "Hooks, Captions and UGC scripts",
-      "Faster generation",
-      "Priority email support",
+      "Brand Kit, analyzers & scheduler",
+      "Advanced AI preferences",
+      "Saved brand memory",
     ],
     ctaLabel: "Get Started",
     ctaType: "starter",
@@ -145,9 +221,9 @@ export const PRICING_TIERS: PricingTierConfig[] = [
     priceSuffix: PRO_INR_MONTHLY.priceSuffix,
     features: [
       "Unlimited AI generations",
-      "Priority support",
-      "Advanced AI features",
-      "Future premium models",
+      "Everything in Starter",
+      "Premium AI quality (GPT-4o)",
+      "Priority processing & support",
     ],
     ctaLabel: "Upgrade to Pro",
     ctaType: "pro",

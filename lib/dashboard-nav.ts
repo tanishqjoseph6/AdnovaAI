@@ -14,27 +14,41 @@ export type NavItem = {
     | "feedback"
     | "settings"
     | "admin";
+  /** When set, free users see a lock badge and upgrade modal instead of navigating. */
+  premiumFeature?:
+    | "brand_kit"
+    | "competitor_analyzer"
+    | "landing_analyzer"
+    | "social_scheduler";
 };
 
 export const dashboardNav: NavItem[] = [
   { label: "Dashboard", href: "/dashboard", icon: "dashboard" },
   { label: "Generate Ads", href: "/dashboard/generate", icon: "generate" },
-  { label: "Brand Kit", href: "/dashboard/brand-kit", icon: "brand" },
+  {
+    label: "Brand Kit",
+    href: "/dashboard/brand-kit",
+    icon: "brand",
+    premiumFeature: "brand_kit",
+  },
   {
     label: "Social Scheduler",
     href: "/dashboard/social-scheduler",
     icon: "scheduler",
+    premiumFeature: "social_scheduler",
   },
   { label: "Referrals", href: "/dashboard/referrals", icon: "referrals" },
   {
     label: "Landing Analyzer",
     href: "/dashboard/landing-analyzer",
     icon: "landing",
+    premiumFeature: "landing_analyzer",
   },
   {
     label: "Competitor Ad Analyzer",
     href: "/dashboard/competitor-analyzer",
     icon: "competitor",
+    premiumFeature: "competitor_analyzer",
   },
   { label: "History", href: "/dashboard/history", icon: "history" },
   { label: "Feedback", href: "/dashboard/feedback", icon: "feedback" },

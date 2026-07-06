@@ -1,5 +1,8 @@
 import { NextResponse } from "next/server";
 import { requireVerifiedUser } from "@/lib/auth/require-user";
+import { clampAiPreferencesForPlan } from "@/lib/billing/ai-preferences-plan";
+import { canAccessFeature } from "@/lib/billing/features";
+import { getUserPlanContext } from "@/lib/billing/plan-access";
 import {
   buildBrandKitPromptSection,
   getBrandKitForUser,
@@ -55,21 +58,35 @@ export async function POST(req: Request) {
     if (!canUseCredits(userCredits)) {
       return NextResponse.json(
         {
-          error: "No credits remaining. Upgrade to Pro for unlimited generations.",
+          error: "No credits remaining. Upgrade to Starter or Pro for more generations.",
           code: CREDITS_ERROR_CODE,
         },
         { status: 403 }
       );
     }
 
+    const planContext = await getUserPlanContext(supabase, user.id);
+    const canUseBrandKit = canAccessFeature(
+      planContext.plan,
+      planContext.subscriptionStatus,
+      "brand_kit"
+    );
+
     const productAnalysis = normalizeProductAnalysis(rawAnalysis);
     const analysisSection = productAnalysis
       ? formatProductAnalysisForPrompt(productAnalysis)
       : undefined;
 
-    const brandKit = await getBrandKitForUser(supabase, user.id);
+    const brandKit = canUseBrandKit
+      ? await getBrandKitForUser(supabase, user.id)
+      : null;
     const brandKitSection = buildBrandKitPromptSection(brandKit);
-    const aiPreferences = await getAiPreferencesForUser(supabase, user.id);
+    const rawAiPreferences = await getAiPreferencesForUser(supabase, user.id);
+    const aiPreferences = clampAiPreferencesForPlan(
+      rawAiPreferences,
+      planContext.plan,
+      planContext.subscriptionStatus
+    );
     const aiPreferencesSection =
       buildAiPreferencesPromptSection(aiPreferences);
     const generationConfig = resolveOpenAiGenerationConfig(aiPreferences);
@@ -108,11 +125,11 @@ export async function POST(req: Request) {
       const deduction = await deductUserCredit(user.id);
       if (deduction.insufficient) {
         return NextResponse.json(
-          {
-            error:
-              "No credits remaining. Upgrade to Pro for unlimited generations.",
-            code: CREDITS_ERROR_CODE,
-          },
+        {
+          error:
+            "No credits remaining. Upgrade to Starter or Pro for more generations.",
+          code: CREDITS_ERROR_CODE,
+        },
           { status: 403 }
         );
       }

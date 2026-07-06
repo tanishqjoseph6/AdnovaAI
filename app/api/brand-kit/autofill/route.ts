@@ -1,6 +1,7 @@
 import net from "node:net";
 import { NextResponse } from "next/server";
 import { requireAuthenticatedUser } from "@/lib/auth/require-user";
+import { requireFeatureAccess } from "@/lib/billing/plan-access";
 import type { BrandKitAutofill } from "@/lib/brand-kit/types";
 import { createClient } from "@/lib/supabase/server";
 
@@ -88,6 +89,15 @@ export async function POST(request: Request) {
     const authResult = await requireAuthenticatedUser(supabase);
     if ("response" in authResult) {
       return authResult.response;
+    }
+
+    const featureResult = await requireFeatureAccess(
+      supabase,
+      authResult.user.id,
+      "brand_kit"
+    );
+    if ("response" in featureResult) {
+      return featureResult.response;
     }
 
     const body = (await request.json().catch(() => ({}))) as {

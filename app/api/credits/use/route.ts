@@ -28,7 +28,7 @@ export async function POST() {
     if (!canUseCredits(current)) {
       return NextResponse.json(
         {
-          error: "No credits remaining. Upgrade to Pro for unlimited generations.",
+          error: "No credits remaining. Upgrade to Starter or Pro for more generations.",
           code: CREDITS_ERROR_CODE,
         },
         { status: 403 }
@@ -49,7 +49,7 @@ export async function POST() {
     if (result.insufficient) {
       return NextResponse.json(
         {
-          error: "No credits remaining. Upgrade to Pro for unlimited generations.",
+          error: "No credits remaining. Upgrade to Starter or Pro for more generations.",
           code: CREDITS_ERROR_CODE,
         },
         { status: 403 }
