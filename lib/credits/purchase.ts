@@ -19,7 +19,7 @@ export type CompleteCreditPurchaseInput = {
   paymentId: string;
 };
 
-export type CreditPackBadge = "popular" | "best-value";
+export type CreditPackBadge = "popular" | "best-value" | "maximum-savings";
 
 export type CreditPackDefinition = {
   credits: number;
@@ -31,13 +31,24 @@ export type CreditPackDefinition = {
 /** Baseline per-credit rate (100 credits @ $15) used for savings badges. */
 export const CREDIT_PACK_BASELINE_PER_CREDIT_USD = 15 / 100;
 
+export const CREDIT_PACK_BADGE_LABELS: Record<CreditPackBadge, string> = {
+  popular: "Most Popular",
+  "best-value": "Best Value",
+  "maximum-savings": "Maximum Savings",
+};
+
 export const CREDIT_PACK_DEFINITIONS = [
   { credits: 100, priceUsd: 15, label: "100 Credits" },
   { credits: 250, priceUsd: 50, label: "250 Credits" },
   { credits: 500, priceUsd: 90, label: "500 Credits" },
   { credits: 1000, priceUsd: 120, label: "1,000 Credits", badge: "popular" },
   { credits: 2500, priceUsd: 250, label: "2,500 Credits", badge: "best-value" },
-  { credits: 5000, priceUsd: 600, label: "5,000 Credits" },
+  {
+    credits: 5000,
+    priceUsd: 600,
+    label: "5,000 Credits",
+    badge: "maximum-savings",
+  },
 ] as const satisfies readonly CreditPackDefinition[];
 
 export type CreditPackOption = CreditPackDefinition & {
