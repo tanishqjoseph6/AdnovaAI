@@ -3,6 +3,9 @@
 import { useState } from "react";
 import { Globe, Search } from "lucide-react";
 import { analyzeLandingPage } from "@/lib/api/analyze-landing-client";
+import { isNoCreditsError } from "@/lib/api/credits-client";
+import { dispatchNoCreditsEvent } from "@/lib/credits/client-events";
+import { useCredits } from "@/hooks/useCredits";
 import type { LandingPageAnalysis } from "@/lib/landing-analyzer/types";
 import LandingAnalyzerResults from "./LandingAnalyzerResults";
 import LandingAnalyzerSkeleton from "./LandingAnalyzerSkeleton";
@@ -15,6 +18,7 @@ type AnalyzerState =
   | { status: "error"; message: string };
 
 export default function LandingAnalyzerPageClient() {
+  const { refresh } = useCredits();
   const [url, setUrl] = useState("");
   const [state, setState] = useState<AnalyzerState>({ status: "idle" });
 
@@ -32,8 +36,15 @@ export default function LandingAnalyzerPageClient() {
 
     try {
       const analysis = await analyzeLandingPage(trimmed);
+      void refresh();
       setState({ status: "success", analysis });
     } catch (error) {
+      if (isNoCreditsError(error)) {
+        dispatchNoCreditsEvent();
+        setState({ status: "idle" });
+        return;
+      }
+
       setState({
         status: "error",
         message:

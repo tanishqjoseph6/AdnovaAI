@@ -259,7 +259,7 @@ export default function CompetitorHistoryCard({
         <div className="mt-5 flex flex-wrap items-center justify-between gap-3 border-t border-white/[0.06] pt-5">
           <p className="text-xs text-zinc-500">
             Analysis: free
-            {betterAd ? ` · Better ad: ${getCreditsUsedLabel(isPro)}` : ""}
+            {betterAd ? ` · Better ad: ${getCreditsUsedLabel()}` : ""}
           </p>
           <button
             type="button"

@@ -32,7 +32,6 @@ describe("dashboard metrics", () => {
     const metrics = computeDashboardMetrics(generations, "free", {
       maxCredits: 5,
       remainingCredits: 0,
-      unlimited: false,
     });
 
     assert.equal(metrics.adsThisMonth, 5);
@@ -69,7 +68,6 @@ describe("dashboard metrics", () => {
       {
         maxCredits: 5,
         remainingCredits: 2,
-        unlimited: false,
       }
     );
 
@@ -82,18 +80,16 @@ describe("dashboard metrics", () => {
       resolveCurrentCycleUsage(5, {
         maxCredits: 5,
         remainingCredits: 5,
-        unlimited: false,
       }),
       0
     );
   });
 
-  it("uses successful current-cycle history for unlimited plans", () => {
+  it("falls back to successful history when credit snapshot is incomplete", () => {
     assert.equal(
       resolveCurrentCycleUsage(42, {
         maxCredits: null,
         remainingCredits: 0,
-        unlimited: true,
       }),
       42
     );
@@ -126,7 +122,6 @@ describe("dashboard metrics", () => {
       {
         maxCredits: 5,
         remainingCredits: 3,
-        unlimited: false,
       }
     );
 
@@ -138,7 +133,6 @@ describe("dashboard metrics", () => {
     const metrics = computeDashboardMetrics([generation("old")], "free", {
       maxCredits: 5,
       remainingCredits: 5,
-      unlimited: false,
     });
 
     assert.equal(metrics.adsThisMonth, 0);

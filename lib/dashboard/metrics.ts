@@ -6,7 +6,6 @@ import type { PlanId } from "@/lib/billing/plans";
 type CreditUsageSnapshot = {
   remainingCredits?: number | null;
   maxCredits?: number | null;
-  unlimited?: boolean;
 };
 
 export type DashboardMetrics = {
@@ -72,10 +71,6 @@ export function resolveCurrentCycleUsage(
   successfulCurrentCycleGenerations: number,
   credits?: CreditUsageSnapshot
 ): number {
-  if (credits?.unlimited) {
-    return successfulCurrentCycleGenerations;
-  }
-
   if (
     typeof credits?.maxCredits === "number" &&
     typeof credits.remainingCredits === "number"

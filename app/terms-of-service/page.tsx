@@ -73,10 +73,11 @@ export default function TermsOfServicePage() {
 
       <LegalSection title="5. Credits and Usage Limits">
         <p>
-          Certain plans include a monthly allocation of AI generation credits or
-          unlimited usage as described at purchase. Credits are consumed when
-          eligible AI actions complete successfully, such as ad generation or
-          related premium features.
+          Each plan includes a monthly allocation of AI credits as described at
+          purchase. Credits are consumed when eligible AI actions complete
+          successfully, such as ad generation or related premium features. You
+          may also purchase additional credits, which are used after your
+          monthly credits are exhausted.
         </p>
         <p>
           Credits have no cash value, are non-transferable, and may expire or

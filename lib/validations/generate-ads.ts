@@ -14,7 +14,6 @@ export const generateAdsResponseSchema = z.object({
   ctas: z.array(z.string()).default([]),
   ugcScript: z.string().min(1),
   credits: z.number().nullable().optional(),
-  unlimited: z.boolean().optional(),
   generationId: z.string().optional(),
   generatedAt: z.string().optional(),
   originalHooks: z.array(z.string()).optional(),

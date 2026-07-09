@@ -114,13 +114,10 @@ describe("applyPurchase", () => {
 });
 
 describe("canAfford", () => {
-  it("allows unlimited users regardless of balance", () => {
-    assert.equal(canAfford({ currentCredits: 0 }, 100, true), true);
-  });
-
-  it("checks balance for metered users", () => {
-    assert.equal(canAfford({ currentCredits: 5 }, 3, false), true);
-    assert.equal(canAfford({ currentCredits: 2 }, 3, false), false);
+  it("checks balance against cost", () => {
+    assert.equal(canAfford({ currentCredits: 5 }, 3), true);
+    assert.equal(canAfford({ currentCredits: 2 }, 3), false);
+    assert.equal(canAfford({ currentCredits: 0 }, 0), true);
   });
 });
 
@@ -159,7 +156,6 @@ describe("parseDeductCreditsRpcResult", () => {
   it("parses a successful deduction", () => {
     const result = parseDeductCreditsRpcResult({
       deducted: true,
-      unlimited: false,
       insufficient: false,
       credits: 4,
       plan: "free",
@@ -173,17 +169,17 @@ describe("parseDeductCreditsRpcResult", () => {
     assert.equal(result.creditSource, "monthly");
   });
 
-  it("parses unlimited plan response", () => {
+  it("parses pro plan deduction without skipping balance", () => {
     const result = parseDeductCreditsRpcResult({
-      deducted: false,
-      unlimited: true,
+      deducted: true,
       insufficient: false,
-      credits: 5,
+      credits: 2493,
       plan: "pro",
-      cost: 1,
+      cost: 7,
+      credit_source: "monthly",
     });
 
-    assert.equal(result.unlimited, true);
+    assert.equal(result.deducted, true);
     assert.equal(result.plan, "pro");
   });
 });

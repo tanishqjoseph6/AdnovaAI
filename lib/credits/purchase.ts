@@ -26,3 +26,7 @@ export const CREDIT_PACK_OPTIONS = [
 ] as const;
 
 export type CreditPackOption = (typeof CREDIT_PACK_OPTIONS)[number];
+
+export function findCreditPack(credits: number): CreditPackOption | null {
+  return CREDIT_PACK_OPTIONS.find((pack) => pack.credits === credits) ?? null;
+}

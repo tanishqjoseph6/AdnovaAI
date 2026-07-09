@@ -22,7 +22,6 @@ type DashboardPageClientProps = {
 type GenerationSuccessDetail = {
   generatedAt?: string;
   remainingCredits?: number | null;
-  unlimited?: boolean;
 };
 
 function isCurrentMonth(iso: string): boolean {
@@ -51,7 +50,7 @@ function applyGenerationSuccess(
   }
 
   const adsThisMonth =
-    detail.unlimited || current.monthlyLimit === null
+    current.monthlyLimit === null
       ? current.adsThisMonth + 1
       : typeof detail.remainingCredits === "number"
         ? Math.max(
@@ -80,7 +79,7 @@ export default function DashboardPageClient({
   const [liveMetrics, setLiveMetrics] = useState(metrics);
   const { credits } = useCredits();
   const hasGenerations = liveMetrics.totalAds > 0;
-  const showUpgrade = !credits?.unlimited && credits?.billingPlan !== "pro";
+  const showUpgrade = credits?.billingPlan !== "pro";
 
   useEffect(() => {
     setLiveMetrics(metrics);
@@ -126,7 +125,7 @@ export default function DashboardPageClient({
           showUpgrade ? "grid gap-6 lg:grid-cols-2" : "max-w-2xl"
         }
       >
-        <UsageCard metrics={liveMetrics} />
+        <UsageCard />
         {showUpgrade && <UpgradeCard show />}
       </div>
     </div>

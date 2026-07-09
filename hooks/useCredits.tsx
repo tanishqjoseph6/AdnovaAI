@@ -62,6 +62,13 @@ export function CreditsProvider({ children }: { children: ReactNode }) {
     void refresh();
   }, [refresh]);
 
+  useEffect(() => {
+    const onRefreshCredits = () => void refresh();
+    window.addEventListener("advora:refresh-credits", onRefreshCredits);
+    return () =>
+      window.removeEventListener("advora:refresh-credits", onRefreshCredits);
+  }, [refresh]);
+
   const value = useMemo(
     () => ({
       credits,

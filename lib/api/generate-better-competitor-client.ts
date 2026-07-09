@@ -13,7 +13,6 @@ export async function generateBetterCompetitorAd(
 ): Promise<
   BetterCompetitorAd & {
     credits?: number | null;
-    unlimited?: boolean;
     generationId?: string;
     generatedAt?: string;
   }
@@ -34,7 +33,6 @@ export async function generateBetterCompetitorAd(
     ugcScript?: string;
     ugc_script?: string;
     credits?: number | null;
-    unlimited?: boolean;
     generationId?: string;
     generatedAt?: string;
     error?: string;
@@ -76,7 +74,6 @@ export async function generateBetterCompetitorAd(
   return {
     ...betterAd,
     credits: payload.credits,
-    unlimited: payload.unlimited,
     generationId: payload.generationId,
     generatedAt: payload.generatedAt,
   };

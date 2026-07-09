@@ -5,12 +5,14 @@ import type { CreditBuckets } from "./balance";
 
 export type CreditsPlan = "free" | "pro";
 
-/** @deprecated Use CreditBalance for the full split-bucket view. */
+/** Metered credit balance exposed to clients and API routes. */
 export type UserCredits = {
+  /** Total spendable credits (monthly + purchased). */
   credits: number;
+  monthlyCredits: number;
+  purchasedCredits: number;
   plan: CreditsPlan;
-  unlimited: boolean;
-  maxCredits: number | null;
+  maxCredits: number;
   updatedAt: string;
   /** True when credits were refilled during this fetch. */
   refilledJustNow?: boolean;
@@ -23,8 +25,7 @@ export type UserCredits = {
 export type CreditBalance = CreditBuckets & {
   userId: string;
   plan: CreditsPlan;
-  unlimited: boolean;
-  maxCredits: number | null;
+  maxCredits: number;
   updatedAt: string;
   refilledJustNow?: boolean;
 };
@@ -39,7 +40,6 @@ export type CreditsApiResponse = UserCredits & {
 
 export type DeductCreditResult = {
   deducted: boolean;
-  unlimited: boolean;
   insufficient: boolean;
   credits: number;
   plan: CreditsPlan;

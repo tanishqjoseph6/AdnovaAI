@@ -116,17 +116,14 @@ export async function POST(req: Request) {
     const ugcScript = (parsed.ugcScript ?? parsed.ugc_script ?? "") as string;
 
     let remainingCredits: number | null = null;
-
-    if (!creditCheck.unlimited) {
-      const deduction = await deductForFeature(
-        user.id,
-        CREDIT_FEATURES.GENERATE_ADS
-      );
-      if (deduction.insufficient) {
-        return insufficientCreditsResponse(deduction.cost, deduction.credits);
-      }
-      remainingCredits = deduction.credits;
+    const deduction = await deductForFeature(
+      user.id,
+      CREDIT_FEATURES.GENERATE_ADS
+    );
+    if (deduction.insufficient) {
+      return insufficientCreditsResponse(deduction.cost, deduction.credits);
     }
+    remainingCredits = deduction.credits;
 
     const { data: generationRow, error: insertError } = await supabase
       .from("generations")
@@ -163,7 +160,6 @@ export async function POST(req: Request) {
       ctas,
       ugcScript,
       credits: remainingCredits,
-      unlimited: creditCheck.unlimited,
       generationId: generationRow?.id,
       generatedAt: generationRow?.created_at ?? new Date().toISOString(),
       originalHooks: hooks,

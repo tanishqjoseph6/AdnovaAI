@@ -6,27 +6,17 @@ import {
   creditsProgressPercent,
   resolveCreditsMax,
 } from "@/lib/credits/display";
-import type { DashboardMetrics } from "@/lib/dashboard/metrics";
 
-type UsageCardProps = {
-  metrics: DashboardMetrics;
-};
-
-export default function UsageCard({ metrics }: UsageCardProps) {
+export default function UsageCard() {
   const { credits, isLoading } = useCredits();
 
-  const unlimited = credits?.unlimited ?? false;
   const max = resolveCreditsMax(credits?.maxCredits, credits?.credits);
   const remaining = credits?.credits ?? 0;
-  const used = unlimited ? metrics.adsThisMonth : Math.max(0, max - remaining);
-  const displayMax = unlimited ? "∞" : String(max);
-  const progress = unlimited
-    ? Math.min((metrics.adsThisMonth / 100) * 100, 100)
-    : creditsProgressPercent(remaining, credits?.maxCredits, false);
+  const used = Math.max(0, max - remaining);
+  const progress = creditsProgressPercent(remaining, credits?.maxCredits);
 
-  const usageLabel = unlimited
-    ? `${metrics.adsThisMonth} generations this month`
-    : isLoading && !credits
+  const usageLabel =
+    isLoading && !credits
       ? "Loading credits..."
       : `${used} / ${max} Credits Used`;
 
@@ -44,9 +34,7 @@ export default function UsageCard({ metrics }: UsageCardProps) {
           <p className="text-2xl font-bold tracking-tight text-white sm:text-3xl">
             {usageLabel}
           </p>
-          {!unlimited && (
-            <span className="text-sm text-zinc-500">{displayMax} limit</span>
-          )}
+          <span className="text-sm text-zinc-500">{max} limit</span>
         </div>
 
         <div className="mt-5 h-3 overflow-hidden rounded-full bg-white/[0.08]">
@@ -58,15 +46,13 @@ export default function UsageCard({ metrics }: UsageCardProps) {
             role="progressbar"
             aria-valuenow={used}
             aria-valuemin={0}
-            aria-valuemax={unlimited ? 100 : max}
+            aria-valuemax={max}
             aria-label="Monthly credit usage"
           />
         </div>
 
         <p className="mt-3 text-sm text-zinc-500">
-          {unlimited
-            ? "Pro plan includes unlimited AI generations."
-            : "Each successful generation uses 1 credit from your monthly allowance."}
+          Each successful generation uses 1 credit from your monthly allowance.
         </p>
       </div>
     </section>

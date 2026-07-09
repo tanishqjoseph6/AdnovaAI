@@ -116,17 +116,14 @@ export async function POST(req: Request) {
     }
 
     let remainingCredits: number | null = null;
-
-    if (!creditCheck.unlimited) {
-      const deduction = await deductForFeature(
-        user.id,
-        CREDIT_FEATURES.GENERATE_BETTER_COMPETITOR_AD
-      );
-      if (deduction.insufficient) {
-        return insufficientCreditsResponse(deduction.cost, deduction.credits);
-      }
-      remainingCredits = deduction.credits;
+    const deduction = await deductForFeature(
+      user.id,
+      CREDIT_FEATURES.GENERATE_BETTER_COMPETITOR_AD
+    );
+    if (deduction.insufficient) {
+      return insufficientCreditsResponse(deduction.cost, deduction.credits);
     }
+    remainingCredits = deduction.credits;
 
     const productDescription = `[Competitor Ad] ${analysis.brand || "Unknown brand"} — ${analysis.product || "Unknown product"} (${analysis.platform || "Unknown platform"})`;
 
@@ -177,7 +174,6 @@ export async function POST(req: Request) {
       emotional_angle: betterAd.emotional_angle,
       visual_suggestions: betterAd.visual_suggestions,
       credits: remainingCredits,
-      unlimited: creditCheck.unlimited,
       generationId: generationRow?.id,
       generatedAt: generationRow?.created_at ?? new Date().toISOString(),
     });

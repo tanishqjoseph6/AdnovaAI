@@ -3,8 +3,13 @@
 import Link from "next/link";
 import { AnimatePresence, motion } from "framer-motion";
 import { useEffect } from "react";
-import { FREE_PLAN_CREDITS } from "@/lib/credits/constants";
-import { PLANS } from "@/lib/billing/plans";
+import {
+  FREE_PLAN_CREDITS,
+  PRO_PLAN_CREDITS,
+  STARTER_PLAN_CREDITS,
+} from "@/lib/credits/constants";
+import { CREDIT_PACK_OPTIONS } from "@/lib/credits/purchase";
+import { formatCreditsCount, PLANS } from "@/lib/billing/plans";
 
 type UpgradeModalProps = {
   open: boolean;
@@ -46,7 +51,7 @@ export default function UpgradeModal({ open, onClose }: UpgradeModalProps) {
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
             className="absolute inset-0 bg-[#030014]/75 backdrop-blur-md"
-            aria-label="Close upgrade modal"
+            aria-label="Close buy credits modal"
             onClick={onClose}
           />
 
@@ -62,25 +67,48 @@ export default function UpgradeModal({ open, onClose }: UpgradeModalProps) {
 
             <div className="relative">
               <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-2xl border border-white/20 bg-white/10 text-2xl shadow-lg shadow-violet-500/30 backdrop-blur-sm">
-                ✨
+                ⚡
               </div>
 
               <h2
                 id="upgrade-modal-title"
                 className="mt-5 text-center text-2xl font-bold text-white"
               >
-                You&apos;re out of credits
+                Buy More Credits
               </h2>
               <p className="mt-3 text-center text-sm leading-relaxed text-zinc-300">
-                Free plans include {FREE_PLAN_CREDITS} AI generations per month.
-                Upgrade for more hooks, captions, CTAs, and UGC scripts.
+                You&apos;ve used your monthly AI credits. Purchase extra credits
+                to keep generating, or upgrade for a larger monthly allowance.
               </p>
+
+              <div className="mt-6 rounded-2xl border border-white/10 bg-white/[0.03] p-4">
+                <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-zinc-500">
+                  Credit packs
+                </p>
+                <ul className="mt-3 space-y-2">
+                  {CREDIT_PACK_OPTIONS.map((pack) => (
+                    <li
+                      key={pack.credits}
+                      className="flex items-center justify-between rounded-xl border border-white/8 bg-white/[0.02] px-3 py-2.5 text-sm text-zinc-200"
+                    >
+                      <span>{pack.label}</span>
+                      <span className="font-semibold text-white">
+                        ₹{pack.priceInr}
+                      </span>
+                    </li>
+                  ))}
+                </ul>
+                <p className="mt-3 text-xs leading-relaxed text-zinc-500">
+                  Purchased credits are used automatically after your monthly
+                  credits run out.
+                </p>
+              </div>
 
               <ul className="mt-6 space-y-2 text-sm text-zinc-200">
                 {[
-                  `Starter: ${PLANS.starter.generationLimit} generations/month`,
-                  "Brand Kit, analyzers & scheduler",
-                  "Pro: unlimited generations + premium AI",
+                  `Free: ${formatCreditsCount(FREE_PLAN_CREDITS)} credits/month`,
+                  `Starter: ${formatCreditsCount(STARTER_PLAN_CREDITS)} credits/month + premium features`,
+                  `Pro: ${formatCreditsCount(PRO_PLAN_CREDITS)} credits/month + priority support`,
                 ].map((feature) => (
                   <li key={feature} className="flex items-center gap-2">
                     <span className="flex h-5 w-5 items-center justify-center rounded-full bg-emerald-500/20 text-emerald-400">
@@ -93,18 +121,18 @@ export default function UpgradeModal({ open, onClose }: UpgradeModalProps) {
 
               <div className="mt-8 flex flex-col gap-3">
                 <Link
-                  href="/dashboard/billing"
+                  href="/dashboard/billing#credit-packs"
                   onClick={onClose}
                   className="inline-flex items-center justify-center rounded-xl bg-gradient-to-r from-cyan-400 via-violet-500 to-fuchsia-500 px-4 py-3.5 text-sm font-semibold text-white shadow-lg shadow-violet-500/30 transition hover:opacity-95"
                 >
-                  Upgrade to Starter – {PLANS.starter.priceLabel}
+                  Buy More Credits
                 </Link>
                 <Link
                   href="/dashboard/billing"
                   onClick={onClose}
                   className="inline-flex items-center justify-center rounded-xl border border-white/15 bg-white/[0.04] px-4 py-3 text-sm font-medium text-zinc-200 backdrop-blur-sm transition hover:bg-white/[0.08]"
                 >
-                  View Pro plans
+                  Upgrade to Starter – {PLANS.starter.priceLabel}
                 </Link>
                 <button
                   type="button"

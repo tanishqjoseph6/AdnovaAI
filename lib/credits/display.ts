@@ -15,17 +15,22 @@ export function resolveCreditsMax(
 
 export function creditsProgressPercent(
   credits: number,
-  maxCredits: number | null | undefined,
-  unlimited: boolean
+  maxCredits: number | null | undefined
 ): number {
-  if (unlimited) {
-    return 100;
-  }
-
   const max = resolveCreditsMax(maxCredits, credits);
   if (max <= 0) {
     return 0;
   }
 
   return Math.min(100, Math.round((credits / max) * 100));
+}
+
+export function formatCreditsBreakdown(
+  monthlyCredits: number,
+  purchasedCredits: number
+): string {
+  if (purchasedCredits > 0) {
+    return `${monthlyCredits} monthly + ${purchasedCredits} purchased`;
+  }
+  return `${monthlyCredits} monthly credits`;
 }

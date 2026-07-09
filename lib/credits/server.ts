@@ -1,4 +1,4 @@
-import { FREE_PLAN_CREDITS, STARTER_PLAN_CREDITS } from "@/lib/credits/constants";
+import { FREE_PLAN_CREDITS, PRO_PLAN_CREDITS, STARTER_PLAN_CREDITS } from "@/lib/credits/constants";
 import { evaluateFreeCreditClaim } from "@/lib/credits/free-credit-claims";
 import { creditsLog, creditsWarn } from "@/lib/credits/logger";
 import {
@@ -9,6 +9,7 @@ import {
   parseDeductCreditsRpcResult,
   type DeductCreditsInput,
 } from "@/lib/credits/deduct";
+import type { CreateCreditPurchaseInput } from "@/lib/credits/purchase";
 import {
   resolveFeatureCost,
   type CreditFeatureId,
@@ -42,27 +43,31 @@ function hasAdminCredentials(): boolean {
 const CREDIT_COLUMNS =
   "credits, monthly_credits, purchased_credits, current_credits, total_used_credits, monthly_allowance, plan, signup_date, last_credit_refill_at, updated_at";
 
-function isUnlimitedPlan(plan: CreditsPlan): boolean {
-  return plan === "pro";
-}
-
 function normalizeCreditsRow(
   row: Record<string, unknown> | null,
   profilesPlan?: PlanId
 ): UserCredits {
   const plan: CreditsPlan = row?.plan === "pro" ? "pro" : "free";
-  const credits =
-    typeof row?.current_credits === "number"
-      ? Math.max(0, row.current_credits)
+  const monthlyCredits =
+    typeof row?.monthly_credits === "number"
+      ? Math.max(0, row.monthly_credits)
       : typeof row?.credits === "number"
         ? Math.max(0, row.credits)
         : 0;
-  const unlimited = isUnlimitedPlan(plan);
+  const purchasedCredits =
+    typeof row?.purchased_credits === "number"
+      ? Math.max(0, row.purchased_credits)
+      : 0;
+  const credits =
+    typeof row?.current_credits === "number"
+      ? Math.max(0, row.current_credits)
+      : monthlyCredits + purchasedCredits;
 
   return {
     credits,
+    monthlyCredits,
+    purchasedCredits,
     plan,
-    unlimited,
     maxCredits: resolveMaxCreditsForProfile(plan, profilesPlan),
     updatedAt:
       typeof row?.updated_at === "string"
@@ -96,7 +101,6 @@ function normalizeCreditBalanceRow(
     monthlyAllowance:
       typeof row?.monthly_allowance === "number" ? row.monthly_allowance : null,
     plan: base.plan,
-    unlimited: base.unlimited,
     maxCredits: base.maxCredits,
     updatedAt: base.updatedAt,
   };
@@ -239,9 +243,10 @@ async function ensureProCreditsIfSubscribed(
   const { error: upsertError } = await admin.from("user_credits").upsert(
     {
       user_id: userId,
-      credits: FREE_PLAN_CREDITS,
-      monthly_credits: FREE_PLAN_CREDITS,
-      monthly_allowance: null,
+      credits: PRO_PLAN_CREDITS,
+      monthly_credits: PRO_PLAN_CREDITS,
+      current_credits: PRO_PLAN_CREDITS,
+      monthly_allowance: PRO_PLAN_CREDITS,
       plan: "pro",
       last_credit_refill_at: now,
       updated_at: now,
@@ -365,8 +370,9 @@ export async function getUserCreditsForUser(
     const billingProfile = await readBillingProfile(userId, supabase);
     return {
       credits: 0,
+      monthlyCredits: 0,
+      purchasedCredits: 0,
       plan: "free",
-      unlimited: false,
       maxCredits: resolveMaxCreditsForProfile("free", billingProfile?.plan),
       updatedAt: new Date().toISOString(),
     };
@@ -401,14 +407,13 @@ export async function getUserCreditsForUser(
 }
 
 export function canUseCredits(credits: UserCredits): boolean {
-  return credits.unlimited || credits.credits > 0;
+  return credits.credits > 0;
 }
 
 export function canAffordCredits(
   balance: CreditBalance,
   cost: number
 ): boolean {
-  if (balance.unlimited) return true;
   if (cost <= 0) return true;
   return balance.currentCredits >= cost;
 }
@@ -449,7 +454,6 @@ export async function deductUserCredit(
   const result = await deductUserCredits({ userId, featureId });
   return {
     deducted: result.deducted,
-    unlimited: result.unlimited,
     insufficient: result.insufficient,
     credits: result.credits,
     plan: result.plan,
@@ -581,6 +585,95 @@ export async function getCreditPurchases(
   );
 }
 
+export async function createPendingCreditPurchase(
+  input: CreateCreditPurchaseInput
+): Promise<{ id: string }> {
+  const admin = createAdminClient();
+  const { data, error } = await admin
+    .from("credit_purchases")
+    .insert({
+      user_id: input.userId,
+      credits_amount: input.creditsAmount,
+      amount_paid: input.amountPaid,
+      currency: input.currency ?? "INR",
+      order_id: input.orderId ?? null,
+      status: "pending",
+    })
+    .select("id")
+    .single();
+
+  if (error) {
+    throw error;
+  }
+
+  return { id: data.id as string };
+}
+
+export async function completeCreditPurchase(
+  purchaseId: string,
+  paymentId: string,
+  expectedUserId: string,
+  expectedOrderId?: string
+): Promise<{ granted: boolean; currentCredits: number; purchasedCredits: number }> {
+  const admin = createAdminClient();
+
+  const { data: purchase, error: purchaseError } = await admin
+    .from("credit_purchases")
+    .select("id, user_id, credits_amount, status, order_id")
+    .eq("id", purchaseId)
+    .maybeSingle();
+
+  if (purchaseError) {
+    throw purchaseError;
+  }
+
+  if (!purchase) {
+    throw new Error("Credit purchase not found");
+  }
+
+  if (purchase.user_id !== expectedUserId) {
+    throw new Error("Credit purchase does not belong to this user");
+  }
+
+  if (
+    expectedOrderId &&
+    purchase.order_id &&
+    purchase.order_id !== expectedOrderId
+  ) {
+    throw new Error("Credit purchase order does not match payment");
+  }
+
+  if (purchase.status === "completed") {
+    const balance = await getCreditBalance(purchase.user_id as string);
+    return {
+      granted: true,
+      currentCredits: balance.currentCredits,
+      purchasedCredits: balance.purchasedCredits,
+    };
+  }
+
+  const grant = await grantPurchasedCredits(
+    purchase.user_id as string,
+    purchase.credits_amount as number,
+    purchaseId
+  );
+
+  const { error: updateError } = await admin
+    .from("credit_purchases")
+    .update({
+      status: "completed",
+      payment_id: paymentId,
+      completed_at: new Date().toISOString(),
+    })
+    .eq("id", purchaseId);
+
+  if (updateError) {
+    throw updateError;
+  }
+
+  return grant;
+}
+
 /**
  * Called after Razorpay activates a paid plan on profiles.
  * Syncs user_credits when a paid billing plan activates.
@@ -604,11 +697,11 @@ export async function syncCreditsWithProfilePlan(
     const { error } = await admin.from("user_credits").upsert(
       {
         user_id: userId,
-        credits: FREE_PLAN_CREDITS,
-        monthly_credits: FREE_PLAN_CREDITS,
+        credits: PRO_PLAN_CREDITS,
+        monthly_credits: PRO_PLAN_CREDITS,
         purchased_credits: 0,
-        current_credits: FREE_PLAN_CREDITS,
-        monthly_allowance: null,
+        current_credits: PRO_PLAN_CREDITS,
+        monthly_allowance: PRO_PLAN_CREDITS,
         plan: "pro",
         last_credit_refill_at: now,
         updated_at: now,

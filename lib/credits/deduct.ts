@@ -3,7 +3,6 @@ import type { DeductCreditResult } from "./types";
 
 export type DeductCreditsRpcResult = {
   deducted: boolean;
-  unlimited: boolean;
   insufficient: boolean;
   credits: number;
   plan: string;
@@ -22,7 +21,6 @@ export function parseDeductCreditsRpcResult(
 } {
   return {
     deducted: Boolean(data.deducted),
-    unlimited: Boolean(data.unlimited),
     insufficient: Boolean(data.insufficient),
     credits: typeof data.credits === "number" ? data.credits : 0,
     plan: data.plan === "pro" ? "pro" : "free",

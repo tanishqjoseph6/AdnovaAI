@@ -3,7 +3,8 @@
 import { motion } from "framer-motion";
 import BillingPlanButton from "@/components/dashboard/BillingPlanButton";
 import { useBillingPricing } from "@/components/billing/BillingPricingContext";
-import type { PlanId } from "@/lib/billing/plans";
+import { formatCreditsCount, type PlanId } from "@/lib/billing/plans";
+import { PRO_PLAN_CREDITS } from "@/lib/credits/plan-config";
 
 type UpgradeProCtaProps = {
   currentPlanId: PlanId;
@@ -29,14 +30,16 @@ export default function UpgradeProCta({ currentPlanId }: UpgradeProCtaProps) {
       <div className="relative flex flex-col gap-6 lg:flex-row lg:items-center lg:justify-between">
         <div className="max-w-xl">
           <p className="text-xs font-medium uppercase tracking-widest text-fuchsia-400">
-            Go unlimited
+            Go Pro
           </p>
           <h3 className="mt-2 text-2xl font-bold tracking-tight text-white sm:text-3xl">
-            Upgrade to Pro and never worry about credits again
+            Upgrade to Pro and get {formatCreditsCount(PRO_PLAN_CREDITS)} AI
+            credits every month
           </h3>
           <p className="mt-3 text-sm leading-relaxed text-zinc-400 sm:text-base">
-            Unlock unlimited AI generations, priority support, and the full
-            Advora creative workflow — built for teams shipping ads at scale.
+            Unlock {formatCreditsCount(PRO_PLAN_CREDITS)} monthly AI credits,
+            priority support, and the full Advora creative workflow — built for
+            teams shipping ads at scale.
           </p>
         </div>
 

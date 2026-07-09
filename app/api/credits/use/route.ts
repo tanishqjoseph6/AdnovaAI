@@ -35,15 +35,6 @@ export async function POST() {
       );
     }
 
-    if (current.unlimited) {
-      return NextResponse.json({
-        deducted: false,
-        unlimited: true,
-        credits: current.credits,
-        plan: current.plan,
-      });
-    }
-
     const result = await deductUserCredits({
       userId: user.id,
       featureId: null,
@@ -53,7 +44,7 @@ export async function POST() {
     if (result.insufficient) {
       return NextResponse.json(
         {
-          error: "No credits remaining. Upgrade to Starter or Pro for more generations.",
+          error: "No credits remaining. Buy more credits or upgrade your plan.",
           code: CREDITS_ERROR_CODE,
         },
         { status: 403 }
@@ -62,7 +53,6 @@ export async function POST() {
 
     return NextResponse.json({
       deducted: result.deducted,
-      unlimited: result.unlimited,
       credits: result.credits,
       plan: result.plan,
     });

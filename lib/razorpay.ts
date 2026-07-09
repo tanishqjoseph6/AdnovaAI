@@ -170,3 +170,30 @@ export async function createPlanOrder(
 
   return order;
 }
+
+export async function createCreditPackOrder(
+  creditsAmount: number,
+  amountInr: number,
+  userId: string,
+  userEmail?: string | null
+) {
+  const razorpay = createRazorpayClient();
+  const amountPaise = amountInr * 100;
+
+  const order = await razorpay.orders.create({
+    amount: amountPaise,
+    currency: "INR",
+    receipt: createRazorpayReceipt(),
+    notes: {
+      type: "credit_pack",
+      user_id: userId,
+      credits_amount: String(creditsAmount),
+      currency: "INR",
+      merchant: "Advora AI",
+      website: "https://useadvora.com",
+      ...(userEmail ? { email: userEmail } : {}),
+    },
+  });
+
+  return order;
+}

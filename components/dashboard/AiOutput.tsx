@@ -8,6 +8,8 @@ import {
   type RewriteAction,
 } from "@/lib/content-editor/types";
 import type { EditableGenerationContent } from "@/lib/content-editor/types";
+import { ApiClientError, isNoCreditsError } from "@/lib/api/credits-client";
+import { dispatchNoCreditsEvent } from "@/lib/credits/client-events";
 import CopyButton from "./CopyButton";
 
 type AiOutputProps = {
@@ -96,10 +98,24 @@ async function rewriteSelectedContent(input: {
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify(input),
   });
-  const payload = (await response.json()) as { error?: string; text?: string };
+  const payload = (await response.json()) as {
+    error?: string;
+    code?: string;
+    text?: string;
+  };
 
   if (!response.ok || !payload.text) {
-    throw new Error(payload.error ?? "Unable to rewrite this content.");
+    const code =
+      typeof payload.code === "string" ? payload.code : undefined;
+    throw new ApiClientError(
+      payload.error ?? "Unable to rewrite this content.",
+      response.status,
+      code
+    );
+  }
+
+  if (typeof window !== "undefined") {
+    window.dispatchEvent(new CustomEvent("advora:refresh-credits"));
   }
 
   return payload.text;
@@ -192,6 +208,12 @@ function EditableItem({
       });
       await applyUpdate(rewritten);
     } catch (error) {
+      if (isNoCreditsError(error)) {
+        dispatchNoCreditsEvent();
+        setStatus(null);
+        return;
+      }
+
       setStatus({
         type: "error",
         message:

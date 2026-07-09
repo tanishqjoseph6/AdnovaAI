@@ -16,8 +16,8 @@ export default function CreditBadge() {
     return null;
   }
 
-  const label = credits.unlimited ? "∞ Pro" : `${credits.credits} left`;
-  const compactLabel = credits.unlimited ? "∞" : String(credits.credits);
+  const label = `${credits.credits} left`;
+  const compactLabel = String(credits.credits);
 
   return (
     <Link

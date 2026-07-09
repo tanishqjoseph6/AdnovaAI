@@ -3,7 +3,6 @@
 import Link from "next/link";
 import { motion } from "framer-motion";
 import GenerationDate from "@/components/history/GenerationDate";
-import { useCredits } from "@/hooks/useCredits";
 import type { GenerationRecord } from "@/lib/history/types";
 import { getGenerationStatus } from "@/lib/history/utils";
 
@@ -29,9 +28,6 @@ function StatusBadge({ status }: { status: "Completed" | "Failed" }) {
 export default function RecentGenerations({
   generations,
 }: RecentGenerationsProps) {
-  const { credits } = useCredits();
-  const creditsLabel = credits?.unlimited ? "0" : "1";
-
   return (
     <section className="glass overflow-hidden rounded-2xl border border-white/[0.08]">
       <div className="flex flex-wrap items-center justify-between gap-3 border-b border-white/[0.06] px-5 py-5 sm:px-6">
@@ -73,9 +69,7 @@ export default function RecentGenerations({
               </div>
 
               <div className="flex flex-wrap items-center gap-3 sm:gap-4">
-                <span className="text-sm text-zinc-400">
-                  {creditsLabel} credit{creditsLabel === "1" ? "" : "s"}
-                </span>
+                <span className="text-sm text-zinc-400">1 credit</span>
                 <StatusBadge status={status} />
                 <Link
                   href="/dashboard/history"

@@ -17,7 +17,7 @@ export default async function DashboardPage() {
 
   let planId: PlanId = "free";
   let userCredits:
-    | { credits: number; maxCredits: number | null; unlimited: boolean }
+    | { credits: number; maxCredits: number | null }
     | undefined;
   let generations: GenerationRecord[] = [];
 
@@ -46,7 +46,6 @@ export default async function DashboardPage() {
     userCredits = {
       credits: credits.credits,
       maxCredits: credits.maxCredits,
-      unlimited: credits.unlimited,
     };
     generations = (generationsResult.data ?? []) as GenerationRecord[];
   }
@@ -60,7 +59,6 @@ export default async function DashboardPage() {
   const metrics = computeDashboardMetrics(generations, planId, {
     remainingCredits: userCredits?.credits,
     maxCredits: userCredits?.maxCredits,
-    unlimited: userCredits?.unlimited,
   });
 
   return (

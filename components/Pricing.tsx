@@ -1,45 +1,28 @@
+import { PLANS } from "@/lib/billing/plans";
+
 const plans = [
   {
-    name: "Starter",
-    price: "9",
-    description: "For founders and small teams testing paid channels.",
-    features: [
-      "50 ad generations / month",
-      "3 brand profiles",
-      "Meta & Google export",
-      "Email support",
-    ],
-    cta: "Start Now",
+    name: PLANS.free.name,
+    priceLabel: PLANS.free.priceLabel,
+    description: "For founders trying AI ad creative for the first time.",
+    features: [...PLANS.free.features],
+    cta: "Start free",
     highlighted: false,
   },
   {
-    name: "Pro",
-    price: "29",
-    description: "For growth teams scaling creative across channels.",
-    features: [
-      "500 ad generations / month",
-      "Unlimited brand profiles",
-      "All platform exports",
-      "AI creative studio",
-      "Performance scoring",
-      "Priority support",
-    ],
-    cta: "Upgrade to Pro",
+    name: PLANS.starter.name,
+    priceLabel: PLANS.starter.priceLabel,
+    description: "For founders and small teams testing paid channels.",
+    features: [...PLANS.starter.features],
+    cta: "Start with Starter",
     highlighted: true,
   },
   {
-    name: "Agency",
-    price: "99",
-    description: "For agencies and brands with advanced compliance needs.",
-    features: [
-      "Unlimited generations",
-      "SSO & SAML",
-      "Custom model fine-tuning",
-      "Dedicated success manager",
-      "SLA & audit logs",
-      "API access",
-    ],
-    cta: "Contact sales",
+    name: PLANS.pro.name,
+    priceLabel: PLANS.pro.priceLabel,
+    description: "For growth teams scaling creative across channels.",
+    features: [...PLANS.pro.features],
+    cta: "Upgrade to Pro",
     highlighted: false,
   },
 ];
@@ -59,7 +42,7 @@ export default function Pricing() {
             <span className="gradient-text">serious ROI</span>
           </h2>
           <p className="mt-4 text-lg text-zinc-400">
-            Start free for 14 days. Cancel anytime. No hidden fees.
+            Start free with monthly AI credits. Cancel anytime. No hidden fees.
           </p>
         </div>
 
@@ -83,15 +66,17 @@ export default function Pricing() {
               <p className="mt-2 text-sm text-zinc-400">{plan.description}</p>
 
               <div className="mt-6 flex items-baseline gap-1">
-                {plan.price !== "Custom" ? (
+                {plan.priceLabel.includes("/") ? (
                   <>
                     <span className="text-4xl font-bold text-white">
-                      ${plan.price}
+                      {plan.priceLabel.split("/")[0]}
                     </span>
                     <span className="text-zinc-500">/month</span>
                   </>
                 ) : (
-                  <span className="text-4xl font-bold text-white">Custom</span>
+                  <span className="text-4xl font-bold text-white">
+                    {plan.priceLabel}
+                  </span>
                 )}
               </div>
 

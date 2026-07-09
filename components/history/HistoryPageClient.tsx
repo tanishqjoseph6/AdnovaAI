@@ -34,7 +34,10 @@ export default function HistoryPageClient({
   initialEntries,
 }: HistoryPageClientProps) {
   const { credits } = useCredits();
-  const planBadge: PlanBadge = credits?.unlimited ? "Pro" : "Free";
+  const planBadge: PlanBadge =
+    credits?.billingPlan === "pro" || credits?.billingPlan === "custom"
+      ? "Pro"
+      : "Free";
 
   const [entries, setEntries] = useState<HistoryEntry[]>(initialEntries);
   const [search, setSearch] = useState("");

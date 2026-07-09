@@ -1,5 +1,9 @@
 import { PLANS } from "@/lib/billing/plans";
-import { FREE_PLAN_CREDITS, STARTER_PLAN_CREDITS } from "@/lib/credits/plan-config";
+import {
+  FREE_PLAN_CREDITS,
+  PRO_PLAN_CREDITS,
+  STARTER_PLAN_CREDITS,
+} from "@/lib/credits/plan-config";
 import { SOCIAL_PLATFORMS, PLATFORM_LABELS } from "@/lib/social-scheduler/types";
 
 export const TRUSTED_BRANDS = [
@@ -141,15 +145,15 @@ export const HOW_IT_WORKS_STEPS = [
 export const LANDING_FAQ = [
   {
     question: "What do I get on the Free plan?",
-    answer: `${FREE_PLAN_CREDITS} AI generations per month with full access to hooks, captions, UGC scripts, the content editor, Brand Kit, analyzers, and history.`,
+    answer: `${FREE_PLAN_CREDITS} AI credits per month with full access to hooks, captions, UGC scripts, the content editor, Brand Kit, analyzers, and history.`,
   },
   {
     question: "How much does Starter cost?",
-    answer: `Starter is ${PLANS.starter.priceLabel} and includes ${STARTER_PLAN_CREDITS} generations per month with the same creative toolkit as Free.`,
+    answer: `Starter is ${PLANS.starter.priceLabel} and includes ${STARTER_PLAN_CREDITS} AI credits per month with the same creative toolkit as Free.`,
   },
   {
     question: "What does Pro include?",
-    answer: `Pro is ${PLANS.pro.priceLabel} with unlimited AI generations and priority support for teams scaling creative output.`,
+    answer: `Pro is ${PLANS.pro.priceLabel} with ${PRO_PLAN_CREDITS.toLocaleString("en-IN")} AI credits per month and priority support for teams scaling creative output.`,
   },
   {
     question: "Can Advora analyze competitor ads?",

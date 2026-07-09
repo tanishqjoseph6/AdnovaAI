@@ -80,9 +80,7 @@ export default function DashboardHero({
   const planName = credits?.displayPlan ?? metrics.planName;
   const creditsDisplay = isLoading && !credits
     ? "—"
-    : credits?.unlimited
-      ? "Unlimited"
-      : String(credits?.credits ?? 0);
+    : String(credits?.credits ?? 0);
 
   return (
     <section className="space-y-6">

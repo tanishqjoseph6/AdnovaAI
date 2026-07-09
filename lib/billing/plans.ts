@@ -19,12 +19,14 @@ export const PLANS = {
     priceLabel: "Free",
     priceInr: 0,
     amountPaise: 0,
-    generationLimit: 5,
+    /** Monthly AI credits included with the plan (refills every 30 days). */
+    monthlyCredits: 50,
     purchasable: false,
     features: [
-      "5 generations / month",
+      "50 AI credits / month",
       "Hooks, captions, CTAs & UGC scripts",
       "Basic AI settings",
+      "Premium features locked",
     ],
   },
   starter: {
@@ -34,10 +36,10 @@ export const PLANS = {
     priceLabel: "₹999/month",
     priceInr: 999,
     amountPaise: 99900,
-    generationLimit: 100,
+    monthlyCredits: 500,
     purchasable: true,
     features: [
-      "100 generations / month",
+      "500 AI credits / month",
       "Brand Kit & brand memory",
       "Competitor & landing analyzers",
       "Social scheduler",
@@ -51,13 +53,14 @@ export const PLANS = {
     priceLabel: "₹2999/month",
     priceInr: 2999,
     amountPaise: 299900,
-    generationLimit: null,
+    monthlyCredits: 2500,
     purchasable: true,
     features: [
-      "Unlimited generations",
+      "2,500 AI credits / month",
       "Everything in Starter",
       "Premium AI quality",
       "Priority processing & support",
+      "Faster generation",
     ],
   },
   custom: {
@@ -67,7 +70,7 @@ export const PLANS = {
     priceLabel: "Custom",
     priceInr: null,
     amountPaise: 0,
-    generationLimit: null,
+    monthlyCredits: 2500,
     purchasable: false,
     features: [
       "Everything in Pro",
@@ -78,6 +81,11 @@ export const PLANS = {
   },
 } as const;
 
+/** @deprecated Use `monthlyCredits` on each plan. */
+export function getPlanMonthlyCredits(planId: PlanId): number {
+  return PLANS[planId].monthlyCredits;
+}
+
 export function isPaidPlan(plan: string): plan is PaidPlanId {
   return plan === "starter" || plan === "pro";
 }
@@ -87,4 +95,8 @@ export function getPlan(planId: string) {
     return PLANS[planId as PlanId];
   }
   return PLANS.free;
+}
+
+export function formatCreditsCount(count: number): string {
+  return count.toLocaleString("en-IN");
 }

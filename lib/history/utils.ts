@@ -179,6 +179,6 @@ export function getGenerationStatus(
   return hasContent ? "Completed" : "Failed";
 }
 
-export function getCreditsUsedLabel(isPro: boolean): string {
-  return isPro ? "Unlimited" : "1 credit";
+export function getCreditsUsedLabel(): string {
+  return "1 credit";
 }

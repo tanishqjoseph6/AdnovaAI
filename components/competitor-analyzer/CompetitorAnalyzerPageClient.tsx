@@ -4,17 +4,18 @@ import { useCallback, useState } from "react";
 import { useRouter } from "next/navigation";
 import { FileDown, Rocket, Target } from "lucide-react";
 import { analyzeCompetitorAd } from "@/lib/api/analyze-competitor-client";
+import { isNoCreditsError } from "@/lib/api/credits-client";
 import {
   generateBetterCompetitorAd,
-  isNoCreditsError,
+  isNoCreditsError as isNoCreditsErrorBetterAd,
 } from "@/lib/api/generate-better-competitor-client";
+import { dispatchNoCreditsEvent } from "@/lib/credits/client-events";
 import { generateCompetitorPdfReport } from "@/lib/competitor-ad/pdf-report";
 import type {
   BetterCompetitorAd,
   CompetitorAdAnalysis,
 } from "@/lib/competitor-ad/types";
 import { useCredits } from "@/hooks/useCredits";
-import UpgradeModal from "@/components/credits/UpgradeModal";
 import LoadingSpinner from "@/components/dashboard/LoadingSpinner";
 import CompetitorAdUpload from "./CompetitorAdUpload";
 import CompetitorAnalysisResults from "./CompetitorAnalysisResults";
@@ -34,7 +35,6 @@ export default function CompetitorAnalyzerPageClient() {
   const [betterAd, setBetterAd] = useState<BetterCompetitorAd | null>(null);
   const [isGeneratingBetter, setIsGeneratingBetter] = useState(false);
   const [generateError, setGenerateError] = useState<string | null>(null);
-  const [upgradeOpen, setUpgradeOpen] = useState(false);
 
   const handleAnalyze = useCallback(async (file: File) => {
     setState({ status: "analyzing" });
@@ -43,8 +43,15 @@ export default function CompetitorAnalyzerPageClient() {
 
     try {
       const analysis = await analyzeCompetitorAd(file);
+      void refresh();
       setState({ status: "success", analysis });
     } catch (error) {
+      if (isNoCreditsError(error)) {
+        dispatchNoCreditsEvent();
+        setState({ status: "idle" });
+        return;
+      }
+
       setState({
         status: "error",
         message:
@@ -54,7 +61,7 @@ export default function CompetitorAnalyzerPageClient() {
       });
       throw error;
     }
-  }, []);
+  }, [refresh]);
 
   const handleGenerateBetter = async () => {
     if (state.status !== "success") return;
@@ -70,7 +77,6 @@ export default function CompetitorAnalyzerPageClient() {
         const detail = {
           generatedAt: result.generatedAt,
           remainingCredits: result.credits,
-          unlimited: result.unlimited,
         };
         window.dispatchEvent(
           new CustomEvent("advora:generation-success", { detail })
@@ -78,8 +84,8 @@ export default function CompetitorAnalyzerPageClient() {
         router.refresh();
       }
     } catch (error) {
-      if (isNoCreditsError(error)) {
-        setUpgradeOpen(true);
+      if (isNoCreditsErrorBetterAd(error)) {
+        dispatchNoCreditsEvent();
         return;
       }
 
@@ -103,8 +109,6 @@ export default function CompetitorAnalyzerPageClient() {
 
   return (
     <div className="mx-auto w-full max-w-6xl space-y-8">
-      <UpgradeModal open={upgradeOpen} onClose={() => setUpgradeOpen(false)} />
-
       <section className="gradient-border overflow-hidden rounded-2xl bg-[#0a0618] shadow-xl shadow-violet-500/5">
         <div className="border-b border-white/[0.06] px-4 py-4 sm:px-6 sm:py-5">
           <div className="flex flex-wrap items-center gap-3">

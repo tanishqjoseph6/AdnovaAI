@@ -6,7 +6,11 @@ import { Lock } from "lucide-react";
 import { useEffect } from "react";
 import type { GatedFeatureId } from "@/lib/billing/features";
 import { FEATURE_CATALOG } from "@/lib/billing/features";
-import { PLANS } from "@/lib/billing/plans";
+import { formatCreditsCount, PLANS } from "@/lib/billing/plans";
+import {
+  PRO_PLAN_CREDITS,
+  STARTER_PLAN_CREDITS,
+} from "@/lib/credits/plan-config";
 
 type PremiumUpgradeModalProps = {
   open: boolean;
@@ -30,7 +34,7 @@ export default function PremiumUpgradeModal({
   const benefitItems = isProFeature
     ? [
         "Premium GPT-4o output quality",
-        "Unlimited AI generations",
+        `${formatCreditsCount(PRO_PLAN_CREDITS)} AI credits every month`,
         "Priority processing & support",
         "Everything in Starter included",
       ]
@@ -38,7 +42,7 @@ export default function PremiumUpgradeModal({
         "Brand Kit & saved brand memory",
         "Competitor & landing page analyzers",
         "Social scheduler & advanced AI settings",
-        "100 generations/month on Starter",
+        `${formatCreditsCount(STARTER_PLAN_CREDITS)} AI credits/month on Starter`,
       ];
 
   useEffect(() => {

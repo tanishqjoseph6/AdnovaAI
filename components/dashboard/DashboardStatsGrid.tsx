@@ -38,12 +38,10 @@ export default function DashboardStatsGrid({
       value:
         isLoading && !credits ? (
           "—"
-        ) : credits?.unlimited ? (
-          "∞"
         ) : (
           <AnimatedCounter value={credits?.credits ?? 0} />
         ),
-      sub: credits?.unlimited ? "Pro unlimited" : `of ${maxCredits} max`,
+      sub: `of ${maxCredits} max`,
       accent: "emerald",
       icon: (
         <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">

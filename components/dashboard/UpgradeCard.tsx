@@ -2,6 +2,8 @@
 
 import Link from "next/link";
 import { motion } from "framer-motion";
+import { formatCreditsCount } from "@/lib/billing/plans";
+import { PRO_PLAN_CREDITS } from "@/lib/credits/plan-config";
 
 type UpgradeCardProps = {
   show: boolean;
@@ -28,11 +30,11 @@ export default function UpgradeCard({ show }: UpgradeCardProps) {
             Go Pro
           </p>
           <h2 className="mt-2 text-2xl font-semibold tracking-tight text-white sm:text-3xl">
-            Unlock unlimited AI ad generation
+            Unlock {formatCreditsCount(PRO_PLAN_CREDITS)} AI credits every month
           </h2>
           <p className="mt-3 text-sm leading-relaxed text-zinc-400 sm:text-base">
-            Scale your creative output with unlimited generations, priority
-            support, and advanced AI features.
+            Scale your creative output with a bigger monthly credit allowance,
+            priority support, and advanced AI features.
           </p>
         </div>
 

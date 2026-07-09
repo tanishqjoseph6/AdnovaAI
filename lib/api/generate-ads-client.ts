@@ -18,7 +18,6 @@ type RawGenerateAdsPayload = {
   ugcScript?: string;
   ugc_script?: string;
   credits?: number | null;
-  unlimited?: boolean;
   generationId?: string;
   generatedAt?: string;
   originalHooks?: string[];
@@ -37,7 +36,6 @@ function normalizeGenerateAdsResponse(
     ctas: payload.ctas ?? [],
     ugcScript: payload.ugcScript ?? payload.ugc_script ?? "",
     credits: payload.credits,
-    unlimited: payload.unlimited,
     generationId: payload.generationId,
     generatedAt: payload.generatedAt,
     originalHooks: payload.originalHooks ?? payload.hooks ?? payload.ad_hooks ?? [],

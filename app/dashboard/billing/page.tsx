@@ -2,6 +2,7 @@ import DashboardShell from "@/components/dashboard/DashboardShell";
 import BillingHeroCard from "@/components/billing/BillingHeroCard";
 import BillingHistoryTable from "@/components/billing/BillingHistoryTable";
 import BillingPricingShell from "@/components/billing/BillingPricingShell";
+import CreditPacksSection from "@/components/billing/CreditPacksSection";
 import FeatureComparison from "@/components/billing/FeatureComparison";
 import PaymentNotice from "@/components/billing/PaymentNotice";
 import PricingPlanCards from "@/components/billing/PricingPlanCards";
@@ -89,6 +90,8 @@ export default async function BillingPage({ searchParams }: BillingPageProps) {
           <BillingFaq />
 
           <UpgradeProCta currentPlanId={subscription.plan} />
+
+          <CreditPacksSection />
         </BillingPricingShell>
 
         <FeatureComparison currentPlanId={subscription.plan} />

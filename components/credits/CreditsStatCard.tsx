@@ -7,24 +7,18 @@ import { resolveCreditsMax } from "@/lib/credits/display";
 export default function CreditsStatCard() {
   const { credits, isLoading } = useCredits();
 
-  const value = isLoading
-    ? "—"
-    : credits?.unlimited
-      ? "∞"
-      : String(credits?.credits ?? 0);
+  const value = isLoading ? "—" : String(credits?.credits ?? 0);
 
-  const change = credits?.unlimited
-    ? "Pro"
-    : credits
-      ? `${resolveCreditsMax(credits.maxCredits, credits.credits)} max`
-      : "";
+  const change = credits
+    ? `${resolveCreditsMax(credits.maxCredits, credits.credits)} max`
+    : "";
 
   return (
     <StatCard
       label="Credits remaining"
       value={value}
       change={change}
-      positive={credits ? credits.unlimited || credits.credits > 0 : true}
+      positive={credits ? credits.credits > 0 : true}
       accent="emerald"
       icon={
         <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">

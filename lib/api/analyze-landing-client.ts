@@ -13,7 +13,7 @@ export async function analyzeLandingPage(
     body: JSON.stringify({ url }),
   });
 
-  let payload: { analysis?: unknown; error?: string };
+  let payload: { analysis?: unknown; error?: string; code?: string };
 
   try {
     payload = await response.json();
@@ -34,7 +34,11 @@ export async function analyzeLandingPage(
       throw new ApiClientError("Session expired. Please log in again.", 401);
     }
 
-    throw new ApiClientError(message, response.status);
+    throw new ApiClientError(
+      message,
+      response.status,
+      typeof payload.code === "string" ? payload.code : undefined
+    );
   }
 
   const analysis = normalizeLandingPageAnalysis(payload.analysis, url.trim());

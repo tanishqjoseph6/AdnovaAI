@@ -41,10 +41,22 @@ describe("credit refill", () => {
     );
   });
 
-  it("resolves refill amounts by plan", () => {
-    assert.equal(resolveCreditRefillAmount("free", "inactive"), 5);
-    assert.equal(resolveCreditRefillAmount("starter", "active"), 100);
-    assert.equal(resolveCreditRefillAmount("pro", "active"), null);
-    assert.equal(resolveCreditRefillAmount("custom", "active"), null);
+  it("uses purchase date for active pro subscriptions", () => {
+    const anchor = resolveCreditRefillAnchor({
+      billingPlan: "pro",
+      subscriptionStatus: "active",
+      purchaseDate: "2026-03-10T00:00:00.000Z",
+      signupDate: "2026-01-01T00:00:00.000Z",
+    });
+
+    assert.equal(anchor?.toISOString(), "2026-03-10T00:00:00.000Z");
+  });
+
+  it("resolves finite refill amounts by plan", () => {
+    assert.equal(resolveCreditRefillAmount("free", "inactive"), 50);
+    assert.equal(resolveCreditRefillAmount("starter", "active"), 500);
+    assert.equal(resolveCreditRefillAmount("pro", "active"), 2500);
+    assert.equal(resolveCreditRefillAmount("custom", "active"), 2500);
+    assert.equal(resolveCreditRefillAmount("pro", "inactive"), 50);
   });
 });

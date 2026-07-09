@@ -29,7 +29,7 @@ export async function analyzeCompetitorAd(
     }),
   });
 
-  let payload: { analysis?: unknown; error?: string };
+  let payload: { analysis?: unknown; error?: string; code?: string };
 
   try {
     payload = await response.json();
@@ -50,7 +50,11 @@ export async function analyzeCompetitorAd(
       throw new ApiClientError("Session expired. Please log in again.", 401);
     }
 
-    throw new ApiClientError(message, response.status);
+    throw new ApiClientError(
+      message,
+      response.status,
+      typeof payload.code === "string" ? payload.code : undefined
+    );
   }
 
   const analysis = normalizeCompetitorAdAnalysis(payload.analysis);

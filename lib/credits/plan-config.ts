@@ -1,62 +1,62 @@
 import { getPlan, type PlanId } from "@/lib/billing/plans";
 import type { UserCredits } from "@/lib/credits/types";
 
-/** Monthly generation allowance from billing plan config (`null` = unlimited). */
-export function getPlanCreditLimit(planId: PlanId): number | null {
-  return getPlan(planId).generationLimit;
-}
-
-function requireFiniteCreditLimit(planId: PlanId): number {
-  const limit = getPlanCreditLimit(planId);
-  if (limit === null) {
-    throw new Error(`Plan "${planId}" has no finite credit limit`);
-  }
-  return limit;
+/** Monthly AI credit allowance for a billing plan. */
+export function getPlanCreditLimit(planId: PlanId): number {
+  return getPlan(planId).monthlyCredits;
 }
 
 /** Credits granted when a new free account is created. */
-export const FREE_PLAN_CREDITS = requireFiniteCreditLimit("free");
+export const FREE_PLAN_CREDITS = getPlanCreditLimit("free");
 
-/** Credits granted when Starter subscription activates. */
-export const STARTER_PLAN_CREDITS = requireFiniteCreditLimit("starter");
+/** Monthly credits when Starter subscription is active. */
+export const STARTER_PLAN_CREDITS = getPlanCreditLimit("starter");
 
-export function isUnlimitedBillingPlan(planId: PlanId): boolean {
-  return getPlanCreditLimit(planId) === null;
+/** Monthly credits when Pro subscription is active. */
+export const PRO_PLAN_CREDITS = getPlanCreditLimit("pro");
+
+/** Max monthly allowance shown in UI for a user's effective billing plan. */
+export function resolveMaxCreditsForProfile(
+  _creditsPlan: "free" | "pro",
+  profilesPlan?: PlanId
+): number {
+  const planId = profilesPlan ?? "free";
+  return getPlanCreditLimit(planId);
 }
 
-/** Max credits for a metered user_credits row, based on billing plan. */
-export function resolveMaxCreditsForProfile(
-  creditsPlan: "free" | "pro",
-  profilesPlan?: PlanId
-): number | null {
-  if (creditsPlan === "pro") {
-    return null;
+export function resolveMonthlyRefillAmount(
+  billingPlan: PlanId,
+  subscriptionStatus: string
+): number {
+  if (subscriptionStatus !== "active") {
+    return FREE_PLAN_CREDITS;
   }
 
-  const planId = profilesPlan ?? "free";
-  const limit = getPlanCreditLimit(planId);
-
-  if (limit === null) {
-    return null;
+  if (billingPlan === "pro" || billingPlan === "custom") {
+    return PRO_PLAN_CREDITS;
   }
 
-  return limit;
+  if (billingPlan === "starter") {
+    return STARTER_PLAN_CREDITS;
+  }
+
+  return FREE_PLAN_CREDITS;
 }
 
 export function createDefaultUserCredits(): UserCredits {
   return {
     credits: FREE_PLAN_CREDITS,
+    monthlyCredits: FREE_PLAN_CREDITS,
+    purchasedCredits: 0,
     plan: "free",
-    unlimited: false,
     maxCredits: FREE_PLAN_CREDITS,
     updatedAt: "1970-01-01T00:00:00.000Z",
   };
 }
 
-export function formatMonthlyGenerationsLabel(planId: PlanId): string {
-  const limit = getPlanCreditLimit(planId);
-  if (limit === null) {
-    return "Unlimited";
-  }
-  return String(limit);
+export function formatMonthlyCreditsLabel(planId: PlanId): string {
+  return String(getPlanCreditLimit(planId));
 }
+
+/** @deprecated Use formatMonthlyCreditsLabel */
+export const formatMonthlyGenerationsLabel = formatMonthlyCreditsLabel;

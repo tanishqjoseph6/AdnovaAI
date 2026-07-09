@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useCredits } from "@/hooks/useCredits";
 import {
   creditsProgressPercent,
+  formatCreditsBreakdown,
   resolveCreditsMax,
 } from "@/lib/credits/display";
 
@@ -40,15 +41,9 @@ export default function CreditsCard() {
   }
 
   const max = resolveCreditsMax(credits.maxCredits, credits.credits);
-  const progress = creditsProgressPercent(
-    credits.credits,
-    credits.maxCredits,
-    credits.unlimited
-  );
-
-  const remainingLabel = credits.unlimited
-    ? "Unlimited"
-    : `${credits.credits} / ${max}`;
+  const progress = creditsProgressPercent(credits.credits, credits.maxCredits);
+  const remainingLabel = `${credits.credits} / ${max}`;
+  const depleted = credits.credits === 0;
 
   return (
     <section className="glass relative overflow-hidden rounded-2xl p-6">
@@ -60,11 +55,6 @@ export default function CreditsCard() {
           <p className="text-sm text-zinc-500">Current plan</p>
           <p className="mt-1 text-2xl font-bold text-white">
             {credits.displayPlan}
-            {credits.unlimited && (
-              <span className="ml-2 align-middle text-sm font-medium text-violet-300">
-                Pro
-              </span>
-            )}
           </p>
         </div>
         <button
@@ -85,7 +75,7 @@ export default function CreditsCard() {
               {remainingLabel}
             </p>
           </div>
-          {!credits.unlimited && credits.credits === 0 && (
+          {depleted && (
             <span className="rounded-full border border-amber-500/30 bg-amber-500/10 px-2.5 py-1 text-xs font-medium text-amber-300">
               Depleted
             </span>
@@ -97,40 +87,40 @@ export default function CreditsCard() {
             className="h-full rounded-full bg-gradient-to-r from-cyan-400 via-violet-500 to-fuchsia-500 transition-all duration-500"
             style={{ width: `${progress}%` }}
             role="progressbar"
-            aria-valuenow={credits.unlimited ? max : credits.credits}
+            aria-valuenow={credits.credits}
             aria-valuemin={0}
-            aria-valuemax={credits.unlimited ? max : max}
+            aria-valuemax={max}
             aria-label="Credits remaining"
           />
         </div>
         <p className="mt-2 text-xs text-zinc-500">
-          {credits.unlimited
-            ? "Pro members enjoy unlimited AI generations."
-            : "Each successful generation uses 1 credit."}
+          {formatCreditsBreakdown(
+            credits.monthlyCredits,
+            credits.purchasedCredits
+          )}
+          . AI actions consume credits based on feature cost.
         </p>
       </div>
 
-      {!credits.unlimited && (
-        <Link
-          href="/dashboard/billing"
-          className="relative mt-6 inline-flex w-full items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-cyan-400 via-violet-500 to-fuchsia-500 px-4 py-3 text-sm font-semibold text-white shadow-lg shadow-violet-500/20 transition hover:opacity-90 sm:w-auto"
+      <Link
+        href={depleted ? "/dashboard/billing#credit-packs" : "/dashboard/billing"}
+        className="relative mt-6 inline-flex w-full items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-cyan-400 via-violet-500 to-fuchsia-500 px-4 py-3 text-sm font-semibold text-white shadow-lg shadow-violet-500/20 transition hover:opacity-90 sm:w-auto"
+      >
+        {depleted ? "Buy More Credits" : "Manage credits & plans"}
+        <svg
+          className="h-4 w-4"
+          fill="none"
+          viewBox="0 0 24 24"
+          stroke="currentColor"
         >
-          Upgrade to Pro
-          <svg
-            className="h-4 w-4"
-            fill="none"
-            viewBox="0 0 24 24"
-            stroke="currentColor"
-          >
-            <path
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              strokeWidth={2}
-              d="M13 7l5 5m0 0l-5 5m5-5H6"
-            />
-          </svg>
-        </Link>
-      )}
+          <path
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            strokeWidth={2}
+            d="M13 7l5 5m0 0l-5 5m5-5H6"
+          />
+        </svg>
+      </Link>
     </section>
   );
 }

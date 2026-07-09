@@ -56,8 +56,9 @@ export default function BillingCreditsLive({
     <>
       <BillingCreditsProgress
         credits={credits.credits}
+        monthlyCredits={credits.monthlyCredits}
+        purchasedCredits={credits.purchasedCredits}
         maxCredits={credits.maxCredits}
-        unlimited={credits.unlimited}
         embedded={embedded}
       />
       {embedded && (
@@ -66,9 +67,9 @@ export default function BillingCreditsLive({
             Usage tip
           </p>
           <p className="mt-2 text-sm leading-relaxed text-zinc-400">
-            {credits.unlimited
-              ? "Your Pro plan includes unlimited generations — create as many ads as you need."
-              : "Upgrade anytime to unlock more credits and faster generation speeds."}
+            Monthly credits are used first. When they run out, purchased credits
+            are consumed automatically. Buy extra credits anytime without
+            changing your plan.
           </p>
         </div>
       )}

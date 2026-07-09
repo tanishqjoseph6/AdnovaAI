@@ -113,16 +113,14 @@ export async function POST(req: Request) {
     }
 
     let remainingCredits: number | null = null;
-    if (!creditCheck.unlimited) {
-      const deduction = await deductForFeature(
-        user.id,
-        CREDIT_FEATURES.ANALYZE_COMPETITOR_AD
-      );
-      if (deduction.insufficient) {
-        return insufficientCreditsResponse(deduction.cost, deduction.credits);
-      }
-      remainingCredits = deduction.credits;
+    const deduction = await deductForFeature(
+      user.id,
+      CREDIT_FEATURES.ANALYZE_COMPETITOR_AD
+    );
+    if (deduction.insufficient) {
+      return insufficientCreditsResponse(deduction.cost, deduction.credits);
     }
+    remainingCredits = deduction.credits;
 
     const { data: inserted, error: insertError } = await supabase
       .from("competitor_analyses")
@@ -144,7 +142,6 @@ export async function POST(req: Request) {
         id: inserted?.id,
       },
       credits: remainingCredits,
-      unlimited: creditCheck.unlimited,
     });
   } catch (error) {
     console.error("POST /api/analyze-competitor-ad error:", error);

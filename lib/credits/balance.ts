@@ -22,10 +22,8 @@ export function computeCurrentCredits(
 
 export function canAfford(
   buckets: Pick<CreditBuckets, "currentCredits">,
-  cost: number,
-  unlimited: boolean
+  cost: number
 ): boolean {
-  if (unlimited) return true;
   if (cost <= 0) return true;
   return buckets.currentCredits >= cost;
 }
@@ -39,7 +37,8 @@ export type DeductionSplit = {
 
 /**
  * Determines how a deduction is split across monthly vs purchased buckets.
- * Monthly credits are consumed first.
+ * Monthly credits are consumed first; purchased credits are used only after
+ * monthly credits are exhausted.
  */
 export function computeDeductionSplit(
   monthlyCredits: number,

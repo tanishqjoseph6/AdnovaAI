@@ -1,9 +1,11 @@
 import type { PlanId } from "./plans";
 import {
-  formatMonthlyGenerationsLabel,
+  formatMonthlyCreditsLabel,
   FREE_PLAN_CREDITS,
+  PRO_PLAN_CREDITS,
   STARTER_PLAN_CREDITS,
 } from "@/lib/credits/plan-config";
+import { formatCreditsCount, PLANS } from "./plans";
 import { getPlanPriceQuote } from "./pricing";
 
 const STARTER_INR_MONTHLY = getPlanPriceQuote("starter", "monthly", "INR");
@@ -18,12 +20,21 @@ export type ComparisonFeature = {
 
 export const BILLING_COMPARISON_FEATURES: ComparisonFeature[] = [
   {
-    label: "Monthly AI generations",
+    label: "Monthly AI credits",
     values: {
-      free: formatMonthlyGenerationsLabel("free"),
-      starter: formatMonthlyGenerationsLabel("starter"),
-      pro: formatMonthlyGenerationsLabel("pro"),
-      custom: formatMonthlyGenerationsLabel("custom"),
+      free: formatMonthlyCreditsLabel("free"),
+      starter: formatMonthlyCreditsLabel("starter"),
+      pro: formatMonthlyCreditsLabel("pro"),
+      custom: formatMonthlyCreditsLabel("custom"),
+    },
+  },
+  {
+    label: "Buy extra credits",
+    values: {
+      free: true,
+      starter: true,
+      pro: true,
+      custom: true,
     },
   },
   {
@@ -126,6 +137,15 @@ export const BILLING_COMPARISON_FEATURES: ComparisonFeature[] = [
     },
   },
   {
+    label: "Faster generation",
+    values: {
+      free: false,
+      starter: false,
+      pro: true,
+      custom: true,
+    },
+  },
+  {
     label: "Generation history",
     values: {
       free: true,
@@ -182,12 +202,13 @@ export const PRICING_TIERS: PricingTierConfig[] = [
   {
     planId: "free",
     displayName: "Free",
-    subtitle: "Perfect for trying Advora AI",
+    subtitle: "Try Advora with monthly AI credits",
     priceDisplay: "Free",
     features: [
-      `${FREE_PLAN_CREDITS} generations/month`,
+      `${formatCreditsCount(FREE_PLAN_CREDITS)} AI credits / month`,
       "Hooks, captions, CTAs & UGC scripts",
       "Basic AI settings",
+      "Premium features locked",
     ],
     ctaLabel: "Current Plan",
     ctaType: "current",
@@ -198,14 +219,14 @@ export const PRICING_TIERS: PricingTierConfig[] = [
     displayName: "Starter",
     emoji: "⭐",
     badge: "Best Value",
-    subtitle: "Perfect for creators, freelancers and small businesses.",
+    subtitle: "Monthly credits plus every premium workflow.",
     priceDisplay: STARTER_INR_MONTHLY.displayAmount,
     priceSuffix: STARTER_INR_MONTHLY.priceSuffix,
     features: [
-      `${STARTER_PLAN_CREDITS} AI generations/month`,
+      `${formatCreditsCount(STARTER_PLAN_CREDITS)} AI credits / month`,
       "Brand Kit, analyzers & scheduler",
       "Advanced AI preferences",
-      "Saved brand memory",
+      "Buy extra credits anytime",
     ],
     ctaLabel: "Get Started",
     ctaType: "starter",
@@ -216,14 +237,14 @@ export const PRICING_TIERS: PricingTierConfig[] = [
     displayName: "Pro",
     emoji: "👑",
     badge: "🔥 MOST POPULAR",
-    subtitle: "Unlimited AI ad generation for serious brands.",
+    subtitle: "More monthly credits for teams shipping ads at scale.",
     priceDisplay: PRO_INR_MONTHLY.displayAmount,
     priceSuffix: PRO_INR_MONTHLY.priceSuffix,
     features: [
-      "Unlimited AI generations",
+      `${formatCreditsCount(PRO_PLAN_CREDITS)} AI credits / month`,
       "Everything in Starter",
       "Premium AI quality (GPT-4o)",
-      "Priority processing & support",
+      "Priority processing, faster generation & support",
     ],
     ctaLabel: "Upgrade to Pro",
     ctaType: "pro",
@@ -238,7 +259,7 @@ export const PRICING_TIERS: PricingTierConfig[] = [
     priceDisplay: "Custom",
     priceSuffix: "Pricing",
     features: [
-      "Unlimited team members",
+      "Custom monthly credit pools",
       "API Access",
       "Dedicated Success Manager",
       "Custom AI Models",
@@ -268,10 +289,10 @@ export const PRICING_TIER_ORDER: PlanId[] = [
 
 /** Hero subtitle copy shown under the current plan name on the Billing page. */
 export const PLAN_HERO_DESCRIPTIONS: Record<PlanId, string> = {
-  free: "Perfect for trying Advora AI and creating your first AI ads.",
-  starter: "Best for growing creators and small businesses.",
-  pro: "Unlimited AI ad generation for serious brands.",
-  custom: "Tailored solutions for agencies and teams at scale.",
+  free: "Monthly AI credits to try Advora. Premium workflows unlock on Starter.",
+  starter: "Monthly AI credits with Brand Kit, analyzers, and advanced AI settings.",
+  pro: "Larger monthly credit pool with premium AI quality and priority support.",
+  custom: "Tailored credit pools and solutions for agencies and teams at scale.",
 };
 
 export function getPlanHeroDescription(planId: PlanId): string {

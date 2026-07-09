@@ -11,12 +11,12 @@ import {
 import type { DeductCreditsResult } from "@/lib/credits/types";
 
 export type FeatureCreditContext = {
-  /** Pro/unlimited plans skip balance deduction. */
-  unlimited: boolean;
   /** Resolved credit cost for this feature. */
   cost: number;
-  /** Current balance available to the user. */
+  /** Total spendable credits (monthly + purchased). */
   available: number;
+  monthlyCredits: number;
+  purchasedCredits: number;
 };
 
 export type FeatureCreditCheck =
@@ -33,7 +33,7 @@ export function insufficientCreditsResponse(
   const plural = required === 1 ? "credit" : "credits";
   return NextResponse.json(
     {
-      error: `Not enough credits. This action needs ${required} ${plural}, but you have ${available}. Upgrade your plan or buy extra credits to continue.`,
+      error: `Not enough credits. This action needs ${required} ${plural}, but you have ${available}. Buy more credits or upgrade your plan to continue.`,
       code: CREDITS_ERROR_CODE,
       required,
       available,
@@ -44,9 +44,8 @@ export function insufficientCreditsResponse(
 
 /**
  * Pre-flight credit check performed BEFORE running an AI generation.
- * Ensures the user can afford the feature so we never call the model when the
- * request would fail at deduction time. The actual deduction happens only
- * after a successful generation via {@link deductForFeature}.
+ * Monthly credits are consumed first at deduction time; purchased credits are
+ * used automatically once monthly credits are exhausted.
  */
 export async function checkFeatureCredits(
   userId: string,
@@ -59,10 +58,6 @@ export async function checkFeatureCredits(
     getUserCreditsForUser(userId, supabase, { email: options?.email }),
   ]);
 
-  if (credits.unlimited) {
-    return { ok: true, unlimited: true, cost, available: credits.credits };
-  }
-
   if (cost > 0 && credits.credits < cost) {
     return {
       ok: false,
@@ -70,13 +65,19 @@ export async function checkFeatureCredits(
     };
   }
 
-  return { ok: true, unlimited: false, cost, available: credits.credits };
+  return {
+    ok: true,
+    cost,
+    available: credits.credits,
+    monthlyCredits: credits.monthlyCredits,
+    purchasedCredits: credits.purchasedCredits,
+  };
 }
 
 /**
- * Deducts credits for a feature AFTER a successful AI generation. Never runs
- * for unlimited plans. The deduction is atomic, can never go negative, and is
- * logged to credit_transactions by the RPC.
+ * Deducts credits for a feature AFTER a successful AI generation. The
+ * deduction is atomic, can never go negative, and is logged to
+ * credit_transactions by the RPC (monthly bucket first, then purchased).
  */
 export async function deductForFeature(
   userId: string,

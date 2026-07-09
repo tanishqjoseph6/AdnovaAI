@@ -16,7 +16,7 @@ const COMPARISON_ROWS = [
   {
     label: "Revisions",
     agency: "Limited rounds, extra fees",
-    advora: "Unlimited regenerations",
+    advora: "Regenerate with your monthly credits",
   },
   {
     label: "Output formats",

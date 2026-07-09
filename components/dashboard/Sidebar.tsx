@@ -37,14 +37,9 @@ function SidebarCredits({ onClose }: { onClose: () => void }) {
     return null;
   }
 
-  const progress = creditsProgressPercent(
-    credits.credits,
-    credits.maxCredits,
-    credits.unlimited
-  );
-  const remainingLabel = credits.unlimited
-    ? "Unlimited"
-    : `${credits.credits} left`;
+  const progress = creditsProgressPercent(credits.credits, credits.maxCredits);
+  const remainingLabel = `${credits.credits} left`;
+  const depleted = credits.credits === 0;
 
   return (
     <div className="rounded-xl border border-violet-500/20 bg-gradient-to-br from-violet-500/10 to-cyan-500/5 p-4">
@@ -57,21 +52,19 @@ function SidebarCredits({ onClose }: { onClose: () => void }) {
           className="h-full rounded-full bg-gradient-to-r from-cyan-400 to-violet-500 transition-all duration-500"
           style={{ width: `${progress}%` }}
           role="progressbar"
-          aria-valuenow={credits.unlimited ? 100 : credits.credits}
+          aria-valuenow={credits.credits}
           aria-valuemin={0}
-          aria-valuemax={credits.unlimited ? 100 : (credits.maxCredits ?? credits.credits)}
+          aria-valuemax={credits.maxCredits ?? credits.credits}
           aria-label="Credits remaining"
         />
       </div>
-      {!credits.unlimited && (
-        <Link
-          href="/dashboard/billing"
-          onClick={onClose}
-          className="mt-3 block text-center text-xs font-medium text-violet-300 hover:text-violet-200"
-        >
-          Upgrade plan →
-        </Link>
-      )}
+      <Link
+        href={depleted ? "/dashboard/billing#credit-packs" : "/dashboard/billing"}
+        onClick={onClose}
+        className="mt-3 block text-center text-xs font-medium text-violet-300 hover:text-violet-200"
+      >
+        {depleted ? "Buy more credits →" : "Manage credits →"}
+      </Link>
     </div>
   );
 }

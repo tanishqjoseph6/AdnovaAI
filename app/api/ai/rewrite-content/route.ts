@@ -173,21 +173,18 @@ export async function POST(request: Request) {
     }
 
     let remainingCredits: number | null = null;
-    if (!creditCheck.unlimited) {
-      const deduction = await deductForFeature(
-        authResult.user.id,
-        rewriteFeature
-      );
-      if (deduction.insufficient) {
-        return insufficientCreditsResponse(deduction.cost, deduction.credits);
-      }
-      remainingCredits = deduction.credits;
+    const deduction = await deductForFeature(
+      authResult.user.id,
+      rewriteFeature
+    );
+    if (deduction.insufficient) {
+      return insufficientCreditsResponse(deduction.cost, deduction.credits);
     }
+    remainingCredits = deduction.credits;
 
     return NextResponse.json({
       text,
       credits: remainingCredits,
-      unlimited: creditCheck.unlimited,
     });
   } catch (error) {
     console.error("AI rewrite error:", error);

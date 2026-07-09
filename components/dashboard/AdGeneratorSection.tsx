@@ -1,13 +1,13 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef } from "react";
 import { useRouter } from "next/navigation";
 import { useAdGenerator } from "@/hooks/useAdGenerator";
 import { useAdScore } from "@/hooks/useAdScore";
 import { useCredits } from "@/hooks/useCredits";
 import { CREDITS_ERROR_CODE } from "@/lib/credits/constants";
+import { dispatchNoCreditsEvent } from "@/lib/credits/client-events";
 import type { ProductAnalysis } from "@/lib/product-analysis/types";
-import UpgradeModal from "@/components/credits/UpgradeModal";
 import ProductUpload from "./ProductUpload";
 import AiOutput from "./AiOutput";
 import AdScoreCard from "./AdScoreCard";
@@ -33,7 +33,6 @@ export default function AdGeneratorSection({
     productAnalysis?: ProductAnalysis | null;
   } | null>(null);
   const scoredSignatureRef = useRef<string | null>(null);
-  const [upgradeOpen, setUpgradeOpen] = useState(false);
   const { refresh } = useCredits();
 
   const { state, generate, clearError, reset, isLoading, hasOutput, outputData } =
@@ -44,7 +43,6 @@ export default function AdGeneratorSection({
           const detail = {
             generatedAt: data.generatedAt,
             remainingCredits: data.credits,
-            unlimited: data.unlimited,
           };
           window.dispatchEvent(
             new CustomEvent("advora:generation-success", {
@@ -54,7 +52,7 @@ export default function AdGeneratorSection({
         }
         router.refresh();
       },
-      onNoCredits: () => setUpgradeOpen(true),
+      onNoCredits: () => dispatchNoCreditsEvent(),
     });
 
   const {
@@ -157,7 +155,6 @@ export default function AdGeneratorSection({
         </div>
       )}
 
-      <UpgradeModal open={upgradeOpen} onClose={() => setUpgradeOpen(false)} />
     </div>
   );
 }
