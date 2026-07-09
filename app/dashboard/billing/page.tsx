@@ -83,6 +83,8 @@ export default async function BillingPage({ searchParams }: BillingPageProps) {
         >
           <BillingHeroCard subscription={subscription} />
 
+          <CreditPacksSection />
+
           <PricingPlanCards currentPlanId={subscription.plan} />
 
           <BillingTrustSection />
@@ -90,8 +92,6 @@ export default async function BillingPage({ searchParams }: BillingPageProps) {
           <BillingFaq />
 
           <UpgradeProCta currentPlanId={subscription.plan} />
-
-          <CreditPacksSection />
         </BillingPricingShell>
 
         <FeatureComparison currentPlanId={subscription.plan} />

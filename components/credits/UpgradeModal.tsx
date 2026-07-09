@@ -8,7 +8,7 @@ import {
   PRO_PLAN_CREDITS,
   STARTER_PLAN_CREDITS,
 } from "@/lib/credits/constants";
-import { CREDIT_PACK_OPTIONS } from "@/lib/credits/purchase";
+import { CREDIT_PACK_OPTIONS, formatPackPriceUsd } from "@/lib/credits/purchase";
 import { formatCreditsCount, PLANS } from "@/lib/billing/plans";
 
 type UpgradeModalProps = {
@@ -74,7 +74,7 @@ export default function UpgradeModal({ open, onClose }: UpgradeModalProps) {
                 id="upgrade-modal-title"
                 className="mt-5 text-center text-2xl font-bold text-white"
               >
-                Buy More Credits
+                Buy Extra Credits
               </h2>
               <p className="mt-3 text-center text-sm leading-relaxed text-zinc-300">
                 You&apos;ve used your monthly AI credits. Purchase extra credits
@@ -89,11 +89,18 @@ export default function UpgradeModal({ open, onClose }: UpgradeModalProps) {
                   {CREDIT_PACK_OPTIONS.map((pack) => (
                     <li
                       key={pack.credits}
-                      className="flex items-center justify-between rounded-xl border border-white/8 bg-white/[0.02] px-3 py-2.5 text-sm text-zinc-200"
+                      className="flex items-center justify-between gap-3 rounded-xl border border-white/8 bg-white/[0.02] px-3 py-2.5 text-sm text-zinc-200"
                     >
-                      <span>{pack.label}</span>
-                      <span className="font-semibold text-white">
-                        ₹{pack.priceInr}
+                      <span className="flex min-w-0 flex-col">
+                        <span>{pack.label}</span>
+                        {pack.savingsPercent !== null ? (
+                          <span className="text-[11px] text-emerald-400">
+                            Save {pack.savingsPercent}%
+                          </span>
+                        ) : null}
+                      </span>
+                      <span className="shrink-0 font-semibold text-white">
+                        {formatPackPriceUsd(pack.priceUsd)}
                       </span>
                     </li>
                   ))}
@@ -125,7 +132,7 @@ export default function UpgradeModal({ open, onClose }: UpgradeModalProps) {
                   onClick={onClose}
                   className="inline-flex items-center justify-center rounded-xl bg-gradient-to-r from-cyan-400 via-violet-500 to-fuchsia-500 px-4 py-3.5 text-sm font-semibold text-white shadow-lg shadow-violet-500/30 transition hover:opacity-95"
                 >
-                  Buy More Credits
+                  Buy Extra Credits
                 </Link>
                 <Link
                   href="/dashboard/billing"
