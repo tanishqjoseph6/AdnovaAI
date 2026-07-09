@@ -3,7 +3,7 @@ import { requireVerifiedUser } from "@/lib/auth/require-user";
 import { CREDITS_ERROR_CODE } from "@/lib/credits/constants";
 import {
   canUseCredits,
-  deductUserCredit,
+  deductUserCredits,
   getUserCreditsForUser,
 } from "@/lib/credits/server";
 import { createClient } from "@/lib/supabase/server";
@@ -44,7 +44,11 @@ export async function POST() {
       });
     }
 
-    const result = await deductUserCredit(user.id);
+    const result = await deductUserCredits({
+      userId: user.id,
+      featureId: null,
+      amountOverride: 1,
+    });
 
     if (result.insufficient) {
       return NextResponse.json(

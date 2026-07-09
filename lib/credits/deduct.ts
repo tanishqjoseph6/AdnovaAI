@@ -34,7 +34,11 @@ export function parseDeductCreditsRpcResult(
 
 export type DeductCreditsInput = {
   userId: string;
-  featureId: CreditFeatureId;
-  /** Override the DB-configured cost (admin/testing only). */
+  /**
+   * Feature whose configured cost is charged. Pass `null` to charge a flat
+   * `amountOverride` with no feature attribution (legacy/manual deductions).
+   */
+  featureId: CreditFeatureId | null;
+  /** Flat amount used only when `featureId` is null. */
   amountOverride?: number;
 };

@@ -9,6 +9,12 @@ import {
 import { buildLandingAnalysisPrompt } from "@/lib/landing-analyzer/prompt";
 import { summarizeLandingPageContent } from "@/lib/landing-analyzer/summarize-content";
 import { normalizeLandingPageAnalysis } from "@/lib/landing-analyzer/types";
+import {
+  checkFeatureCredits,
+  deductForFeature,
+  insufficientCreditsResponse,
+} from "@/lib/credits/guard";
+import { CREDIT_FEATURES } from "@/lib/credits/schema";
 import { createClient } from "@/lib/supabase/server";
 
 const openai = new OpenAI({
@@ -51,6 +57,16 @@ export async function POST(req: Request) {
       );
     }
 
+    const creditCheck = await checkFeatureCredits(
+      user.id,
+      supabase,
+      CREDIT_FEATURES.ANALYZE_LANDING_PAGE,
+      { email: user.email }
+    );
+    if (!creditCheck.ok) {
+      return creditCheck.response;
+    }
+
     const pageContent = await fetchLandingPageContent(normalizedUrl);
     const preparedContent = pageContent.needsSummarization
       ? await summarizeLandingPageContent(openai, pageContent)
@@ -84,7 +100,23 @@ export async function POST(req: Request) {
       );
     }
 
-    return NextResponse.json({ analysis });
+    let remainingCredits: number | null = null;
+    if (!creditCheck.unlimited) {
+      const deduction = await deductForFeature(
+        user.id,
+        CREDIT_FEATURES.ANALYZE_LANDING_PAGE
+      );
+      if (deduction.insufficient) {
+        return insufficientCreditsResponse(deduction.cost, deduction.credits);
+      }
+      remainingCredits = deduction.credits;
+    }
+
+    return NextResponse.json({
+      analysis,
+      credits: remainingCredits,
+      unlimited: creditCheck.unlimited,
+    });
   } catch (error) {
     console.error("POST /api/analyze-landing-page error:", error);
 

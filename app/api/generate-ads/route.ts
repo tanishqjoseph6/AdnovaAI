@@ -7,12 +7,12 @@ import {
   buildBrandKitPromptSection,
   getBrandKitForUser,
 } from "@/lib/brand-kit/server";
-import { CREDITS_ERROR_CODE } from "@/lib/credits/constants";
 import {
-  canUseCredits,
-  deductUserCredit,
-  getUserCreditsForUser,
-} from "@/lib/credits/server";
+  checkFeatureCredits,
+  deductForFeature,
+  insufficientCreditsResponse,
+} from "@/lib/credits/guard";
+import { CREDIT_FEATURES } from "@/lib/credits/schema";
 import {
   buildAiPreferencesPromptSection,
   resolveOpenAiGenerationConfig,
@@ -51,18 +51,14 @@ export async function POST(req: Request) {
       );
     }
 
-    const userCredits = await getUserCreditsForUser(user.id, supabase, {
-      email: user.email,
-    });
-
-    if (!canUseCredits(userCredits)) {
-      return NextResponse.json(
-        {
-          error: "No credits remaining. Upgrade to Starter or Pro for more generations.",
-          code: CREDITS_ERROR_CODE,
-        },
-        { status: 403 }
-      );
+    const creditCheck = await checkFeatureCredits(
+      user.id,
+      supabase,
+      CREDIT_FEATURES.GENERATE_ADS,
+      { email: user.email }
+    );
+    if (!creditCheck.ok) {
+      return creditCheck.response;
     }
 
     const planContext = await getUserPlanContext(supabase, user.id);
@@ -121,17 +117,13 @@ export async function POST(req: Request) {
 
     let remainingCredits: number | null = null;
 
-    if (!userCredits.unlimited) {
-      const deduction = await deductUserCredit(user.id);
+    if (!creditCheck.unlimited) {
+      const deduction = await deductForFeature(
+        user.id,
+        CREDIT_FEATURES.GENERATE_ADS
+      );
       if (deduction.insufficient) {
-        return NextResponse.json(
-        {
-          error:
-            "No credits remaining. Upgrade to Starter or Pro for more generations.",
-          code: CREDITS_ERROR_CODE,
-        },
-          { status: 403 }
-        );
+        return insufficientCreditsResponse(deduction.cost, deduction.credits);
       }
       remainingCredits = deduction.credits;
     }
@@ -171,7 +163,7 @@ export async function POST(req: Request) {
       ctas,
       ugcScript,
       credits: remainingCredits,
-      unlimited: userCredits.unlimited,
+      unlimited: creditCheck.unlimited,
       generationId: generationRow?.id,
       generatedAt: generationRow?.created_at ?? new Date().toISOString(),
       originalHooks: hooks,

@@ -9,7 +9,10 @@ import {
   parseDeductCreditsRpcResult,
   type DeductCreditsInput,
 } from "@/lib/credits/deduct";
-import type { CreditFeatureId } from "@/lib/credits/schema";
+import {
+  resolveFeatureCost,
+  type CreditFeatureId,
+} from "@/lib/credits/schema";
 import {
   featureCostFromRow,
   creditTransactionFromRow,
@@ -427,7 +430,7 @@ export async function deductUserCredits(
   const { data, error } = await admin.rpc("deduct_user_credits", {
     p_user_id: input.userId,
     p_amount: amount,
-    p_feature_id: input.featureId,
+    p_feature_id: input.featureId ?? null,
   });
 
   if (error) {
@@ -484,6 +487,37 @@ export async function grantPurchasedCredits(
     currentCredits: result?.current_credits ?? 0,
     purchasedCredits: result?.purchased_credits ?? 0,
   };
+}
+
+/**
+ * Resolves the credit cost for a single feature from the DB, falling back to
+ * the compiled default when the row is missing/disabled or the query fails.
+ * This is the authoritative pre-check value; the deduction RPC re-resolves the
+ * cost server-side so the two always agree.
+ */
+export async function getFeatureCost(
+  featureId: CreditFeatureId
+): Promise<number> {
+  try {
+    const client = hasAdminCredentials()
+      ? createAdminClient()
+      : await createClient();
+    const { data, error } = await client
+      .from("credit_feature_costs")
+      .select("cost, enabled")
+      .eq("feature_id", featureId)
+      .maybeSingle();
+
+    if (error || !data || data.enabled === false) {
+      return resolveFeatureCost(featureId);
+    }
+
+    return typeof data.cost === "number"
+      ? data.cost
+      : resolveFeatureCost(featureId);
+  } catch {
+    return resolveFeatureCost(featureId);
+  }
 }
 
 export async function getFeatureCreditCosts(): Promise<

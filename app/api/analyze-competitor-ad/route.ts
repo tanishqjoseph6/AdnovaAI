@@ -4,6 +4,12 @@ import { requireVerifiedUser } from "@/lib/auth/require-user";
 import { requireFeatureAccess } from "@/lib/billing/plan-access";
 import { COMPETITOR_AD_ANALYSIS_PROMPT } from "@/lib/competitor-ad/prompt";
 import { normalizeCompetitorAdAnalysis } from "@/lib/competitor-ad/types";
+import {
+  checkFeatureCredits,
+  deductForFeature,
+  insufficientCreditsResponse,
+} from "@/lib/credits/guard";
+import { CREDIT_FEATURES } from "@/lib/credits/schema";
 import { createClient } from "@/lib/supabase/server";
 
 const openai = new OpenAI({
@@ -60,6 +66,16 @@ export async function POST(req: Request) {
       );
     }
 
+    const creditCheck = await checkFeatureCredits(
+      user.id,
+      supabase,
+      CREDIT_FEATURES.ANALYZE_COMPETITOR_AD,
+      { email: user.email }
+    );
+    if (!creditCheck.ok) {
+      return creditCheck.response;
+    }
+
     const response = await openai.chat.completions.create({
       model: "gpt-4o-mini",
       temperature: 0.3,
@@ -96,6 +112,18 @@ export async function POST(req: Request) {
       );
     }
 
+    let remainingCredits: number | null = null;
+    if (!creditCheck.unlimited) {
+      const deduction = await deductForFeature(
+        user.id,
+        CREDIT_FEATURES.ANALYZE_COMPETITOR_AD
+      );
+      if (deduction.insufficient) {
+        return insufficientCreditsResponse(deduction.cost, deduction.credits);
+      }
+      remainingCredits = deduction.credits;
+    }
+
     const { data: inserted, error: insertError } = await supabase
       .from("competitor_analyses")
       .insert({
@@ -115,6 +143,8 @@ export async function POST(req: Request) {
         ...analysis,
         id: inserted?.id,
       },
+      credits: remainingCredits,
+      unlimited: creditCheck.unlimited,
     });
   } catch (error) {
     console.error("POST /api/analyze-competitor-ad error:", error);

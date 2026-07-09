@@ -8,7 +8,12 @@ import {
   computeCurrentCredits,
   computeDeductionSplit,
 } from "./balance";
-import { resolveFeatureCost, isZeroCostFeature, CREDIT_FEATURES } from "./schema";
+import {
+  resolveFeatureCost,
+  isZeroCostFeature,
+  featureForContentKind,
+  CREDIT_FEATURES,
+} from "./schema";
 import { parseDeductCreditsRpcResult } from "./deduct";
 
 describe("computeCurrentCredits", () => {
@@ -121,8 +126,13 @@ describe("canAfford", () => {
 
 describe("feature costs", () => {
   it("resolves default costs", () => {
-    assert.equal(resolveFeatureCost(CREDIT_FEATURES.GENERATE_ADS), 1);
-    assert.equal(resolveFeatureCost(CREDIT_FEATURES.ANALYZE_COMPETITOR_AD), 0);
+    assert.equal(resolveFeatureCost(CREDIT_FEATURES.GENERATE_ADS), 7);
+    assert.equal(resolveFeatureCost(CREDIT_FEATURES.HOOKS), 2);
+    assert.equal(resolveFeatureCost(CREDIT_FEATURES.CAPTION), 1);
+    assert.equal(resolveFeatureCost(CREDIT_FEATURES.CTA), 1);
+    assert.equal(resolveFeatureCost(CREDIT_FEATURES.UGC_SCRIPT), 3);
+    assert.equal(resolveFeatureCost(CREDIT_FEATURES.ANALYZE_COMPETITOR_AD), 10);
+    assert.equal(resolveFeatureCost(CREDIT_FEATURES.ANALYZE_LANDING_PAGE), 15);
   });
 
   it("prefers DB cost when provided", () => {
@@ -132,6 +142,16 @@ describe("feature costs", () => {
   it("identifies zero-cost features", () => {
     assert.equal(isZeroCostFeature(CREDIT_FEATURES.SCORE_GENERATED_ADS), true);
     assert.equal(isZeroCostFeature(CREDIT_FEATURES.GENERATE_ADS), false);
+  });
+
+  it("maps content kinds to per-item features", () => {
+    assert.equal(featureForContentKind("hook"), CREDIT_FEATURES.HOOKS);
+    assert.equal(featureForContentKind("caption"), CREDIT_FEATURES.CAPTION);
+    assert.equal(featureForContentKind("cta"), CREDIT_FEATURES.CTA);
+    assert.equal(
+      featureForContentKind("ugcScript"),
+      CREDIT_FEATURES.UGC_SCRIPT
+    );
   });
 });
 

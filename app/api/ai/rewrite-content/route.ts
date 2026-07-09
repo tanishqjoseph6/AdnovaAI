@@ -8,6 +8,12 @@ import {
   buildBrandKitPromptSection,
   getBrandKitForUser,
 } from "@/lib/brand-kit/server";
+import {
+  checkFeatureCredits,
+  deductForFeature,
+  insufficientCreditsResponse,
+} from "@/lib/credits/guard";
+import { featureForContentKind } from "@/lib/credits/schema";
 import { isContentKind, isRewriteAction, REWRITE_ACTION_LABELS } from "@/lib/content-editor/types";
 import {
   buildAiPreferencesPromptSection,
@@ -101,6 +107,17 @@ export async function POST(request: Request) {
       }
     }
 
+    const rewriteFeature = featureForContentKind(body.kind);
+    const creditCheck = await checkFeatureCredits(
+      authResult.user.id,
+      supabase,
+      rewriteFeature,
+      { email: authResult.user.email }
+    );
+    if (!creditCheck.ok) {
+      return creditCheck.response;
+    }
+
     const planContext = await getUserPlanContext(supabase, authResult.user.id);
     const canUseBrandKit = canAccessFeature(
       planContext.plan,
@@ -155,7 +172,23 @@ export async function POST(request: Request) {
       );
     }
 
-    return NextResponse.json({ text });
+    let remainingCredits: number | null = null;
+    if (!creditCheck.unlimited) {
+      const deduction = await deductForFeature(
+        authResult.user.id,
+        rewriteFeature
+      );
+      if (deduction.insufficient) {
+        return insufficientCreditsResponse(deduction.cost, deduction.credits);
+      }
+      remainingCredits = deduction.credits;
+    }
+
+    return NextResponse.json({
+      text,
+      credits: remainingCredits,
+      unlimited: creditCheck.unlimited,
+    });
   } catch (error) {
     console.error("AI rewrite error:", error);
     return NextResponse.json(
