@@ -1,6 +1,7 @@
 import {
   isScheduledPostStatus,
   isSocialPlatform,
+  PLATFORM_META,
   type ScheduledPostStatus,
   type SocialPlatform,
 } from "@/lib/social-scheduler/types";
@@ -9,9 +10,12 @@ export type ScheduledPostInput = {
   platform: SocialPlatform;
   caption: string;
   imageDataUrl: string | null;
+  imageUrl: string | null;
+  imageStoragePath: string | null;
   scheduledFor: string;
   notes: string | null;
   status: ScheduledPostStatus;
+  publishNow?: boolean;
 };
 
 export type ScheduledPostValidation =
@@ -44,10 +48,15 @@ export function validateScheduledPostInput(
     return { ok: false, error: "Caption is required." };
   }
 
-  if (caption.length > 2200) {
-    return { ok: false, error: "Caption must be 2,200 characters or fewer." };
+  const characterLimit = PLATFORM_META[input.platform].characterLimit;
+  if (caption.length > characterLimit) {
+    return {
+      ok: false,
+      error: `Caption must be ${characterLimit.toLocaleString()} characters or fewer.`,
+    };
   }
 
+  const publishNow = input.publishNow === true;
   const scheduledFor =
     typeof input.scheduledFor === "string" ? input.scheduledFor : "";
   const scheduledDate = new Date(scheduledFor);
@@ -55,10 +64,20 @@ export function validateScheduledPostInput(
     return { ok: false, error: "Choose a valid date and time." };
   }
 
+  if (!publishNow && scheduledDate.getTime() < Date.now() - 60_000) {
+    return {
+      ok: false,
+      error: "Scheduled time must be in the future.",
+    };
+  }
+
   const imageDataUrl = normalizeNullableText(input.imageDataUrl, 1_000_000);
   if (imageDataUrl && !imageDataUrl.startsWith("data:image/")) {
     return { ok: false, error: "Upload a valid image file." };
   }
+
+  const imageUrl = normalizeNullableText(input.imageUrl, 2000);
+  const imageStoragePath = normalizeNullableText(input.imageStoragePath, 500);
 
   const status =
     options.allowStatus && isScheduledPostStatus(input.status)
@@ -71,9 +90,14 @@ export function validateScheduledPostInput(
       platform: input.platform,
       caption,
       imageDataUrl,
-      scheduledFor: scheduledDate.toISOString(),
+      imageUrl,
+      imageStoragePath,
+      scheduledFor: publishNow
+        ? new Date().toISOString()
+        : scheduledDate.toISOString(),
       notes: normalizeNullableText(input.notes, 1000),
       status,
+      publishNow,
     },
   };
 }

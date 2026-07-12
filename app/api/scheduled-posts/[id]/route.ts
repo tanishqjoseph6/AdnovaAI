@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { requireAuthenticatedUser } from "@/lib/auth/require-user";
 import { requireFeatureAccess } from "@/lib/billing/plan-access";
 import { scheduledPostFromRow } from "@/lib/social-scheduler/server";
+import { isPlatformAvailable } from "@/lib/social-scheduler/types";
 import { validateScheduledPostInput } from "@/lib/social-scheduler/validation";
 import { createClient } from "@/lib/supabase/server";
 
@@ -36,12 +37,21 @@ export async function PATCH(request: Request, context: RouteContext) {
       return NextResponse.json({ error: validation.error }, { status: 400 });
     }
 
+    if (!isPlatformAvailable(validation.value.platform)) {
+      return NextResponse.json(
+        { error: "This platform is not available yet." },
+        { status: 400 }
+      );
+    }
+
     const { data, error } = await supabase
       .from("scheduled_posts")
       .update({
         platform: validation.value.platform,
         caption: validation.value.caption,
         image_data_url: validation.value.imageDataUrl,
+        image_url: validation.value.imageUrl,
+        image_storage_path: validation.value.imageStoragePath,
         scheduled_for: validation.value.scheduledFor,
         notes: validation.value.notes,
         status: validation.value.status,
