@@ -103,7 +103,7 @@ export default function CalendarView({ posts }: CalendarViewProps) {
         <div className="flex items-center gap-2">
           <button
             type="button"
-            onClick={() => setMonth((current) => addMonths(current, -1))}
+            onClick={() => setMonth(addMonths(month, -1))}
             className="rounded-lg border border-white/10 bg-white/[0.04] p-2 text-zinc-300 transition hover:bg-white/[0.08] hover:text-white"
             aria-label="Previous month"
           >
@@ -114,7 +114,7 @@ export default function CalendarView({ posts }: CalendarViewProps) {
           </span>
           <button
             type="button"
-            onClick={() => setMonth((current) => addMonths(current, 1))}
+            onClick={() => setMonth(addMonths(month, 1))}
             className="rounded-lg border border-white/10 bg-white/[0.04] p-2 text-zinc-300 transition hover:bg-white/[0.08] hover:text-white"
             aria-label="Next month"
           >
