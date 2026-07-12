@@ -1,4 +1,5 @@
 import { createHash, randomBytes } from "node:crypto";
+import { resolveSiteOrigin } from "@/lib/site-url";
 import type { AvailablePlatform } from "@/lib/social-scheduler/types";
 
 export type OAuthStatePayload = {
@@ -73,16 +74,9 @@ export function getOAuthCookieName(): string {
 }
 
 export function getSiteOrigin(): string {
-  const siteUrl = process.env.NEXT_PUBLIC_SITE_URL;
-  if (siteUrl) {
-    return siteUrl.replace(/\/$/, "");
-  }
-
-  if (process.env.VERCEL_URL) {
-    return `https://${process.env.VERCEL_URL}`;
-  }
-
-  return "http://localhost:3000";
+  return resolveSiteOrigin(
+    process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : null
+  );
 }
 
 export function buildOAuthCallbackUrl(platform: AvailablePlatform): string {

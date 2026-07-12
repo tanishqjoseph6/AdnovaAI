@@ -18,12 +18,16 @@ import {
   isoToLocalDateInput,
   isoToLocalTimeInput,
 } from "@/lib/social-scheduler/format";
-import type { SocialOAuthStatus } from "@/lib/social-scheduler/oauth-config";
-import { isOAuthFullyConfigured } from "@/lib/social-scheduler/oauth-config";
+import {
+  isAnyPlatformOAuthConfigured,
+  isPlatformOAuthConfigured,
+  type SocialOAuthStatus,
+} from "@/lib/social-scheduler/oauth-config";
 import { useSchedulerHydrated } from "@/lib/social-scheduler/use-scheduler-hydrated";
 import { groupPostsByStatus } from "@/lib/social-scheduler/server";
-import type {
-  ScheduledPost,
+import {
+  isAvailablePlatform,
+  type ScheduledPost,
   ScheduledPostsSummary,
   SocialConnection,
   SocialPlatform,
@@ -152,16 +156,15 @@ export default function SocialSchedulerPageClient({
         type: "success",
         message: "Account connected successfully.",
       });
-    } else if (
-      connectionStatus === "error" &&
-      isOAuthFullyConfigured(oauthStatus)
-    ) {
+    } else if (connectionStatus === "error") {
+      const message = searchParams.get("message");
       setStatus({
         type: "error",
-        message: "We couldn't connect your account. Please try again.",
+        message:
+          message ?? "We couldn't connect your account. Please try again.",
       });
     }
-  }, [searchParams, oauthStatus]);
+  }, [searchParams]);
 
   function updateForm<K extends keyof ComposeFormState>(
     key: K,
@@ -339,7 +342,10 @@ export default function SocialSchedulerPageClient({
   }
 
   function handleConnect(platform: SocialPlatform) {
-    if (!isOAuthFullyConfigured(oauthStatus)) {
+    if (
+      !isAvailablePlatform(platform) ||
+      !isPlatformOAuthConfigured(platform, oauthStatus)
+    ) {
       return;
     }
 
@@ -373,7 +379,7 @@ export default function SocialSchedulerPageClient({
     }
   }
 
-  const oauthConfigured = isOAuthFullyConfigured(oauthStatus);
+  const oauthConfigured = isAnyPlatformOAuthConfigured(oauthStatus);
 
   return (
     <div className="space-y-8">

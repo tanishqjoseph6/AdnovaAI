@@ -1,5 +1,6 @@
 "use client";
 
+import Image from "next/image";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useEffect, useMemo, useState, type MouseEvent } from "react";
@@ -15,6 +16,66 @@ type SidebarProps = {
   open: boolean;
   onClose: () => void;
 };
+
+const ADVORA_LOGO = "/icon.png";
+
+function SidebarBrandMark() {
+  const [logoSrc, setLogoSrc] = useState(ADVORA_LOGO);
+  const [workspaceLogo, setWorkspaceLogo] = useState<string | null>(null);
+
+  useEffect(() => {
+    let active = true;
+
+    async function loadWorkspaceLogo() {
+      try {
+        const response = await fetch("/api/brand-kit", { cache: "no-store" });
+        const payload = (await response.json().catch(() => ({}))) as {
+          brandKit?: { logoUrl?: string | null };
+        };
+
+        const logoUrl = payload.brandKit?.logoUrl?.trim();
+        if (active && logoUrl) {
+          setWorkspaceLogo(logoUrl);
+        }
+      } catch {
+        // Keep the default Advora logo when brand kit is unavailable.
+      }
+    }
+
+    void loadWorkspaceLogo();
+    return () => {
+      active = false;
+    };
+  }, []);
+
+  function handleLogoError() {
+    if (workspaceLogo && logoSrc !== workspaceLogo) {
+      setLogoSrc(workspaceLogo);
+    }
+  }
+
+  return (
+    <span className="flex h-9 w-9 shrink-0 items-center justify-center overflow-hidden rounded-xl bg-gradient-to-br from-cyan-400 via-violet-500 to-fuchsia-500 shadow-lg shadow-violet-500/20">
+      {logoSrc === ADVORA_LOGO ? (
+        <Image
+          src={ADVORA_LOGO}
+          alt="Advora AI"
+          width={36}
+          height={36}
+          className="h-full w-full object-cover"
+          onError={handleLogoError}
+        />
+      ) : (
+        <img
+          src={logoSrc}
+          alt="Advora AI"
+          className="h-full w-full object-cover"
+          onError={handleLogoError}
+        />
+      )}
+    </span>
+  );
+}
 
 function isActive(pathname: string, href: string) {
   if (href === "/dashboard") return pathname === "/dashboard";
@@ -146,9 +207,7 @@ export default function Sidebar({ open, onClose }: SidebarProps) {
       >
         <div className="flex h-16 items-center justify-between gap-2 border-b border-white/[0.06] px-4 pt-[env(safe-area-inset-top)] sm:px-5 lg:pt-0">
           <Link href="/dashboard" className="flex min-w-0 items-center gap-2.5" onClick={onClose}>
-            <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-gradient-to-br from-cyan-400 via-violet-500 to-fuchsia-500 text-sm font-bold text-white shadow-lg shadow-violet-500/20">
-              A
-            </span>
+            <SidebarBrandMark />
             <div className="min-w-0">
               <p className="truncate text-sm font-semibold text-white">
                 Advora<span className="text-cyan-400">AI</span>

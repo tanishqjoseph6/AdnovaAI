@@ -4,15 +4,16 @@ import { motion } from "framer-motion";
 import { CheckCircle2, Loader2, Rocket, Unplug } from "lucide-react";
 import PlatformIcon from "@/components/social-scheduler/PlatformIcon";
 import {
+  isPlatformOAuthConfigured,
+  type SocialOAuthStatus,
+} from "@/lib/social-scheduler/oauth-config";
+import {
   PLATFORM_META,
   SOCIAL_PLATFORMS,
+  type AvailablePlatform,
   type SocialConnection,
   type SocialPlatform,
 } from "@/lib/social-scheduler/types";
-import {
-  isOAuthFullyConfigured,
-  type SocialOAuthStatus,
-} from "@/lib/social-scheduler/oauth-config";
 
 type PlatformCardsProps = {
   connections: SocialConnection[];
@@ -54,7 +55,9 @@ export default function PlatformCards({
           const meta = PLATFORM_META[platform];
           const connection = getConnection(connections, platform);
           const isAvailable = meta.availability === "available";
-          const oauthConfigured = isOAuthFullyConfigured(oauthStatus);
+          const oauthConfigured =
+            isAvailable &&
+            isPlatformOAuthConfigured(platform as AvailablePlatform, oauthStatus);
           const isConnecting = connectingPlatform === platform;
           const isDisconnecting = disconnectingPlatform === platform;
 

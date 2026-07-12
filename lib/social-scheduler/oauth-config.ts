@@ -29,3 +29,7 @@ export function isPlatformOAuthConfigured(
 export function isOAuthFullyConfigured(status: SocialOAuthStatus): boolean {
   return status.x && status.linkedin;
 }
+
+export function isAnyPlatformOAuthConfigured(status: SocialOAuthStatus): boolean {
+  return status.x || status.linkedin;
+}
