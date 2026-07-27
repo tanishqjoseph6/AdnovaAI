@@ -57,10 +57,20 @@ function formatRelativeTime(isoDate: string): string {
     return `${diffHours}h ago`;
   }
 
-  return date.toLocaleDateString(undefined, {
+  return date.toLocaleDateString("en-US", {
     month: "short",
     day: "numeric",
   });
+}
+
+function RelativeTime({ isoDate }: { isoDate: string }) {
+  const [label, setLabel] = useState("");
+
+  useEffect(() => {
+    setLabel(formatRelativeTime(isoDate));
+  }, [isoDate]);
+
+  return <>{label || "\u00a0"}</>;
 }
 
 function NotificationItem({
@@ -99,7 +109,7 @@ function NotificationItem({
           {notification.body}
         </p>
         <p className="mt-2 text-[11px] text-zinc-600">
-          {formatRelativeTime(notification.createdAt)}
+          <RelativeTime isoDate={notification.createdAt} />
         </p>
       </div>
     </>

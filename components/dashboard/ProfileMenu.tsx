@@ -230,7 +230,12 @@ export default function ProfileMenu() {
 
     try {
       invalidateCreditsCache();
-      await supabase.auth.signOut();
+      const { error: signOutError } = await supabase.auth.signOut();
+      if (signOutError) {
+        console.warn("[ProfileMenu] Sign out failed:", signOutError.message);
+        window.location.assign("/login");
+        return;
+      }
       router.refresh();
       router.push("/login");
     } finally {

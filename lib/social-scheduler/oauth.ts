@@ -7,6 +7,7 @@ export type OAuthStatePayload = {
   userId: string;
   codeVerifier: string;
   returnTo: string;
+  state: string;
 };
 
 const OAUTH_COOKIE = "advora_social_oauth";
@@ -54,7 +55,7 @@ export function decodeOAuthCookie(
       return null;
     }
 
-    if (!parsed.platform || !parsed.userId || !parsed.codeVerifier) {
+    if (!parsed.platform || !parsed.userId || !parsed.codeVerifier || !parsed.state) {
       return null;
     }
 
@@ -63,6 +64,7 @@ export function decodeOAuthCookie(
       userId: parsed.userId,
       codeVerifier: parsed.codeVerifier,
       returnTo: parsed.returnTo ?? "/dashboard/social-scheduler",
+      state: parsed.state,
     };
   } catch {
     return null;

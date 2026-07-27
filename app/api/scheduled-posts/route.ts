@@ -1,19 +1,20 @@
 import { NextResponse } from "next/server";
-import { requireAuthenticatedUser } from "@/lib/auth/require-user";
+import { requireVerifiedUser } from "@/lib/auth/require-user";
 import { requireFeatureAccess } from "@/lib/billing/plan-access";
 import { publishScheduledPost } from "@/lib/social-scheduler/publish";
+import { getConnectionWithTokens } from "@/lib/social-scheduler/connections-server";
 import {
   scheduledPostFromRow,
   summarizeScheduledPosts,
 } from "@/lib/social-scheduler/server";
-import { isPlatformAvailable } from "@/lib/social-scheduler/types";
+import { isAvailablePlatform, isPlatformAvailable } from "@/lib/social-scheduler/types";
 import { validateScheduledPostInput } from "@/lib/social-scheduler/validation";
 import { createClient } from "@/lib/supabase/server";
 
 export async function GET() {
   try {
     const supabase = await createClient();
-    const authResult = await requireAuthenticatedUser(supabase);
+    const authResult = await requireVerifiedUser(supabase);
     if ("response" in authResult) {
       return authResult.response;
     }
@@ -58,7 +59,7 @@ export async function GET() {
 export async function POST(request: Request) {
   try {
     const supabase = await createClient();
-    const authResult = await requireAuthenticatedUser(supabase);
+    const authResult = await requireVerifiedUser(supabase);
     if ("response" in authResult) {
       return authResult.response;
     }
@@ -84,6 +85,26 @@ export async function POST(request: Request) {
     if (!isPlatformAvailable(validation.value.platform)) {
       return NextResponse.json(
         { error: "This platform is not available yet." },
+        { status: 400 }
+      );
+    }
+
+    if (!isAvailablePlatform(validation.value.platform)) {
+      return NextResponse.json(
+        { error: "This platform is not available yet." },
+        { status: 400 }
+      );
+    }
+
+    const connection = await getConnectionWithTokens(
+      authResult.user.id,
+      validation.value.platform
+    );
+    if (!connection) {
+      return NextResponse.json(
+        {
+          error: `Connect your ${validation.value.platform === "x" ? "X" : "LinkedIn"} account before scheduling posts.`,
+        },
         { status: 400 }
       );
     }

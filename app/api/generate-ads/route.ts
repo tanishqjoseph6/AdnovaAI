@@ -12,7 +12,11 @@ import {
   deductForFeature,
   insufficientCreditsResponse,
 } from "@/lib/credits/guard";
+import { refundUserCredits } from "@/lib/credits/server";
 import { CREDIT_FEATURES } from "@/lib/credits/schema";
+import {
+  generateAdsRequestSchema,
+} from "@/lib/validations/generate-ads";
 import {
   buildAiPreferencesPromptSection,
   resolveOpenAiGenerationConfig,
@@ -40,16 +44,22 @@ export async function POST(req: Request) {
     }
     const user = authResult.user;
 
-    const { productDescription, productAnalysis: rawAnalysis } = await req.json();
+    const body = await req.json();
+    const parsedBody = generateAdsRequestSchema.safeParse(body);
 
-    if (!productDescription) {
+    if (!parsedBody.success) {
       return NextResponse.json(
         {
-          error: "Product description is required",
+          error:
+            parsedBody.error.issues[0]?.message ??
+            "Invalid product description.",
         },
         { status: 400 }
       );
     }
+
+    const { productDescription } = parsedBody.data;
+    const rawAnalysis = (body as { productAnalysis?: unknown }).productAnalysis;
 
     const creditCheck = await checkFeatureCredits(
       user.id,
@@ -93,29 +103,6 @@ export async function POST(req: Request) {
       aiPreferencesSection
     );
 
-    const response = await openai.chat.completions.create({
-      model: generationConfig.model,
-      temperature: generationConfig.temperature,
-      max_tokens: generationConfig.maxTokens,
-      response_format: { type: "json_object" },
-      messages: [
-        {
-          role: "user",
-          content: prompt,
-        },
-      ],
-    });
-
-    const content = response.choices[0].message.content || "{}";
-
-    const parsed = JSON.parse(content) as Record<string, unknown>;
-
-    const hooks = (parsed.hooks ?? parsed.ad_hooks ?? []) as string[];
-    const captions = (parsed.captions ?? parsed.ad_captions ?? []) as string[];
-    const ctas = (parsed.ctas ?? []) as string[];
-    const ugcScript = (parsed.ugcScript ?? parsed.ugc_script ?? "") as string;
-
-    let remainingCredits: number | null = null;
     const deduction = await deductForFeature(
       user.id,
       CREDIT_FEATURES.GENERATE_ADS
@@ -123,7 +110,62 @@ export async function POST(req: Request) {
     if (deduction.insufficient) {
       return insufficientCreditsResponse(deduction.cost, deduction.credits);
     }
-    remainingCredits = deduction.credits;
+
+    let response;
+    try {
+      response = await openai.chat.completions.create({
+        model: generationConfig.model,
+        temperature: generationConfig.temperature,
+        max_tokens: generationConfig.maxTokens,
+        response_format: { type: "json_object" },
+        messages: [
+          {
+            role: "user",
+            content: prompt,
+          },
+        ],
+      });
+    } catch (openAiError) {
+      if (deduction.deducted && deduction.cost > 0) {
+        await refundUserCredits(
+          user.id,
+          deduction.cost,
+          CREDIT_FEATURES.GENERATE_ADS
+        ).catch((refundError) => {
+          console.error("Failed to refund credits after OpenAI error:", refundError);
+        });
+      }
+      throw openAiError;
+    }
+
+    const content = response.choices[0].message.content || "{}";
+
+    let parsed: Record<string, unknown>;
+    try {
+      parsed = JSON.parse(content) as Record<string, unknown>;
+    } catch {
+      if (deduction.deducted && deduction.cost > 0) {
+        await refundUserCredits(
+          user.id,
+          deduction.cost,
+          CREDIT_FEATURES.GENERATE_ADS
+        ).catch((refundError) => {
+          console.error("Failed to refund credits after parse error:", refundError);
+        });
+      }
+
+      return NextResponse.json(
+        { error: "Failed to parse AI response. Please try again." },
+        { status: 502 }
+      );
+    }
+
+    const hooks = (parsed.hooks ?? parsed.ad_hooks ?? []) as string[];
+    const captions = (parsed.captions ?? parsed.ad_captions ?? []) as string[];
+    const ctas = (parsed.ctas ?? []) as string[];
+    const ugcScript = (parsed.ugcScript ?? parsed.ugc_script ?? "") as string;
+
+    const remainingCredits = deduction.credits;
 
     const { data: generationRow, error: insertError } = await supabase
       .from("generations")

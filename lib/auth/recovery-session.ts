@@ -6,10 +6,41 @@ import {
 } from "@/lib/auth/recovery";
 
 const RECOVERY_WAIT_MS = 10_000;
+export const RECOVERY_FLOW_QUERY_PARAM = "recovery";
+export const RECOVERY_FLOW_SESSION_KEY = "advora:password-recovery";
 
 export type RecoverySessionResult =
   | { ok: true }
   | { ok: false; reason: "expired" | "pending" };
+
+function hasRecoveryFlowSignal(): boolean {
+  if (typeof window === "undefined") {
+    return false;
+  }
+
+  const params = new URLSearchParams(window.location.search);
+  if (params.get(RECOVERY_FLOW_QUERY_PARAM) === "1") {
+    return true;
+  }
+
+  return window.sessionStorage.getItem(RECOVERY_FLOW_SESSION_KEY) === "1";
+}
+
+export function markRecoveryFlowActive(): void {
+  if (typeof window === "undefined") {
+    return;
+  }
+
+  window.sessionStorage.setItem(RECOVERY_FLOW_SESSION_KEY, "1");
+}
+
+export function clearRecoveryFlowMarker(): void {
+  if (typeof window === "undefined") {
+    return;
+  }
+
+  window.sessionStorage.removeItem(RECOVERY_FLOW_SESSION_KEY);
+}
 
 function stripAuthHashFromUrl(): void {
   if (typeof window === "undefined" || !window.location.hash) {
@@ -45,14 +76,9 @@ async function setSessionFromHash(
   return true;
 }
 
-async function hasAuthenticatedUser(
+async function hasRecoverySessionUser(
   supabase: SupabaseClient
 ): Promise<boolean> {
-  const { data: sessionData } = await supabase.auth.getSession();
-  if (sessionData.session?.user) {
-    return true;
-  }
-
   const { data: userData, error } = await supabase.auth.getUser();
   return !error && Boolean(userData.user);
 }
@@ -76,13 +102,8 @@ function waitForRecoverySession(
     const {
       data: { subscription },
     } = supabase.auth.onAuthStateChange((event, session) => {
-      if (
-        session?.user &&
-        (event === "PASSWORD_RECOVERY" ||
-          event === "SIGNED_IN" ||
-          event === "INITIAL_SESSION" ||
-          event === "TOKEN_REFRESHED")
-      ) {
+      if (session?.user && event === "PASSWORD_RECOVERY") {
+        markRecoveryFlowActive();
         finish(true);
       }
     });
@@ -102,21 +123,18 @@ export async function establishRecoverySession(
   if (isRecoveryHash(hashParams)) {
     const established = await setSessionFromHash(supabase, hashParams);
     if (established) {
+      markRecoveryFlowActive();
       return { ok: true };
     }
     return { ok: false, reason: "expired" };
   }
 
-  if (await hasAuthenticatedUser(supabase)) {
+  if (hasRecoveryFlowSignal() && (await hasRecoverySessionUser(supabase))) {
     return { ok: true };
   }
 
   const recovered = await waitForRecoverySession(supabase);
-  if (recovered) {
-    return { ok: true };
-  }
-
-  if (await hasAuthenticatedUser(supabase)) {
+  if (recovered && (await hasRecoverySessionUser(supabase))) {
     return { ok: true };
   }
 

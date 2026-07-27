@@ -1,7 +1,8 @@
 import { cookies } from "next/headers";
 import { NextResponse } from "next/server";
-import { requireAuthenticatedUser } from "@/lib/auth/require-user";
+import { requireVerifiedUser } from "@/lib/auth/require-user";
 import { requireFeatureAccess } from "@/lib/billing/plan-access";
+import { resolveSafeAuthRedirect } from "@/lib/auth/safe-redirect";
 import {
   buildOAuthCallbackUrl,
   encodeOAuthCookie,
@@ -44,7 +45,7 @@ export async function GET(request: Request, context: RouteContext) {
     }
 
     const supabase = await createClient();
-    const authResult = await requireAuthenticatedUser(supabase);
+    const authResult = await requireVerifiedUser(supabase);
     if ("response" in authResult) {
       return authResult.response;
     }
@@ -63,9 +64,10 @@ export async function GET(request: Request, context: RouteContext) {
     const codeChallenge = generateCodeChallenge(codeVerifier);
     const state = generateOAuthState();
     const redirectUri = buildOAuthCallbackUrl(platform);
-    const returnTo =
-      new URL(request.url).searchParams.get("returnTo") ??
-      "/dashboard/social-scheduler";
+    const returnTo = resolveSafeAuthRedirect(
+      new URL(request.url).searchParams.get("returnTo"),
+      "/dashboard/social-scheduler"
+    );
 
     const cookieStore = await cookies();
     cookieStore.set(getOAuthCookieName(), encodeOAuthCookie({
@@ -73,6 +75,7 @@ export async function GET(request: Request, context: RouteContext) {
       userId: authResult.user.id,
       codeVerifier,
       returnTo,
+      state,
     }), {
       httpOnly: true,
       secure: process.env.NODE_ENV === "production",

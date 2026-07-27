@@ -8,6 +8,7 @@ import {
 import { resolveSafeAuthRedirect } from "@/lib/auth/safe-redirect";
 import { resolveSiteOrigin } from "@/lib/site-url";
 import { createServerClient } from "@supabase/ssr";
+import type { EmailOtpType } from "@supabase/supabase-js";
 
 function createCallbackSupabase(
   request: NextRequest,
@@ -29,6 +30,32 @@ function createCallbackSupabase(
       },
     }
   );
+}
+
+function appendRecoveryFlowParam(path: string): string {
+  if (path !== "/reset-password") {
+    return path;
+  }
+
+  return `${path}?${new URLSearchParams({ recovery: "1" }).toString()}`;
+}
+
+function resolveCallbackRedirectPath(safeNext: string): string {
+  return appendRecoveryFlowParam(safeNext);
+}
+
+function resolveTokenHashOtpType(
+  type: string | null
+): EmailOtpType | null {
+  if (type === "recovery" || type === "signup" || type === "email") {
+    return type;
+  }
+
+  if (type === "magiclink") {
+    return "email";
+  }
+
+  return null;
 }
 
 export async function GET(request: NextRequest) {
@@ -53,40 +80,51 @@ export async function GET(request: NextRequest) {
     isRecovery,
   });
 
-  if (tokenHash && type === "recovery") {
-    const response = NextResponse.redirect(`${origin}${safeNext}`);
-    const supabase = createCallbackSupabase(request, response);
-    const { error } = await supabase.auth.verifyOtp({
-      token_hash: tokenHash,
-      type: "recovery",
-    });
-
-    if (!error) {
-      authLog("auth_callback", "Recovery session established via token_hash", {
-        next: safeNext,
-        origin,
+  if (tokenHash) {
+    const otpType = resolveTokenHashOtpType(type);
+    if (!otpType) {
+      authWarn("auth_callback", "Unsupported token_hash type", { type, origin });
+    } else {
+      const redirectPath = resolveCallbackRedirectPath(safeNext);
+      const response = NextResponse.redirect(`${origin}${redirectPath}`);
+      const supabase = createCallbackSupabase(request, response);
+      const { error } = await supabase.auth.verifyOtp({
+        token_hash: tokenHash,
+        type: otpType,
       });
-      return response;
+
+      if (!error) {
+        authLog("auth_callback", "Session established via token_hash", {
+          type: otpType,
+          next: redirectPath,
+          origin,
+        });
+        return response;
+      }
+
+      authError("auth_callback", "token_hash verification failed", {
+        type: otpType,
+        error: error.message,
+        next: redirectPath,
+      });
+
+      if (otpType === "recovery") {
+        return NextResponse.redirect(
+          `${origin}/reset-password?error=${encodeURIComponent(RESET_LINK_EXPIRED_MESSAGE)}`
+        );
+      }
     }
-
-    authError("auth_callback", "Recovery token_hash verification failed", {
-      error: error.message,
-      next: safeNext,
-    });
-
-    return NextResponse.redirect(
-      `${origin}/reset-password?error=${encodeURIComponent(RESET_LINK_EXPIRED_MESSAGE)}`
-    );
   }
 
   if (code) {
-    const response = NextResponse.redirect(`${origin}${safeNext}`);
+    const redirectPath = resolveCallbackRedirectPath(safeNext);
+    const response = NextResponse.redirect(`${origin}${redirectPath}`);
     const supabase = createCallbackSupabase(request, response);
     const { error } = await supabase.auth.exchangeCodeForSession(code);
 
     if (!error) {
       authLog("auth_callback", "Session established", {
-        next: safeNext,
+        next: redirectPath,
         origin,
         isRecovery,
       });
@@ -95,7 +133,7 @@ export async function GET(request: NextRequest) {
 
     authError("auth_callback", "Code exchange failed", {
       error: error.message,
-      next: safeNext,
+      next: redirectPath,
     });
 
     if (safeNext === "/reset-password" || isRecovery) {

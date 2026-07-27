@@ -1,11 +1,15 @@
 import { NextResponse } from "next/server";
-import { createClient } from "@/lib/supabase/server";
 
 export async function GET() {
-  const supabase = await createClient();
-  const { data, error } = await supabase
-    .from("profiles")
-    .select("*");
+  if (process.env.NODE_ENV === "production") {
+    return NextResponse.json({ error: "Not found" }, { status: 404 });
+  }
 
-  return NextResponse.json({ data, error });
+  return NextResponse.json(
+    {
+      error:
+        "This debug route is disabled. Use authenticated admin tooling instead.",
+    },
+    { status: 410 }
+  );
 }

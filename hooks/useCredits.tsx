@@ -10,8 +10,9 @@ import {
   useState,
   type ReactNode,
 } from "react";
+import { ApiClientError, fetchCredits } from "@/lib/api/credits-client";
 import type { CreditsApiResponse } from "@/lib/credits/types";
-import { fetchCredits } from "@/lib/api/credits-client";
+import { supabase } from "@/lib/supabase";
 
 type CreditsContextValue = {
   credits: CreditsApiResponse | null;
@@ -24,6 +25,21 @@ type CreditsContextValue = {
 const CreditsContext = createContext<CreditsContextValue | null>(null);
 
 let cachedCredits: CreditsApiResponse | null = null;
+
+async function handleCreditsAuthFailure(error: ApiClientError) {
+  if (error.status === 403 && error.code === "EMAIL_NOT_VERIFIED") {
+    window.location.assign("/verify-email");
+    return;
+  }
+
+  if (error.status !== 401) {
+    return;
+  }
+
+  cachedCredits = null;
+  await supabase.auth.signOut();
+  window.location.assign("/login");
+}
 
 export function CreditsProvider({ children }: { children: ReactNode }) {
   const [credits, setCredits] = useState<CreditsApiResponse | null>(cachedCredits);
@@ -45,6 +61,10 @@ export function CreditsProvider({ children }: { children: ReactNode }) {
         cachedCredits = data;
         setCredits(data);
       } catch (err) {
+        if (err instanceof ApiClientError) {
+          await handleCreditsAuthFailure(err);
+        }
+
         const message =
           err instanceof Error ? err.message : "Failed to load credits";
         setError(message);

@@ -1,6 +1,7 @@
 import { cookies } from "next/headers";
 import { NextResponse } from "next/server";
 import { upsertSocialConnection } from "@/lib/social-scheduler/connections-server";
+import { resolveSafeAuthRedirect } from "@/lib/auth/safe-redirect";
 import {
   buildOAuthCallbackUrl,
   decodeOAuthCookie,
@@ -19,7 +20,8 @@ function redirectWithStatus(
   status: "success" | "error",
   message?: string
 ) {
-  const url = new URL(returnTo, getSiteOrigin());
+  const safeReturnTo = resolveSafeAuthRedirect(returnTo, "/dashboard/social-scheduler");
+  const url = new URL(safeReturnTo, getSiteOrigin());
   url.searchParams.set("connection", status);
   if (message) {
     url.searchParams.set("message", message);
@@ -50,8 +52,15 @@ export async function GET(request: Request, context: RouteContext) {
       );
     }
 
+    const stateParam = url.searchParams.get("state");
     const code = url.searchParams.get("code");
-    if (!code || !oauthState || oauthState.platform !== platform) {
+    if (
+      !code ||
+      !oauthState ||
+      oauthState.platform !== platform ||
+      !stateParam ||
+      stateParam !== oauthState.state
+    ) {
       return redirectWithStatus(
         returnTo,
         "error",

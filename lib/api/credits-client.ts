@@ -25,7 +25,7 @@ export async function fetchCredits(): Promise<CreditsApiResponse> {
     cache: "no-store",
   });
 
-  let payload: CreditsApiResponse | { error: string };
+  let payload: CreditsApiResponse | { error: string; code?: string };
 
   try {
     payload = await response.json();
@@ -37,13 +37,17 @@ export async function fetchCredits(): Promise<CreditsApiResponse> {
   }
 
   if (!response.ok) {
+    const code =
+      "code" in payload && typeof payload.code === "string"
+        ? payload.code
+        : undefined;
     const message =
       "error" in payload && typeof payload.error === "string"
         ? payload.error
         : response.status === 401
           ? "Session expired. Please log in again."
           : "Failed to load credits";
-    throw new ApiClientError(message, response.status);
+    throw new ApiClientError(message, response.status, code);
   }
 
   return payload as CreditsApiResponse;

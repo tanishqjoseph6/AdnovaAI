@@ -1,4 +1,4 @@
-import { redirect } from "next/navigation";
+import { notFound, redirect } from "next/navigation";
 import { isUserAdmin } from "@/lib/admin/auth";
 import { createClient } from "@/lib/supabase/server";
 
@@ -9,7 +9,7 @@ export default async function AdminShortcutPage() {
   } = await supabase.auth.getUser();
 
   if (!user || !(await isUserAdmin(user.id, user.email))) {
-    redirect("/dashboard");
+    notFound();
   }
 
   redirect("/dashboard/admin");

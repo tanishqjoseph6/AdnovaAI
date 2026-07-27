@@ -85,3 +85,32 @@ export async function deductForFeature(
 ): Promise<DeductCreditsResult> {
   return deductUserCredits({ userId, featureId });
 }
+
+/**
+ * Deducts credits before running AI work and refunds if the work fails.
+ */
+export async function deductForFeatureBeforeGeneration(
+  userId: string,
+  featureId: CreditFeatureId,
+  run: () => Promise<void>
+): Promise<DeductCreditsResult> {
+  const deduction = await deductForFeature(userId, featureId);
+  if (deduction.insufficient) {
+    return deduction;
+  }
+
+  try {
+    await run();
+    return deduction;
+  } catch (error) {
+    if (deduction.deducted && deduction.cost > 0) {
+      try {
+        const { refundUserCredits } = await import("@/lib/credits/server");
+        await refundUserCredits(userId, deduction.cost, featureId);
+      } catch (refundError) {
+        console.error("Failed to refund credits after generation error:", refundError);
+      }
+    }
+    throw error;
+  }
+}

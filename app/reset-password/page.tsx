@@ -14,13 +14,19 @@ import {
   validateNewPassword,
 } from "@/lib/auth/password-reset";
 import { buildAuthCallbackPath } from "@/lib/auth/recovery";
-import { establishRecoverySession } from "@/lib/auth/recovery-session";
+import {
+  clearRecoveryFlowMarker,
+  establishRecoverySession,
+  markRecoveryFlowActive,
+  RECOVERY_FLOW_QUERY_PARAM,
+} from "@/lib/auth/recovery-session";
 import { invalidateCreditsCache } from "@/hooks/useCredits";
 import { supabase } from "@/lib/supabase";
 
 type ResetState = "loading" | "ready" | "invalid" | "success";
 
 const REDIRECT_DELAY_MS = 2500;
+const CALLBACK_REDIRECT_TIMEOUT_MS = 15_000;
 
 function ResetPasswordForm() {
   const router = useRouter();
@@ -46,16 +52,28 @@ function ResetPasswordForm() {
     const type = searchParams.get("type");
 
     if (code) {
-      router.replace(buildAuthCallbackPath(code, "/reset-password"));
+      window.location.replace(buildAuthCallbackPath(code, "/reset-password"));
       return;
     }
 
     if (tokenHash && type === "recovery") {
-      router.replace(
+      window.location.replace(
         `/auth/callback?token_hash=${encodeURIComponent(tokenHash)}&type=recovery&next=${encodeURIComponent("/reset-password")}`
       );
       return;
     }
+
+    if (searchParams.get(RECOVERY_FLOW_QUERY_PARAM) === "1") {
+      markRecoveryFlowActive();
+    }
+
+    let cancelled = false;
+    const redirectTimeout = window.setTimeout(() => {
+      if (!cancelled) {
+        setState("invalid");
+        setError(RESET_LINK_EXPIRED_MESSAGE);
+      }
+    }, CALLBACK_REDIRECT_TIMEOUT_MS);
 
     async function bootstrap() {
       const result = await establishRecoverySession(supabase);
@@ -69,7 +87,12 @@ function ResetPasswordForm() {
     }
 
     void bootstrap();
-  }, [router, searchParams]);
+
+    return () => {
+      cancelled = true;
+      window.clearTimeout(redirectTimeout);
+    };
+  }, [searchParams]);
 
   useEffect(() => {
     if (state !== "success") {
@@ -117,6 +140,7 @@ function ResetPasswordForm() {
 
       console.info("[reset-password] Password updated successfully");
       invalidateCreditsCache();
+      clearRecoveryFlowMarker();
       await supabase.auth.signOut();
       setState("success");
       showToast(RESET_SUCCESS_MESSAGE, "success");

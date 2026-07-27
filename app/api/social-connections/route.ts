@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { requireAuthenticatedUser } from "@/lib/auth/require-user";
+import { requireVerifiedUser } from "@/lib/auth/require-user";
 import { requireFeatureAccess } from "@/lib/billing/plan-access";
 import { listSocialConnections } from "@/lib/social-scheduler/connections-server";
 import { getSocialOAuthStatus } from "@/lib/social-scheduler/oauth-config";
@@ -8,7 +8,7 @@ import { createClient } from "@/lib/supabase/server";
 export async function GET() {
   try {
     const supabase = await createClient();
-    const authResult = await requireAuthenticatedUser(supabase);
+    const authResult = await requireVerifiedUser(supabase);
     if ("response" in authResult) {
       return authResult.response;
     }
@@ -29,7 +29,10 @@ export async function GET() {
       return NextResponse.json({ connections, oauth });
     } catch (error) {
       console.error("Social connections fetch error:", error);
-      return NextResponse.json({ connections: [], oauth });
+      return NextResponse.json(
+        { error: "Unable to load connected accounts." },
+        { status: 500 }
+      );
     }
   } catch (error) {
     console.error("Social connections route error:", error);

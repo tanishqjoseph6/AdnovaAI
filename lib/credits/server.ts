@@ -172,6 +172,9 @@ export async function maybeRefillUserCredits(
   userId: string
 ): Promise<CreditRefillRpcResult> {
   if (!hasAdminCredentials()) {
+    creditsWarn("credit_refill", "Refill skipped — missing SUPABASE_SERVICE_ROLE_KEY", {
+      userId,
+    });
     return { refilled: false, reason: "missing_service_role" };
   }
 
@@ -403,6 +406,10 @@ export async function getUserCreditsForUser(
   return {
     ...credits,
     refilledJustNow: refillResult.refilled === true,
+    nextRefillAt:
+      typeof refillResult.next_refill_at === "string"
+        ? refillResult.next_refill_at
+        : null,
   };
 }
 
@@ -689,21 +696,33 @@ export async function syncCreditsWithProfilePlan(
 
   const admin = createAdminClient();
   const now = new Date().toISOString();
+  const existing = await readCreditsRow(userId, admin);
+  const purchasedCredits =
+    typeof existing?.purchased_credits === "number"
+      ? Math.max(0, existing.purchased_credits)
+      : 0;
 
-  if (
-    (profilesPlan === "pro" || profilesPlan === "custom") &&
-    subscriptionStatus === "active"
-  ) {
+  const isActivePaid =
+    subscriptionStatus === "active" &&
+    (profilesPlan === "starter" ||
+      profilesPlan === "pro" ||
+      profilesPlan === "custom");
+
+  if (!isActivePaid) {
+    const monthlyCredits = FREE_PLAN_CREDITS;
     const { error } = await admin.from("user_credits").upsert(
       {
         user_id: userId,
-        credits: PRO_PLAN_CREDITS,
-        monthly_credits: PRO_PLAN_CREDITS,
-        purchased_credits: 0,
-        current_credits: PRO_PLAN_CREDITS,
-        monthly_allowance: PRO_PLAN_CREDITS,
-        plan: "pro",
+        plan: "free",
+        credits: monthlyCredits + purchasedCredits,
+        monthly_credits: monthlyCredits,
+        purchased_credits: purchasedCredits,
+        current_credits: monthlyCredits + purchasedCredits,
+        monthly_allowance: monthlyCredits,
         last_credit_refill_at: now,
+        next_refill_at: new Date(
+          Date.now() + 30 * 24 * 60 * 60 * 1000
+        ).toISOString(),
         updated_at: now,
       },
       { onConflict: "user_id" }
@@ -715,16 +734,21 @@ export async function syncCreditsWithProfilePlan(
     return;
   }
 
-  if (profilesPlan === "starter" && subscriptionStatus === "active") {
+  if (profilesPlan === "pro" || profilesPlan === "custom") {
+    const monthlyCredits = PRO_PLAN_CREDITS;
     const { error } = await admin.from("user_credits").upsert(
       {
         user_id: userId,
-        plan: "free",
-        credits: STARTER_PLAN_CREDITS,
-        monthly_credits: STARTER_PLAN_CREDITS,
-        current_credits: STARTER_PLAN_CREDITS,
-        monthly_allowance: STARTER_PLAN_CREDITS,
+        credits: monthlyCredits + purchasedCredits,
+        monthly_credits: monthlyCredits,
+        purchased_credits: purchasedCredits,
+        current_credits: monthlyCredits + purchasedCredits,
+        monthly_allowance: monthlyCredits,
+        plan: "pro",
         last_credit_refill_at: now,
+        next_refill_at: new Date(
+          Date.now() + 30 * 24 * 60 * 60 * 1000
+        ).toISOString(),
         updated_at: now,
       },
       { onConflict: "user_id" }
@@ -733,5 +757,57 @@ export async function syncCreditsWithProfilePlan(
     if (error) {
       throw error;
     }
+    return;
+  }
+
+  if (profilesPlan === "starter") {
+    const monthlyCredits = STARTER_PLAN_CREDITS;
+    const { error } = await admin.from("user_credits").upsert(
+      {
+        user_id: userId,
+        plan: "free",
+        credits: monthlyCredits + purchasedCredits,
+        monthly_credits: monthlyCredits,
+        purchased_credits: purchasedCredits,
+        current_credits: monthlyCredits + purchasedCredits,
+        monthly_allowance: monthlyCredits,
+        last_credit_refill_at: now,
+        next_refill_at: new Date(
+          Date.now() + 30 * 24 * 60 * 60 * 1000
+        ).toISOString(),
+        updated_at: now,
+      },
+      { onConflict: "user_id" }
+    );
+
+    if (error) {
+      throw error;
+    }
+  }
+}
+
+export async function refundUserCredits(
+  userId: string,
+  amount: number,
+  featureId?: string
+): Promise<void> {
+  if (!hasAdminCredentials() || amount <= 0) {
+    return;
+  }
+
+  const admin = createAdminClient();
+  const { error } = await admin.rpc("refund_user_credits", {
+    p_user_id: userId,
+    p_amount: amount,
+    p_feature_id: featureId ?? null,
+  });
+
+  if (error) {
+    creditsWarn("credit_refund", "Refund RPC failed", {
+      userId,
+      amount,
+      error: error.message,
+    });
+    throw error;
   }
 }
