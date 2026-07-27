@@ -1,6 +1,6 @@
 import net from "node:net";
 import { NextResponse } from "next/server";
-import { requireAuthenticatedUser } from "@/lib/auth/require-user";
+import { requireVerifiedUser } from "@/lib/auth/require-user";
 import { requireFeatureAccess } from "@/lib/billing/plan-access";
 import type { BrandKitAutofill } from "@/lib/brand-kit/types";
 import { createClient } from "@/lib/supabase/server";
@@ -86,7 +86,7 @@ function inferIndustry(text: string): string {
 export async function POST(request: Request) {
   try {
     const supabase = await createClient();
-    const authResult = await requireAuthenticatedUser(supabase);
+    const authResult = await requireVerifiedUser(supabase);
     if ("response" in authResult) {
       return authResult.response;
     }

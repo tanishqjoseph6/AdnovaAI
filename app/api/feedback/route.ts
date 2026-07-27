@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { requireAuthenticatedUser } from "@/lib/auth/require-user";
+import { requireVerifiedUser } from "@/lib/auth/require-user";
 import {
   createFeedbackScreenshotSignedUrl,
   feedbackTicketFromRow,
@@ -11,7 +11,7 @@ import { createClient } from "@/lib/supabase/server";
 export async function GET() {
   try {
     const supabase = await createClient();
-    const authResult = await requireAuthenticatedUser(supabase);
+    const authResult = await requireVerifiedUser(supabase);
     if ("response" in authResult) {
       return authResult.response;
     }

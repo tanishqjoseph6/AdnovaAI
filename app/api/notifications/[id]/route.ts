@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { requireAuthenticatedUser } from "@/lib/auth/require-user";
+import { requireVerifiedUser } from "@/lib/auth/require-user";
 import {
   isMissingNotificationsSchemaError,
   logNotificationStep,
@@ -15,7 +15,7 @@ type RouteContext = {
 export async function PATCH(_request: Request, context: RouteContext) {
   try {
     const supabase = await createClient();
-    const authResult = await requireAuthenticatedUser(supabase);
+    const authResult = await requireVerifiedUser(supabase);
     if ("response" in authResult) {
       return authResult.response;
     }

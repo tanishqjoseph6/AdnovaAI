@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { requireAuthenticatedUser } from "@/lib/auth/require-user";
+import { requireVerifiedUser } from "@/lib/auth/require-user";
 import { requireFeatureAccess } from "@/lib/billing/plan-access";
 import { uploadScheduledPostImage } from "@/lib/social-scheduler/image-storage";
 import { createClient } from "@/lib/supabase/server";
@@ -7,7 +7,7 @@ import { createClient } from "@/lib/supabase/server";
 export async function POST(request: Request) {
   try {
     const supabase = await createClient();
-    const authResult = await requireAuthenticatedUser(supabase);
+    const authResult = await requireVerifiedUser(supabase);
     if ("response" in authResult) {
       return authResult.response;
     }

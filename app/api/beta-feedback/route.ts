@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { requireAuthenticatedUser } from "@/lib/auth/require-user";
+import { requireVerifiedUser } from "@/lib/auth/require-user";
 import { validateFeedbackInput } from "@/lib/feedback/validation";
 import { createClient } from "@/lib/supabase/server";
 
@@ -33,7 +33,7 @@ function getOptionalScreenshot(value: FormDataEntryValue | null): File | null {
 export async function POST(request: Request) {
   try {
     const supabase = await createClient();
-    const authResult = await requireAuthenticatedUser(supabase);
+    const authResult = await requireVerifiedUser(supabase);
     if ("response" in authResult) {
       return authResult.response;
     }

@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { requireAuthenticatedUser } from "@/lib/auth/require-user";
+import { requireVerifiedUser } from "@/lib/auth/require-user";
 import { requireFeatureAccess } from "@/lib/billing/plan-access";
 import { publishScheduledPost } from "@/lib/social-scheduler/publish";
 import { createClient } from "@/lib/supabase/server";
@@ -12,7 +12,7 @@ export async function POST(_request: Request, context: RouteContext) {
   try {
     const { id } = await context.params;
     const supabase = await createClient();
-    const authResult = await requireAuthenticatedUser(supabase);
+    const authResult = await requireVerifiedUser(supabase);
     if ("response" in authResult) {
       return authResult.response;
     }

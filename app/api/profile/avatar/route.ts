@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { requireAuthenticatedUser } from "@/lib/auth/require-user";
+import { requireVerifiedUser } from "@/lib/auth/require-user";
 import { validateAvatarFile } from "@/lib/settings/avatar";
 import {
   persistProfileAvatarUrl,
@@ -19,7 +19,7 @@ function getAvatarFile(formData: FormData): File | null {
 export async function POST(request: Request) {
   try {
     const supabase = await createClient();
-    const authResult = await requireAuthenticatedUser(supabase);
+    const authResult = await requireVerifiedUser(supabase);
     if ("response" in authResult) {
       return authResult.response;
     }
@@ -86,7 +86,7 @@ export async function POST(request: Request) {
 export async function DELETE() {
   try {
     const supabase = await createClient();
-    const authResult = await requireAuthenticatedUser(supabase);
+    const authResult = await requireVerifiedUser(supabase);
     if ("response" in authResult) {
       return authResult.response;
     }
