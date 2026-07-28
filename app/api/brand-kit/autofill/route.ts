@@ -114,7 +114,7 @@ export async function POST(request: Request) {
     const response = await fetch(url, {
       headers: {
         accept: "text/html,application/xhtml+xml",
-        "user-agent": "AdvoraAI Brand Kit Autofill",
+        "user-agent": "Advora Brand Kit Autofill",
       },
       signal: AbortSignal.timeout(6000),
     });

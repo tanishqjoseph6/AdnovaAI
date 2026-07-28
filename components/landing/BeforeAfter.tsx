@@ -54,7 +54,7 @@ export default function BeforeAfter() {
             className="gradient-border rounded-2xl bg-[#0a0618] p-6 shadow-xl shadow-violet-500/15 sm:p-7"
           >
             <span className="inline-flex rounded-full bg-gradient-to-r from-cyan-400 via-violet-500 to-fuchsia-500 px-3 py-0.5 text-xs font-semibold text-white">
-              After — Advora AI
+              After — Advora
             </span>
             <h3 className="mt-4 text-lg font-semibold text-white">
               Scroll-stopping ad kit

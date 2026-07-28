@@ -15,6 +15,8 @@ export type ScheduledPostInput = {
   scheduledFor: string;
   notes: string | null;
   status: ScheduledPostStatus;
+  campaignId: string | null;
+  campaignColor: string | null;
   publishNow?: boolean;
 };
 
@@ -57,6 +59,13 @@ export function validateScheduledPostInput(
   }
 
   const publishNow = input.publishNow === true;
+  const status =
+    options.allowStatus && isScheduledPostStatus(input.status)
+      ? input.status
+      : input.status === "draft"
+        ? "draft"
+        : "upcoming";
+
   const scheduledFor =
     typeof input.scheduledFor === "string" ? input.scheduledFor : "";
   const scheduledDate = new Date(scheduledFor);
@@ -64,7 +73,14 @@ export function validateScheduledPostInput(
     return { ok: false, error: "Choose a valid date and time." };
   }
 
-  if (!publishNow && scheduledDate.getTime() < Date.now() - 60_000) {
+  if (
+    !publishNow &&
+    status !== "draft" &&
+    status !== "pending_approval" &&
+    status !== "approved" &&
+    status !== "rejected" &&
+    scheduledDate.getTime() < Date.now() - 60_000
+  ) {
     return {
       ok: false,
       error: "Scheduled time must be in the future.",
@@ -79,10 +95,16 @@ export function validateScheduledPostInput(
   const imageUrl = normalizeNullableText(input.imageUrl, 2000);
   const imageStoragePath = normalizeNullableText(input.imageStoragePath, 500);
 
-  const status =
-    options.allowStatus && isScheduledPostStatus(input.status)
-      ? input.status
-      : "upcoming";
+  const campaignId =
+    typeof input.campaignId === "string" && input.campaignId.trim()
+      ? input.campaignId.trim()
+      : null;
+  const campaignColorRaw = normalizeNullableText(input.campaignColor, 16);
+  const campaignColor =
+    campaignColorRaw &&
+    /^#([0-9a-fA-F]{3}|[0-9a-fA-F]{6})$/.test(campaignColorRaw)
+      ? campaignColorRaw
+      : null;
 
   return {
     ok: true,
@@ -97,6 +119,8 @@ export function validateScheduledPostInput(
         : scheduledDate.toISOString(),
       notes: normalizeNullableText(input.notes, 1000),
       status,
+      campaignId,
+      campaignColor,
       publishNow,
     },
   };

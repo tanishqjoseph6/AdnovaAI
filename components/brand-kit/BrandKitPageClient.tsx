@@ -401,7 +401,7 @@ export default function BrandKitPageClient({
                   value={brandKit.brandName}
                   onChange={(event) => update("brandName", event.target.value)}
                   className={settingsInputClassName}
-                  placeholder="Advora AI"
+                  placeholder="Advora"
                 />
               </div>
               <div>

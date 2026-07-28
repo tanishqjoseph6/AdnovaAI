@@ -9,9 +9,9 @@ import {
 } from "@/lib/legal/constants";
 
 export const metadata: Metadata = {
-  title: "Refund Policy | Advora AI",
+  title: "Refund Policy | Advora",
   description:
-    "Understand Advora AI subscription refunds, credit usage rules, and payment dispute handling.",
+    "Understand Advora subscription refunds, credit usage rules, and payment dispute handling.",
 };
 
 export default function RefundPolicyPage() {
@@ -23,7 +23,7 @@ export default function RefundPolicyPage() {
     >
       <LegalSection title="1. Subscription Policy">
         <p>
-          Advora AI offers Free, Starter, Pro, and custom subscription options.
+          Advora offers Free, Starter, Pro, and custom subscription options.
           Paid plans are billed in advance through Stripe in USD for the selected
           billing period. At checkout, Stripe may charge your local currency
           using the live exchange rate. Access to paid features and included
@@ -33,7 +33,7 @@ export default function RefundPolicyPage() {
 
       <LegalSection title="2. General Refund Eligibility">
         <p>
-          Because Advora AI provides immediate access to digital software and AI
+          Because Advora provides immediate access to digital software and AI
           generation credits, subscription fees are generally non-refundable once
           a plan is activated and credits become available for use.
         </p>

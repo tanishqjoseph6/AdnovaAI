@@ -37,15 +37,21 @@ function StatusBadge({ status }: { status: ScheduledPostStatus }) {
   const className =
     status === "published"
       ? "border-emerald-500/30 bg-emerald-500/10 text-emerald-300"
-      : status === "failed"
+      : status === "failed" || status === "rejected"
         ? "border-red-500/30 bg-red-500/10 text-red-300"
-        : "border-cyan-500/30 bg-cyan-500/10 text-cyan-300";
+        : status === "draft"
+          ? "border-zinc-500/30 bg-zinc-500/10 text-zinc-300"
+          : status === "pending_approval"
+            ? "border-amber-500/30 bg-amber-500/10 text-amber-300"
+            : status === "approved"
+              ? "border-violet-500/30 bg-violet-500/10 text-violet-300"
+              : "border-cyan-500/30 bg-cyan-500/10 text-cyan-300";
 
   return (
     <span
       className={`rounded-full border px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wider ${className}`}
     >
-      {status}
+      {status.replaceAll("_", " ")}
     </span>
   );
 }

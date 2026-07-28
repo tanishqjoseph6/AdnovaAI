@@ -158,7 +158,7 @@ function FeedbackModal({
                   id="beta-feedback-title"
                   className="mt-2 text-2xl font-semibold tracking-tight text-white"
                 >
-                  Help improve Advora AI
+                  Help improve Advora
                 </h2>
               </div>
               <button

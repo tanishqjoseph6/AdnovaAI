@@ -66,7 +66,7 @@ export default function CompetitorComparisonSection({
     <section className="glass overflow-hidden rounded-2xl border border-violet-500/20">
       <div className="border-b border-white/[0.06] bg-gradient-to-r from-violet-600/10 via-transparent to-cyan-500/10 px-5 py-4 sm:px-6">
         <h2 className="text-base font-semibold text-white sm:text-lg">
-          Competitor vs Advora AI Improved Version
+          Competitor vs Advora Improved Version
         </h2>
         <p className="mt-1 text-sm text-zinc-500">
           Predicted performance if you apply AI recommendations
@@ -90,7 +90,7 @@ export default function CompetitorComparisonSection({
 
         <div className="p-5 sm:p-6">
           <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-cyan-400/90">
-            Advora AI Improved Version
+            Advora Improved Version
           </p>
           <div className="mt-3 flex flex-wrap items-end gap-3">
             <p

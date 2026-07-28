@@ -47,9 +47,9 @@ function FeatureCard({ feature, index }: { feature: LandingFeature; index: numbe
       whileInView={{ opacity: 1, y: 0 }}
       viewport={{ once: true, margin: "-40px" }}
       transition={{ duration: 0.4, delay: (index % 6) * 0.05 }}
-      className="glass group flex h-full flex-col rounded-2xl border border-white/[0.08] p-6 transition hover:border-violet-500/30 hover:shadow-lg hover:shadow-violet-500/10"
+      className="premium-card glass group flex h-full flex-col rounded-2xl border border-white/[0.08] p-6 transition duration-500 hover:-translate-y-1 hover:border-cyan-300/25 hover:shadow-2xl hover:shadow-violet-500/15"
     >
-      <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-gradient-to-br from-cyan-500/20 via-violet-500/20 to-fuchsia-500/20 text-cyan-300 transition group-hover:scale-105">
+      <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-gradient-to-br from-cyan-500/20 via-violet-500/20 to-fuchsia-500/20 text-cyan-300 transition duration-500 group-hover:scale-110 group-hover:rotate-3">
         <Icon className="h-5 w-5" aria-hidden />
       </div>
       <h3 className="mt-5 text-lg font-semibold text-white">{feature.title}</h3>

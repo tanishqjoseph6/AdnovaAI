@@ -24,7 +24,7 @@ export default function FeedbackSuccessAnimation() {
         transition={{ delay: 0.15 }}
         className="text-2xl font-semibold tracking-tight text-white"
       >
-        Thank you for helping improve Advora AI ❤️
+        Thank you for helping improve Advora ❤️
       </motion.h3>
       <motion.p
         initial={{ opacity: 0, y: 8 }}

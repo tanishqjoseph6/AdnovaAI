@@ -9,9 +9,9 @@ import {
 } from "@/lib/legal/constants";
 
 export const metadata: Metadata = {
-  title: "Privacy Policy | Advora AI",
+  title: "Privacy Policy | Advora",
   description:
-    "Learn how Advora AI collects, uses, and protects your data when you use our AI ad generation platform.",
+    "Learn how Advora collects, uses, and protects your data when you use our AI ad generation platform.",
 };
 
 export default function PrivacyPolicyPage() {
@@ -39,7 +39,7 @@ export default function PrivacyPolicyPage() {
 
       <LegalSection title="2. How We Use Your Information">
         <p>
-          We use your information to provide and maintain Advora AI, authenticate
+          We use your information to provide and maintain Advora, authenticate
           users, process subscriptions, allocate and track credits, generate AI
           outputs, store Brand Kit preferences, analyze landing pages and
           competitor ads, schedule social content, and deliver customer support.
@@ -88,7 +88,7 @@ export default function PrivacyPolicyPage() {
       <LegalSection title="6. Data Sharing">
         <p>
           We may share information with trusted service providers that help us
-          operate Advora AI, including hosting, authentication, analytics,
+          operate Advora, including hosting, authentication, analytics,
           payment processing, email delivery, and AI infrastructure partners.
           These providers may access data only as needed to perform services on
           our behalf and under appropriate confidentiality obligations.
@@ -136,7 +136,7 @@ export default function PrivacyPolicyPage() {
 
       <LegalSection title="10. International Users">
         <p>
-          Advora AI is operated from India. If you access the service from
+          Advora is operated from India. If you access the service from
           outside India, you understand that your information may be processed in
           India or other locations where our service providers operate.
         </p>

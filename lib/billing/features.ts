@@ -11,6 +11,7 @@ export type FeatureId =
   | "landing_analyzer"
   | "social_scheduler"
   | "reel_script_generator"
+  | "thumbnail_generator"
   | "brand_memory"
   | "advanced_ai_preferences"
   | "premium_ai_quality"
@@ -38,6 +39,7 @@ const STARTER_FEATURES: ReadonlySet<FeatureId> = new Set([
   "landing_analyzer",
   "social_scheduler",
   "reel_script_generator",
+  "thumbnail_generator",
   "brand_memory",
   "advanced_ai_preferences",
 ]);
@@ -98,6 +100,14 @@ export const FEATURE_CATALOG: Record<GatedFeatureId, FeatureCatalogEntry> = {
     minPlan: "starter",
     icon: "🎬",
   },
+  thumbnail_generator: {
+    id: "thumbnail_generator",
+    label: "AI Thumbnail Generator",
+    description:
+      "Create HD YouTube, Instagram, Reel, product, and ad thumbnails with AI headlines and CTAs.",
+    minPlan: "starter",
+    icon: "🖼️",
+  },
   advanced_ai_preferences: {
     id: "advanced_ai_preferences",
     label: "Advanced AI Preferences",
@@ -138,7 +148,10 @@ export const ROUTE_FEATURE_MAP: Record<string, GatedFeatureId> = {
   "/dashboard/competitor-analyzer": "competitor_analyzer",
   "/dashboard/landing-analyzer": "landing_analyzer",
   "/dashboard/social-scheduler": "social_scheduler",
+  "/dashboard/campaign-calendar": "social_scheduler",
+  "/dashboard/team-approvals": "social_scheduler",
   "/dashboard/reel-script": "reel_script_generator",
+  "/dashboard/thumbnail": "thumbnail_generator",
 };
 
 export function resolveEffectivePlan(

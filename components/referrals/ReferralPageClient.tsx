@@ -178,8 +178,8 @@ export default function ReferralPageClient({
     if (navigator.share) {
       try {
         await navigator.share({
-          title: "Try Advora AI",
-          text: "Create high-converting AI ads with Advora AI.",
+          title: "Try Advora",
+          text: "Create high-converting AI ads with Advora.",
           url: loadedStats.referralLink,
         });
         setShareStatus("Referral link shared.");

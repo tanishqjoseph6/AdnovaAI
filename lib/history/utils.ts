@@ -5,8 +5,12 @@ import type {
   HistoryFilter,
   HistorySort,
   ReelScriptRecord,
+  ThumbnailRecord,
 } from "./types";
 import { REEL_GOAL_LABELS, REEL_PLATFORM_LABELS } from "@/lib/reel-script/types";
+import {
+  THUMBNAIL_FORMAT_LABELS,
+} from "@/lib/thumbnail/types";
 
 const GENERATION_DATE_FORMAT_OPTIONS = {
   weekday: "short",
@@ -158,6 +162,29 @@ export function matchesSearchQueryForReelScript(
   return parts.some((part) => part.toLowerCase().includes(normalized));
 }
 
+export function matchesSearchQueryForThumbnail(
+  record: ThumbnailRecord,
+  query: string
+): boolean {
+  const normalized = query.trim().toLowerCase();
+  if (!normalized) return true;
+
+  const parts = [
+    record.brand_name,
+    record.prompt,
+    record.product_url ?? "",
+    THUMBNAIL_FORMAT_LABELS[record.format],
+    ...record.result.suggestedHeadlines,
+    ...record.result.suggestedCtas,
+    ...record.result.variations.flatMap((variation) => [
+      variation.headline,
+      variation.cta,
+    ]),
+  ];
+
+  return parts.some((part) => part.toLowerCase().includes(normalized));
+}
+
 export function matchesSearchQueryForEntry(
   entry: HistoryEntry,
   query: string
@@ -168,6 +195,10 @@ export function matchesSearchQueryForEntry(
 
   if (entry.kind === "reel_script") {
     return matchesSearchQueryForReelScript(entry.record, query);
+  }
+
+  if (entry.kind === "thumbnail") {
+    return matchesSearchQueryForThumbnail(entry.record, query);
   }
 
   return matchesSearchQueryForCompetitor(entry.record, query);

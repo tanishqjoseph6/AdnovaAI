@@ -3,7 +3,7 @@ import type { Metadata } from "next";
 export const metadata: Metadata = {
   title: {
     default: "Dashboard",
-    template: "%s | Advora AI",
+    template: "%s | Advora",
   },
   description: "Manage your AI-generated ad campaigns",
 };

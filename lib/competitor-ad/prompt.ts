@@ -43,7 +43,7 @@ Return ONLY valid JSON in this exact shape (replace every "integer" with your 0-
     "percent": "integer 0-100 representing how confidently you could analyze this screenshot"
   },
   "improved_version_prediction": {
-    "hook_score": "integer — predicted score if Advora AI rewrote the hook",
+    "hook_score": "integer — predicted score if Advora rewrote the hook",
     "cta_score": "integer",
     "offer_score": "integer",
     "psychology_score": "integer",

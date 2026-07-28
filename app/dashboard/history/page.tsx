@@ -3,26 +3,35 @@ import HistoryPageClient from "@/components/history/HistoryPageClient";
 import { competitorRecordFromRow } from "@/lib/competitor-ad/types";
 import type { GenerationRecord, HistoryEntry } from "@/lib/history/types";
 import { reelScriptFromRow } from "@/lib/reel-script/server";
+import { thumbnailFromRow } from "@/lib/thumbnail/server";
 import { createClient } from "@/lib/supabase/server";
 
 export default async function HistoryPage() {
   const supabase = await createClient();
 
-  const [generationsResult, competitorResult, reelScriptsResult] =
-    await Promise.all([
-      supabase
-        .from("generations")
-        .select("*")
-        .order("created_at", { ascending: false }),
-      supabase
-        .from("competitor_analyses")
-        .select("*")
-        .order("created_at", { ascending: false }),
-      supabase
-        .from("reel_scripts")
-        .select("*")
-        .order("created_at", { ascending: false }),
-    ]);
+  const [
+    generationsResult,
+    competitorResult,
+    reelScriptsResult,
+    thumbnailsResult,
+  ] = await Promise.all([
+    supabase
+      .from("generations")
+      .select("*")
+      .order("created_at", { ascending: false }),
+    supabase
+      .from("competitor_analyses")
+      .select("*")
+      .order("created_at", { ascending: false }),
+    supabase
+      .from("reel_scripts")
+      .select("*")
+      .order("created_at", { ascending: false }),
+    supabase
+      .from("thumbnails")
+      .select("*")
+      .order("created_at", { ascending: false }),
+  ]);
 
   const generations = (generationsResult.data ?? []) as GenerationRecord[];
 
@@ -50,6 +59,18 @@ export default async function HistoryPage() {
     console.error("reel_scripts fetch error:", reelScriptsResult.error);
   }
 
+  const thumbnailEntries: HistoryEntry[] = [];
+  if (!thumbnailsResult.error && thumbnailsResult.data) {
+    for (const row of thumbnailsResult.data) {
+      const record = thumbnailFromRow(row);
+      if (record) {
+        thumbnailEntries.push({ kind: "thumbnail", record });
+      }
+    }
+  } else if (thumbnailsResult.error) {
+    console.error("thumbnails fetch error:", thumbnailsResult.error);
+  }
+
   const generationEntries: HistoryEntry[] = generations.map((record) => ({
     kind: "generation",
     record,
@@ -59,6 +80,7 @@ export default async function HistoryPage() {
     ...generationEntries,
     ...competitorEntries,
     ...reelEntries,
+    ...thumbnailEntries,
   ].sort(
     (a, b) =>
       new Date(b.record.created_at).getTime() -

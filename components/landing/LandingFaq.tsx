@@ -18,7 +18,7 @@ export default function LandingFaq() {
           Questions, <span className="gradient-text">answered</span>
         </>
       }
-      description="Everything you need to know before you start creating with Advora AI."
+      description="Everything you need to know before you start creating with Advora."
     >
       <div className="mx-auto max-w-3xl space-y-3">
         {LANDING_FAQ.map((item, index) => {

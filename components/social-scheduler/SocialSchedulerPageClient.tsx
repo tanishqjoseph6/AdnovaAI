@@ -50,9 +50,13 @@ type SocialSchedulerPageClientProps = {
 };
 
 const emptySummary: ScheduledPostsSummary = {
+  draft: 0,
+  pending_approval: 0,
+  approved: 0,
   upcoming: 0,
   published: 0,
   failed: 0,
+  rejected: 0,
 };
 
 function formFromPost(post: ScheduledPost): ComposeFormState {

@@ -9,9 +9,9 @@ import {
 } from "@/lib/legal/constants";
 
 export const metadata: Metadata = {
-  title: "Terms of Service | Advora AI",
+  title: "Terms of Service | Advora",
   description:
-    "Read the Terms of Service for using Advora AI, including subscriptions, credits, and acceptable use.",
+    "Read the Terms of Service for using Advora, including subscriptions, credits, and acceptable use.",
 };
 
 export default function TermsOfServicePage() {
@@ -23,7 +23,7 @@ export default function TermsOfServicePage() {
     >
       <LegalSection title="1. Acceptance of Terms">
         <p>
-          By accessing or using Advora AI, you agree to be bound by these Terms
+          By accessing or using Advora, you agree to be bound by these Terms
           of Service and our Privacy Policy. If you do not agree, do not use the
           service.
         </p>
@@ -31,7 +31,7 @@ export default function TermsOfServicePage() {
 
       <LegalSection title="2. The Service">
         <p>
-          Advora AI provides software tools for AI-powered ad generation, Brand
+          Advora provides software tools for AI-powered ad generation, Brand
           Kit management, landing page analysis, competitor ad analysis, social
           post scheduling, account management, and related marketing workflows.
           Features may change, improve, or be added over time.
@@ -88,7 +88,7 @@ export default function TermsOfServicePage() {
       </LegalSection>
 
       <LegalSection title="6. Acceptable Use">
-        <p>You agree not to use Advora AI to:</p>
+        <p>You agree not to use Advora to:</p>
         <ul className="list-disc space-y-2 pl-5">
           <li>Violate any law, regulation, or third-party rights</li>
           <li>Generate deceptive, harmful, illegal, or infringing content</li>
@@ -106,7 +106,7 @@ export default function TermsOfServicePage() {
 
       <LegalSection title="7. Intellectual Property">
         <p>
-          Advora AI, including its software, branding, design, and documentation,
+          Advora, including its software, branding, design, and documentation,
           is owned by us or our licensors and protected by applicable intellectual
           property laws. These Terms do not grant you ownership of the platform.
         </p>
@@ -133,7 +133,7 @@ export default function TermsOfServicePage() {
 
       <LegalSection title="9. Disclaimers">
         <p>
-          Advora AI is provided on an &quot;as is&quot; and &quot;as available&quot;
+          Advora is provided on an &quot;as is&quot; and &quot;as available&quot;
           basis. We do not guarantee uninterrupted service, error-free outputs,
           or specific business results from generated ads, analyses, or
           scheduled content.
@@ -142,14 +142,14 @@ export default function TermsOfServicePage() {
 
       <LegalSection title="10. Limitation of Liability">
         <p>
-          To the maximum extent permitted by law, Advora AI and its affiliates
+          To the maximum extent permitted by law, Advora and its affiliates
           will not be liable for any indirect, incidental, special,
           consequential, or punitive damages, or for loss of profits, revenue,
           data, or goodwill arising from your use of the service.
         </p>
         <p>
           Our total liability for any claim relating to the service will not
-          exceed the amount you paid to Advora AI in the twelve (12) months
+          exceed the amount you paid to Advora in the twelve (12) months
           before the event giving rise to the claim.
         </p>
       </LegalSection>

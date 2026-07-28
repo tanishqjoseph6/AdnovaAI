@@ -1,4 +1,4 @@
-# Supabase Auth — Production Setup (Advora AI)
+# Supabase Auth — Production Setup (Advora)
 
 Configure these in the [Supabase Dashboard](https://supabase.com/dashboard) before launch.
 
@@ -37,7 +37,7 @@ Supabase built-in email is rate-limited (~4/hour on free tier). For production:
 
 1. **Authentication → Email → SMTP Settings**
 2. Configure custom SMTP (Resend, SendGrid, AWS SES, etc.)
-3. Set sender: `Advora AI <support@useadvora.com>`
+3. Set sender: `Advora <support@useadvora.com>`
 
 ## Email templates
 
@@ -46,7 +46,7 @@ Supabase built-in email is rate-limited (~4/hour on free tier). For production:
 For **6-digit OTP login**, the template body must include:
 
 ```html
-<p>Your Advora AI login code is:</p>
+<p>Your Advora login code is:</p>
 <h2>{{ .Token }}</h2>
 <p>This code expires in a few minutes.</p>
 ```

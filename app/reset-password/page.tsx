@@ -214,7 +214,7 @@ function ResetPasswordForm() {
         Choose a new password
       </h1>
       <p className="mt-2 text-center text-sm text-zinc-400">
-        Enter a strong password for your Advora AI account.
+        Enter a strong password for your Advora account.
       </p>
 
       <form className="mt-8 space-y-4" onSubmit={(event) => void handleSubmit(event)}>

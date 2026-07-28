@@ -46,8 +46,8 @@ export default function WhyAdvora() {
             Why Advora
           </p>
           <h2 className="mt-3 text-3xl font-semibold tracking-tight text-white md:text-4xl">
-            Traditional agency vs{" "}
-            <span className="gradient-text">Advora AI</span>
+            Traditional workflow vs{" "}
+            <span className="gradient-text">Advora</span>
           </h2>
           <p className="mt-4 text-base leading-relaxed text-zinc-400 sm:text-lg">
             Stop waiting weeks and paying retainers. Ship premium ad creative at
@@ -65,10 +65,10 @@ export default function WhyAdvora() {
           <div className="grid grid-cols-3 border-b border-white/[0.06] bg-white/[0.02] text-center text-sm font-semibold">
             <div className="px-4 py-4 text-zinc-500 sm:px-6">Compare</div>
             <div className="border-x border-white/[0.06] px-4 py-4 text-zinc-400 sm:px-6">
-              Traditional Agency
+              Traditional Workflow
             </div>
             <div className="bg-gradient-to-br from-violet-500/10 to-cyan-500/10 px-4 py-4 text-white sm:px-6">
-              Advora AI
+              Advora
             </div>
           </div>
 

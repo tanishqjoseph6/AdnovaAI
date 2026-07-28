@@ -18,6 +18,7 @@ export const CREDIT_FEATURES = {
   ANALYZE_PRODUCT_IMAGE: "analyze_product_image",
   BRAND_KIT_AUTOFILL: "brand_kit_autofill",
   GENERATE_REEL_SCRIPT: "generate_reel_script",
+  GENERATE_THUMBNAIL: "generate_thumbnail",
 } as const;
 
 export type CreditFeatureId =
@@ -42,6 +43,7 @@ export const DEFAULT_FEATURE_COSTS: Record<CreditFeatureId, number> = {
   [CREDIT_FEATURES.ANALYZE_PRODUCT_IMAGE]: 0,
   [CREDIT_FEATURES.BRAND_KIT_AUTOFILL]: 0,
   [CREDIT_FEATURES.GENERATE_REEL_SCRIPT]: 10,
+  [CREDIT_FEATURES.GENERATE_THUMBNAIL]: 15,
 };
 
 /**

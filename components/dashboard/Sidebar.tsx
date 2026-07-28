@@ -59,7 +59,7 @@ function SidebarBrandMark() {
       {logoSrc === ADVORA_LOGO ? (
         <Image
           src={ADVORA_LOGO}
-          alt="Advora AI"
+          alt="Advora"
           width={36}
           height={36}
           className="h-full w-full object-cover"
@@ -68,7 +68,7 @@ function SidebarBrandMark() {
       ) : (
         <img
           src={logoSrc}
-          alt="Advora AI"
+          alt="Advora"
           className="h-full w-full object-cover"
           onError={handleLogoError}
         />

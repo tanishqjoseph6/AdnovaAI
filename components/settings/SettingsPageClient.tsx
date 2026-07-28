@@ -660,7 +660,7 @@ export default function SettingsPageClient({
       >
         <SettingsSectionCard
           title="Profile"
-          description="Your public identity across Advora AI."
+          description="Your public identity across Advora."
           icon={<ProfileIcon />}
         >
           <ProfileAvatarUpload
@@ -984,7 +984,7 @@ export default function SettingsPageClient({
 
         <SettingsSectionCard
           title="Security"
-          description="Protect your Advora AI account."
+          description="Protect your Advora account."
           icon={<SecurityIcon />}
         >
           <button

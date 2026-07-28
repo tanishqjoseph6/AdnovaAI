@@ -24,7 +24,7 @@ export function buildPaymentInvoicePdf(payment: PaymentRecord): Buffer {
 
   doc.setTextColor(255, 255, 255);
   doc.setFontSize(22);
-  doc.text("Advora AI", 20, 22);
+  doc.text("Advora", 20, 22);
   doc.setFontSize(11);
   doc.text("Invoice", 20, 32);
 
@@ -83,7 +83,7 @@ export function buildPaymentInvoicePdf(payment: PaymentRecord): Buffer {
 
   doc.setFontSize(9);
   doc.setTextColor(120, 120, 120);
-  doc.text("Thank you for subscribing to Advora AI.", 20, 270);
+  doc.text("Thank you for subscribing to Advora.", 20, 270);
   doc.text("support@useadvora.com | https://useadvora.com", 20, 276);
 
   return Buffer.from(doc.output("arraybuffer"));

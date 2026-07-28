@@ -21,13 +21,13 @@ const geistMono = Geist_Mono({
 });
 
 const siteUrl = new URL(getProductionSiteUrl());
-const siteTitle = "Advora AI — AI Ad Generator for High-Converting Campaigns";
+const siteTitle = "Advora — AI Ad Generator for High-Converting Campaigns";
 const siteDescription =
   "Generate scroll-stopping ad copy, visuals, and multi-channel campaigns in seconds. AI-powered creative for Meta, Google, TikTok, and more.";
 
 export const metadata: Metadata = {
   metadataBase: siteUrl,
-  applicationName: "Advora AI",
+  applicationName: "Advora",
   title: siteTitle,
   description: siteDescription,
   manifest: "/manifest.json",
@@ -59,14 +59,14 @@ export const metadata: Metadata = {
     title: siteTitle,
     description: siteDescription,
     url: "/",
-    siteName: "Advora AI",
+    siteName: "Advora",
     type: "website",
     images: [
       {
         url: "/opengraph-image.png",
         width: 1200,
         height: 630,
-        alt: "Advora AI - AI Ad Generator for High-Converting Campaigns",
+        alt: "Advora - AI Ad Generator for High-Converting Campaigns",
       },
     ],
   },
@@ -77,7 +77,7 @@ export const metadata: Metadata = {
     images: [
       {
         url: "/twitter-image.png",
-        alt: "Advora AI - AI Ad Generator for High-Converting Campaigns",
+        alt: "Advora - AI Ad Generator for High-Converting Campaigns",
       },
     ],
   },

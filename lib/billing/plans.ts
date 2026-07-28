@@ -8,7 +8,7 @@ export type SubscriptionStatus =
 
 export type PaidPlanId = "starter" | "pro";
 
-export const MERCHANT_NAME = "Advora AI";
+export const MERCHANT_NAME = "Advora";
 export const MERCHANT_WEBSITE = "https://useadvora.com";
 
 export const PLANS = {
@@ -43,6 +43,7 @@ export const PLANS = {
       "Brand Kit & brand memory",
       "Competitor & landing analyzers",
       "AI reel script generator",
+      "AI thumbnail generator",
       "Social scheduler",
       "Advanced AI settings",
     ],

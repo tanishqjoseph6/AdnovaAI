@@ -1,7 +1,8 @@
 import type { CompetitorAnalysisRecord } from "@/lib/competitor-ad/types";
 import type { ReelScriptRecord } from "@/lib/reel-script/types";
+import type { ThumbnailRecord } from "@/lib/thumbnail/types";
 
-export type { CompetitorAnalysisRecord, ReelScriptRecord };
+export type { CompetitorAnalysisRecord, ReelScriptRecord, ThumbnailRecord };
 
 export type GenerationRecord = {
   id: string;
@@ -22,7 +23,8 @@ export type GenerationRecord = {
 export type HistoryEntry =
   | { kind: "generation"; record: GenerationRecord }
   | { kind: "competitor"; record: CompetitorAnalysisRecord }
-  | { kind: "reel_script"; record: ReelScriptRecord };
+  | { kind: "reel_script"; record: ReelScriptRecord }
+  | { kind: "thumbnail"; record: ThumbnailRecord };
 
 export type HistoryFilter = "today" | "week" | "month" | "all";
 export type HistorySort = "newest" | "oldest";

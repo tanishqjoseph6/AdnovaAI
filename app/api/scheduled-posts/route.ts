@@ -100,7 +100,8 @@ export async function POST(request: Request) {
       authResult.user.id,
       validation.value.platform
     );
-    if (!connection) {
+
+    if (!connection && validation.value.status !== "draft") {
       return NextResponse.json(
         {
           error: `Connect your ${validation.value.platform === "x" ? "X" : "LinkedIn"} account before scheduling posts.`,
@@ -122,6 +123,8 @@ export async function POST(request: Request) {
         scheduled_for: validation.value.scheduledFor,
         notes: validation.value.notes,
         status: validation.value.status,
+        campaign_id: validation.value.campaignId,
+        campaign_color: validation.value.campaignColor,
         updated_at: now,
       })
       .select("*")

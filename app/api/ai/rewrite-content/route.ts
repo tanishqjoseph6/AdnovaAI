@@ -37,7 +37,7 @@ function buildRewritePrompt(input: {
     ? `\n\n${input.aiPreferencesSection}`
     : "";
 
-  return `You are Advora AI's content editor.
+  return `You are Advora's content editor.
 
 Rewrite ONLY the selected ${input.kind}. Do not generate hooks, captions, CTAs, or scripts beyond this one selected item.
 

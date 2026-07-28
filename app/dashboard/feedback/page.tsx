@@ -6,7 +6,7 @@ export default function FeedbackPage() {
   return (
     <DashboardShell
       title="Feedback"
-      subtitle="Rate your experience and help us build a better Advora AI"
+      subtitle="Rate your experience and help us build a better Advora"
     >
       <Suspense
         fallback={

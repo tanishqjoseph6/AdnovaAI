@@ -5,7 +5,7 @@ import type {
 } from "@/lib/competitor-ad/types";
 import { getCompetitorScoreColor } from "@/lib/competitor-ad/scores";
 
-const BRAND_NAME = "Advora AI";
+const BRAND_NAME = "Advora";
 const MARGIN = 20;
 const PAGE_WIDTH = 210;
 const CONTENT_WIDTH = PAGE_WIDTH - MARGIN * 2;
@@ -222,7 +222,7 @@ export function generateCompetitorPdfReport(
 
   const improved = analysis.improved_version;
   if (improved.why_better) {
-    y = addSectionTitle(doc, y, "Advora AI Improved Version (Predicted)");
+    y = addSectionTitle(doc, y, "Advora Improved Version (Predicted)");
     y = addWrappedText(
       doc,
       y,

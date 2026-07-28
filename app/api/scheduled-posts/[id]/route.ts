@@ -55,6 +55,8 @@ export async function PATCH(request: Request, context: RouteContext) {
         scheduled_for: validation.value.scheduledFor,
         notes: validation.value.notes,
         status: validation.value.status,
+        campaign_id: validation.value.campaignId,
+        campaign_color: validation.value.campaignColor,
         updated_at: new Date().toISOString(),
       })
       .eq("id", id)

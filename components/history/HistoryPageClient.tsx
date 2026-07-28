@@ -6,6 +6,7 @@ import { createClient } from "@/lib/supabase/client";
 import GenerationCard from "@/components/history/GenerationCard";
 import CompetitorHistoryCard from "@/components/history/CompetitorHistoryCard";
 import ReelScriptHistoryCard from "@/components/history/ReelScriptHistoryCard";
+import ThumbnailHistoryCard from "@/components/history/ThumbnailHistoryCard";
 import HistoryEmptyState from "@/components/history/HistoryEmptyState";
 import { useCredits } from "@/hooks/useCredits";
 import type {
@@ -61,7 +62,9 @@ export default function HistoryPageClient({
         ? "generations"
         : entry.kind === "competitor"
           ? "competitor_analyses"
-          : "reel_scripts";
+          : entry.kind === "thumbnail"
+            ? "thumbnails"
+            : "reel_scripts";
     const { error } = await supabase
       .from(table)
       .delete()
@@ -208,6 +211,19 @@ export default function HistoryPageClient({
                   onDelete={async (id) => {
                     await handleDelete({
                       kind: "competitor",
+                      record: { ...entry.record, id },
+                    });
+                  }}
+                />
+              ) : entry.kind === "thumbnail" ? (
+                <ThumbnailHistoryCard
+                  key={`thumb-${entry.record.id}`}
+                  record={entry.record}
+                  planBadge={planBadge}
+                  index={index}
+                  onDelete={async (id) => {
+                    await handleDelete({
+                      kind: "thumbnail",
                       record: { ...entry.record, id },
                     });
                   }}

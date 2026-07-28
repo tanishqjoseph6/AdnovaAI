@@ -114,7 +114,7 @@ export default function UserFeedbackPageClient() {
             </h2>
             <p className="mt-2 max-w-2xl text-sm leading-relaxed text-zinc-400">
               Rate your experience, tell us what&apos;s working, and help shape
-              the future of Advora AI.
+              the future of Advora.
             </p>
           </div>
         </div>

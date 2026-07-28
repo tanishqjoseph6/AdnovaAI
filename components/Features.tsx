@@ -91,15 +91,15 @@ const features = [
 
 export default function Features() {
   return (
-    <section id="features" className="relative py-20 md:py-28">
+    <section id="features" className="relative py-24 md:py-32">
       <div className="pointer-events-none absolute inset-0 bg-gradient-to-b from-transparent via-violet-950/20 to-transparent" />
 
       <div className="relative mx-auto max-w-6xl px-4 sm:px-6">
         <div className="mx-auto max-w-2xl text-center">
-          <p className="text-[11px] font-semibold uppercase tracking-[0.2em] text-cyan-400">
+          <p className="section-eyebrow">
             Features
           </p>
-          <h2 className="mt-3 text-3xl font-semibold tracking-tight text-white md:text-4xl">
+          <h2 className="mt-3 text-3xl font-semibold tracking-[-0.04em] text-white md:text-5xl">
             Everything you need to{" "}
             <span className="gradient-text">scale creative</span>
           </h2>
@@ -109,7 +109,7 @@ export default function Features() {
           </p>
         </div>
 
-        <div className="mt-14 grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
+        <div className="mt-14 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
           {features.map((feature, index) => (
             <motion.article
               key={feature.title}
@@ -117,10 +117,10 @@ export default function Features() {
               whileInView={{ opacity: 1, y: 0 }}
               viewport={{ once: true, margin: "-20px" }}
               transition={{ duration: 0.35, delay: index * 0.05 }}
-              className="glass group rounded-2xl border border-white/[0.08] p-6 transition hover:border-white/[0.14] hover:shadow-lg hover:shadow-violet-500/10"
+              className="premium-card glass group rounded-2xl border border-white/[0.08] p-6 transition duration-500 hover:-translate-y-1 hover:border-cyan-300/25 hover:shadow-2xl hover:shadow-violet-500/15"
             >
               <div
-                className={`mb-4 inline-flex h-12 w-12 items-center justify-center rounded-xl bg-gradient-to-br ${feature.accent}`}
+                className={`mb-4 inline-flex h-12 w-12 items-center justify-center rounded-xl bg-gradient-to-br ${feature.accent} transition duration-500 group-hover:scale-110 group-hover:rotate-3`}
               >
                 <svg
                   className="h-6 w-6"
@@ -131,7 +131,7 @@ export default function Features() {
                   {feature.icon}
                 </svg>
               </div>
-              <h3 className="text-lg font-semibold text-white">
+              <h3 className="text-lg font-semibold tracking-tight text-white">
                 {feature.title}
               </h3>
               <p className="mt-2 text-sm leading-relaxed text-zinc-400">

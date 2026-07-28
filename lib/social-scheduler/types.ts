@@ -20,9 +20,13 @@ export const COMING_SOON_PLATFORMS = [
 ] as const;
 
 export const SCHEDULED_POST_STATUSES = [
+  "draft",
+  "pending_approval",
+  "approved",
   "upcoming",
   "published",
   "failed",
+  "rejected",
 ] as const;
 
 export type SocialPlatform = (typeof SOCIAL_PLATFORMS)[number];
@@ -54,11 +58,43 @@ export type ScheduledPost = {
   externalPostId: string | null;
   publishedAt: string | null;
   errorMessage: string | null;
+  campaignId: string | null;
+  campaignColor: string | null;
+  teamId: string | null;
+  submittedBy: string | null;
+  reviewedBy: string | null;
+  reviewedAt: string | null;
+  rejectionReason: string | null;
+  createdAt: string;
+  updatedAt: string;
+};
+
+export type CampaignVisibility = "private" | "team";
+
+export type Campaign = {
+  id: string;
+  name: string;
+  description: string | null;
+  color: string;
+  visibility: CampaignVisibility;
+  startsAt: string | null;
+  endsAt: string | null;
   createdAt: string;
   updatedAt: string;
 };
 
 export type ScheduledPostsSummary = Record<ScheduledPostStatus, number>;
+
+export const CAMPAIGN_COLORS = [
+  "#8b5cf6",
+  "#22d3ee",
+  "#ec4899",
+  "#34d399",
+  "#f59e0b",
+  "#6366f1",
+  "#f43f5e",
+  "#14b8a6",
+] as const;
 
 export type PlatformAvailability = "available" | "coming_soon";
 

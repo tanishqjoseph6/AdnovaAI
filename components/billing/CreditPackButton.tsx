@@ -83,7 +83,7 @@ export default function CreditPackButton({
         createRazorpayCheckoutOptions({
           keyId: orderPayload.keyId,
           orderId: orderPayload.orderId,
-          planName: `${pack.label} — Advora AI Credits`,
+          planName: `${pack.label} — Advora Credits`,
           prefill: orderPayload.prefill,
           handler: async (response: RazorpaySuccessResponse) => {
             setIsLoading(true);

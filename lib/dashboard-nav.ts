@@ -7,9 +7,12 @@ export type NavItem = {
     | "brand"
     | "referrals"
     | "scheduler"
+    | "calendar"
     | "landing"
     | "competitor"
     | "reel"
+    | "thumbnail"
+    | "team"
     | "history"
     | "billing"
     | "feedback"
@@ -21,7 +24,8 @@ export type NavItem = {
     | "competitor_analyzer"
     | "landing_analyzer"
     | "social_scheduler"
-    | "reel_script_generator";
+    | "reel_script_generator"
+    | "thumbnail_generator";
 };
 
 export const dashboardNav: NavItem[] = [
@@ -37,6 +41,18 @@ export const dashboardNav: NavItem[] = [
     label: "Social Scheduler",
     href: "/dashboard/social-scheduler",
     icon: "scheduler",
+    premiumFeature: "social_scheduler",
+  },
+  {
+    label: "Campaign Calendar",
+    href: "/dashboard/campaign-calendar",
+    icon: "calendar",
+    premiumFeature: "social_scheduler",
+  },
+  {
+    label: "Team Approvals",
+    href: "/dashboard/team-approvals",
+    icon: "team",
     premiumFeature: "social_scheduler",
   },
   { label: "Referrals", href: "/dashboard/referrals", icon: "referrals" },
@@ -57,6 +73,12 @@ export const dashboardNav: NavItem[] = [
     href: "/dashboard/reel-script",
     icon: "reel",
     premiumFeature: "reel_script_generator",
+  },
+  {
+    label: "AI Thumbnails",
+    href: "/dashboard/thumbnail",
+    icon: "thumbnail",
+    premiumFeature: "thumbnail_generator",
   },
   { label: "History", href: "/dashboard/history", icon: "history" },
   { label: "Feedback", href: "/dashboard/feedback", icon: "feedback" },

@@ -33,7 +33,7 @@ const BADGES: Badge[] = [
   {
     icon: Wrench,
     title: "Building in Public",
-    description: "You are helping shape the future of Advora AI.",
+    description: "You are helping shape the future of Advora.",
   },
 ];
 

@@ -99,7 +99,7 @@ function LoginForm() {
           Welcome back
         </h1>
         <p className="mt-2 text-sm text-zinc-400">
-          Sign in to your Advora AI account.
+          Sign in to your Advora account.
         </p>
 
         <div className="mt-6">
