@@ -27,7 +27,9 @@ const KPI_LABELS: Record<string, string> = {
 };
 
 function formatValue(key: string, value: number) {
-  if (key === "monthlyRevenue" || key === "mrr") return `₹${value.toLocaleString("en-IN")}`;
+  if (key === "monthlyRevenue" || key === "mrr") {
+    return `$${value.toLocaleString("en-US")}`;
+  }
   return value.toLocaleString("en-IN");
 }
 

@@ -10,6 +10,7 @@ export type FeatureId =
   | "competitor_analyzer"
   | "landing_analyzer"
   | "social_scheduler"
+  | "reel_script_generator"
   | "brand_memory"
   | "advanced_ai_preferences"
   | "premium_ai_quality"
@@ -36,6 +37,7 @@ const STARTER_FEATURES: ReadonlySet<FeatureId> = new Set([
   "competitor_analyzer",
   "landing_analyzer",
   "social_scheduler",
+  "reel_script_generator",
   "brand_memory",
   "advanced_ai_preferences",
 ]);
@@ -88,6 +90,14 @@ export const FEATURE_CATALOG: Record<GatedFeatureId, FeatureCatalogEntry> = {
     minPlan: "starter",
     icon: "📅",
   },
+  reel_script_generator: {
+    id: "reel_script_generator",
+    label: "AI Reel Script Generator",
+    description:
+      "Generate scroll-stopping reel scripts with hooks, scenes, voice-over, CTAs, and captions.",
+    minPlan: "starter",
+    icon: "🎬",
+  },
   advanced_ai_preferences: {
     id: "advanced_ai_preferences",
     label: "Advanced AI Preferences",
@@ -128,6 +138,7 @@ export const ROUTE_FEATURE_MAP: Record<string, GatedFeatureId> = {
   "/dashboard/competitor-analyzer": "competitor_analyzer",
   "/dashboard/landing-analyzer": "landing_analyzer",
   "/dashboard/social-scheduler": "social_scheduler",
+  "/dashboard/reel-script": "reel_script_generator",
 };
 
 export function resolveEffectivePlan(

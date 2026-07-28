@@ -168,11 +168,15 @@ export async function grantFreeCreditsIfEligible(
   return Boolean(data);
 }
 
-export async function maybeRefillUserCredits(
+/**
+ * Lazy monthly credit reset — idempotent, row-locked via Postgres RPC.
+ * Call on dashboard load and verified API requests when `now >= next_reset_date`.
+ */
+export async function ensureLazyMonthlyCreditReset(
   userId: string
 ): Promise<CreditRefillRpcResult> {
   if (!hasAdminCredentials()) {
-    creditsWarn("credit_refill", "Refill skipped — missing SUPABASE_SERVICE_ROLE_KEY", {
+    creditsWarn("credit_refill", "Lazy reset skipped — missing SUPABASE_SERVICE_ROLE_KEY", {
       userId,
     });
     return { refilled: false, reason: "missing_service_role" };
@@ -184,7 +188,7 @@ export async function maybeRefillUserCredits(
   });
 
   if (error) {
-    creditsWarn("credit_refill", "Refill RPC failed", {
+    creditsWarn("credit_refill", "Lazy reset RPC failed", {
       userId,
       error: error.message,
     });
@@ -194,16 +198,20 @@ export async function maybeRefillUserCredits(
   const result = (data ?? { refilled: false }) as CreditRefillRpcResult;
 
   if (result.refilled) {
-    creditsLog("credit_refill", "Monthly credits refilled", {
+    creditsLog("credit_refill", "Monthly credits reset (lazy)", {
       userId,
       credits: result.credits,
       billingPlan: result.billing_plan,
       refilledAt: result.refilled_at,
+      nextResetDate: result.next_reset_date,
     });
   }
 
   return result;
 }
+
+/** @deprecated Use ensureLazyMonthlyCreditReset */
+export const maybeRefillUserCredits = ensureLazyMonthlyCreditReset;
 
 export async function ensureUserCredits(
   userId: string,
@@ -396,20 +404,24 @@ export async function getUserCreditsForUser(
     email: options?.email,
   });
 
-  const refillResult = await maybeRefillUserCredits(userId);
+  const refillResult = await ensureLazyMonthlyCreditReset(userId);
 
   const credits = await getUserCredits(userId, supabase, billingProfile?.plan, {
     emailVerified: true,
     email: options?.email,
   });
 
+  const nextResetDate =
+    typeof refillResult.next_reset_date === "string"
+      ? refillResult.next_reset_date
+      : typeof refillResult.next_refill_at === "string"
+        ? refillResult.next_refill_at
+        : null;
+
   return {
     ...credits,
     refilledJustNow: refillResult.refilled === true,
-    nextRefillAt:
-      typeof refillResult.next_refill_at === "string"
-        ? refillResult.next_refill_at
-        : null,
+    nextResetDate,
   };
 }
 
@@ -602,7 +614,7 @@ export async function createPendingCreditPurchase(
       user_id: input.userId,
       credits_amount: input.creditsAmount,
       amount_paid: input.amountPaid,
-      currency: input.currency ?? "INR",
+      currency: input.currency ?? "USD",
       order_id: input.orderId ?? null,
       status: "pending",
     })
@@ -720,7 +732,7 @@ export async function syncCreditsWithProfilePlan(
         current_credits: monthlyCredits + purchasedCredits,
         monthly_allowance: monthlyCredits,
         last_credit_refill_at: now,
-        next_refill_at: new Date(
+        next_reset_date: new Date(
           Date.now() + 30 * 24 * 60 * 60 * 1000
         ).toISOString(),
         updated_at: now,
@@ -746,7 +758,7 @@ export async function syncCreditsWithProfilePlan(
         monthly_allowance: monthlyCredits,
         plan: "pro",
         last_credit_refill_at: now,
-        next_refill_at: new Date(
+        next_reset_date: new Date(
           Date.now() + 30 * 24 * 60 * 60 * 1000
         ).toISOString(),
         updated_at: now,
@@ -772,7 +784,7 @@ export async function syncCreditsWithProfilePlan(
         current_credits: monthlyCredits + purchasedCredits,
         monthly_allowance: monthlyCredits,
         last_credit_refill_at: now,
-        next_refill_at: new Date(
+        next_reset_date: new Date(
           Date.now() + 30 * 24 * 60 * 60 * 1000
         ).toISOString(),
         updated_at: now,

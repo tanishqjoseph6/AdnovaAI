@@ -122,7 +122,7 @@ function PlanCta({
   tier: PricingTierConfig;
   currentPlanId: PlanId;
 }) {
-  const { interval, currency } = useBillingPricing();
+  const { interval } = useBillingPricing();
   const isCurrent = currentPlanId === tier.planId;
   const baseButtonClass =
     "block w-full rounded-xl py-3 text-center text-sm font-semibold transition disabled:cursor-not-allowed";
@@ -145,7 +145,6 @@ function PlanCta({
       <BillingPlanButton
         plan="starter"
         interval={interval}
-        currency={currency}
         disabled={disabled}
         className={`${baseButtonClass} border border-cyan-500/35 bg-cyan-500/15 text-cyan-100 hover:border-cyan-400/50 hover:bg-cyan-500/25 disabled:opacity-50`}
       >
@@ -160,7 +159,6 @@ function PlanCta({
       <BillingPlanButton
         plan="pro"
         interval={interval}
-        currency={currency}
         disabled={disabled}
         className={`${baseButtonClass} bg-gradient-to-r from-violet-500 via-fuchsia-500 to-pink-500 text-white shadow-lg shadow-violet-500/30 hover:opacity-90 disabled:opacity-50`}
       >

@@ -5,6 +5,7 @@ import { AnimatePresence, motion } from "framer-motion";
 import { createClient } from "@/lib/supabase/client";
 import GenerationCard from "@/components/history/GenerationCard";
 import CompetitorHistoryCard from "@/components/history/CompetitorHistoryCard";
+import ReelScriptHistoryCard from "@/components/history/ReelScriptHistoryCard";
 import HistoryEmptyState from "@/components/history/HistoryEmptyState";
 import { useCredits } from "@/hooks/useCredits";
 import type {
@@ -56,7 +57,11 @@ export default function HistoryPageClient({
   const handleDelete = async (entry: HistoryEntry) => {
     const supabase = createClient();
     const table =
-      entry.kind === "generation" ? "generations" : "competitor_analyses";
+      entry.kind === "generation"
+        ? "generations"
+        : entry.kind === "competitor"
+          ? "competitor_analyses"
+          : "reel_scripts";
     const { error } = await supabase
       .from(table)
       .delete()
@@ -194,7 +199,7 @@ export default function HistoryPageClient({
                     });
                   }}
                 />
-              ) : (
+              ) : entry.kind === "competitor" ? (
                 <CompetitorHistoryCard
                   key={`comp-${entry.record.id}`}
                   record={entry.record}
@@ -203,6 +208,19 @@ export default function HistoryPageClient({
                   onDelete={async (id) => {
                     await handleDelete({
                       kind: "competitor",
+                      record: { ...entry.record, id },
+                    });
+                  }}
+                />
+              ) : (
+                <ReelScriptHistoryCard
+                  key={`reel-${entry.record.id}`}
+                  record={entry.record}
+                  planBadge={planBadge}
+                  index={index}
+                  onDelete={async (id) => {
+                    await handleDelete({
+                      kind: "reel_script",
                       record: { ...entry.record, id },
                     });
                   }}

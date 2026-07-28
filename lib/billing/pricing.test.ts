@@ -3,53 +3,33 @@ import assert from "node:assert/strict";
 import {
   getPaidPlanAmountMinor,
   getPlanPriceQuote,
+  PLAN_CURRENCY,
   YEARLY_DISCOUNT_PERCENT,
 } from "./pricing";
 
 describe("billing pricing", () => {
-  it("monthly INR prices", () => {
-    assert.equal(
-      getPlanPriceQuote("starter", "monthly", "INR").displayAmount,
-      "₹999"
-    );
-    assert.equal(getPaidPlanAmountMinor("starter", "monthly", "INR"), 99900);
-    assert.equal(
-      getPlanPriceQuote("pro", "monthly", "INR").displayAmount,
-      "₹2,999"
-    );
-  });
-
-  it("yearly INR prices with 20% discount", () => {
-    assert.equal(YEARLY_DISCOUNT_PERCENT, 20);
-    assert.equal(
-      getPlanPriceQuote("starter", "yearly", "INR").displayAmount,
-      "₹9,590"
-    );
-    assert.equal(getPaidPlanAmountMinor("starter", "yearly", "INR"), 959000);
-    assert.equal(
-      getPlanPriceQuote("pro", "yearly", "INR").displayAmount,
-      "₹28,790"
-    );
-    assert.equal(getPlanPriceQuote("starter", "yearly", "INR").showSaveBadge, true);
+  it("uses USD as the canonical plan currency", () => {
+    assert.equal(PLAN_CURRENCY, "USD");
   });
 
   it("monthly USD prices", () => {
     assert.equal(
-      getPlanPriceQuote("starter", "monthly", "USD").displayAmount,
+      getPlanPriceQuote("starter", "monthly").displayAmount,
       "$19"
     );
-    assert.equal(getPaidPlanAmountMinor("starter", "monthly", "USD"), 1900);
-    assert.equal(getPlanPriceQuote("pro", "monthly", "USD").displayAmount, "$59");
+    assert.equal(getPaidPlanAmountMinor("starter", "monthly"), 1900);
+    assert.equal(getPlanPriceQuote("pro", "monthly").displayAmount, "$59");
+    assert.equal(getPaidPlanAmountMinor("pro", "monthly"), 5900);
   });
 
-  it("yearly USD prices", () => {
+  it("yearly USD prices with 20% discount", () => {
+    assert.equal(YEARLY_DISCOUNT_PERCENT, 20);
     assert.equal(
-      getPlanPriceQuote("starter", "yearly", "USD").displayAmount,
+      getPlanPriceQuote("starter", "yearly").displayAmount,
       "$182"
     );
-    assert.equal(
-      getPlanPriceQuote("pro", "yearly", "USD").displayAmount,
-      "$566"
-    );
+    assert.equal(getPaidPlanAmountMinor("starter", "yearly"), 18200);
+    assert.equal(getPlanPriceQuote("pro", "yearly").displayAmount, "$566");
+    assert.equal(getPlanPriceQuote("starter", "yearly").showSaveBadge, true);
   });
 });

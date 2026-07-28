@@ -1,6 +1,6 @@
 import { PaymentVerificationError } from "@/lib/billing/payment-verification";
 import { isPaidPlan, type PaidPlanId } from "@/lib/billing/plans";
-import type { BillingCurrency, BillingInterval } from "@/lib/billing/pricing";
+import type { BillingInterval } from "@/lib/billing/pricing";
 
 type RazorpayAmountSource = {
   amount?: number | string | null;
@@ -10,7 +10,7 @@ type RazorpayOrderNotes = Record<string, string | undefined>;
 
 export type VerifiedRazorpayPaymentDetails = {
   amountMinor: number;
-  currency: BillingCurrency;
+  currency: string;
   plan: PaidPlanId;
   billingInterval: BillingInterval;
   razorpayPaymentId: string;
@@ -40,7 +40,7 @@ export function parseRazorpayAmountMinor(
 
 /**
  * Prefer the captured payment amount from Razorpay and cross-check against the order.
- * Both values are in paise/cents (e.g. ₹999 → 99900, ₹2,999 → 299900).
+ * Both values are in the smallest currency unit (e.g. legacy INR paise or USD cents).
  */
 export function resolveVerifiedRazorpayAmountMinor(
   payment: RazorpayAmountSource,
@@ -59,7 +59,7 @@ export function resolveVerifiedRazorpayAmountMinor(
 export function parseRazorpayCurrency(
   paymentCurrency: string | null | undefined,
   orderNotes?: RazorpayOrderNotes
-): BillingCurrency {
+): string {
   const fromPayment = paymentCurrency?.toUpperCase();
   if (fromPayment === "USD") return "USD";
   if (fromPayment === "INR") return "INR";

@@ -6,6 +6,7 @@ import { Check, Minus, Sparkles } from "lucide-react";
 import { BILLING_COMPARISON_FEATURES } from "@/lib/billing/comparison";
 import type { ComparisonValue } from "@/lib/billing/comparison";
 import { PLANS } from "@/lib/billing/plans";
+import { getPlanPriceQuote } from "@/lib/billing/pricing";
 import type { PlanId } from "@/lib/billing/plans";
 
 const DISPLAY_PLANS = ["free", "starter", "pro"] as const;
@@ -118,9 +119,11 @@ export default function LandingPricing() {
 
                 <div className="mt-5 flex items-baseline gap-1.5">
                   <span className="text-4xl font-bold tracking-tight text-white md:text-5xl">
-                    {plan.priceInr === 0 ? "Free" : `₹${plan.priceInr}`}
+                    {planId === "free"
+                      ? "Free"
+                      : getPlanPriceQuote(planId, "monthly").displayAmount}
                   </span>
-                  {plan.priceInr > 0 ? (
+                  {planId !== "free" ? (
                     <span className="text-sm text-zinc-500">/month</span>
                   ) : null}
                 </div>

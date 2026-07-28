@@ -17,7 +17,7 @@ const FAQ_ITEMS = [
   {
     question: "Which payment methods are supported?",
     answer:
-      "INR payments use Razorpay. International payments use Stripe (when enabled).",
+      "All plans are priced in USD. Stripe converts to your local currency at checkout using the live exchange rate. Cards and wallets supported in your region are accepted.",
   },
   {
     question: "Can I upgrade later?",

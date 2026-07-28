@@ -12,16 +12,13 @@ import type { PaidPlanId } from "@/lib/billing/plans";
 import {
   getCheckoutLabel,
   getPlanPriceQuote,
-  type BillingCurrency,
   type BillingInterval,
   type PlanPriceQuote,
 } from "@/lib/billing/pricing";
 
 type BillingPricingContextValue = {
   interval: BillingInterval;
-  currency: BillingCurrency;
   setInterval: (interval: BillingInterval) => void;
-  setCurrency: (currency: BillingCurrency) => void;
   getQuote: (plan: PaidPlanId) => PlanPriceQuote;
   getButtonLabel: (plan: PaidPlanId, baseLabel: string) => string;
 };
@@ -32,34 +29,28 @@ const BillingPricingContext = createContext<BillingPricingContextValue | null>(
 
 export function BillingPricingProvider({ children }: { children: ReactNode }) {
   const [interval, setInterval] = useState<BillingInterval>("monthly");
-  const [currency, setCurrency] = useState<BillingCurrency>("INR");
 
   const getQuote = useCallback(
-    (plan: PaidPlanId) => getPlanPriceQuote(plan, interval, currency),
-    [interval, currency]
+    (plan: PaidPlanId) => getPlanPriceQuote(plan, interval),
+    [interval]
   );
 
   const getButtonLabel = useCallback(
     (plan: PaidPlanId, baseLabel: string) => {
-      const price = getCheckoutLabel(plan, interval, currency);
-      if (baseLabel.toLowerCase().includes("upgrade")) {
-        return `${baseLabel} — ${price}`;
-      }
+      const price = getCheckoutLabel(plan, interval);
       return `${baseLabel} — ${price}`;
     },
-    [interval, currency]
+    [interval]
   );
 
   const value = useMemo(
     () => ({
       interval,
-      currency,
       setInterval,
-      setCurrency,
       getQuote,
       getButtonLabel,
     }),
-    [interval, currency, getQuote, getButtonLabel]
+    [interval, getQuote, getButtonLabel]
   );
 
   return (

@@ -1,8 +1,9 @@
 import { NextResponse } from "next/server";
 import { requireVerifiedUser } from "@/lib/auth/require-user";
 import { isPaidPlan } from "@/lib/billing/plans";
-import type { BillingCurrency, BillingInterval } from "@/lib/billing/pricing";
+import type { BillingInterval } from "@/lib/billing/pricing";
 import {
+  getStripePriceEnvKey,
   getStripePriceMetadata,
   isStripeConfigured,
 } from "@/lib/stripe/checkout";
@@ -11,8 +12,8 @@ import { createClient } from "@/lib/supabase/server";
 /**
  * POST /api/stripe/create-checkout
  *
- * Stripe-ready USD checkout. Requires STRIPE_SECRET_KEY and price IDs when
- * enabling live USD billing. Returns 503 until configured.
+ * USD subscription checkout via Stripe. Adaptive Pricing converts to the
+ * customer's local currency using Stripe's live exchange rate at payment time.
  */
 export async function POST(request: Request) {
   try {
@@ -20,7 +21,7 @@ export async function POST(request: Request) {
       return NextResponse.json(
         {
           error:
-            "USD checkout is not enabled yet. Please use INR billing or contact support.",
+            "Checkout is temporarily unavailable. Please contact support@useadvora.com.",
         },
         { status: 503 }
       );
@@ -36,33 +37,23 @@ export async function POST(request: Request) {
     const body = await request.json();
     const planId = body?.plan;
     const interval = (body?.interval ?? "monthly") as BillingInterval;
-    const currency = (body?.currency ?? "USD") as BillingCurrency;
 
     if (!isPaidPlan(planId)) {
       return NextResponse.json({ error: "Invalid plan" }, { status: 400 });
-    }
-
-    if (currency !== "USD") {
-      return NextResponse.json(
-        { error: "Stripe checkout only supports USD." },
-        { status: 400 }
-      );
     }
 
     if (interval !== "monthly" && interval !== "yearly") {
       return NextResponse.json({ error: "Invalid billing interval" }, { status: 400 });
     }
 
-    const priceMeta = getStripePriceMetadata(planId, interval, currency);
-
-    // Price IDs map here when Stripe products are configured in the dashboard.
-    const priceId = process.env[`STRIPE_PRICE_${planId.toUpperCase()}_${interval.toUpperCase()}`];
+    const priceMeta = getStripePriceMetadata(planId, interval);
+    const priceId = process.env[getStripePriceEnvKey(planId, interval)];
 
     if (!priceId) {
       return NextResponse.json(
         {
           error:
-            "USD checkout is not fully configured. Please use INR billing for now.",
+            "Checkout is not fully configured. Please contact support@useadvora.com.",
           metadata: priceMeta,
         },
         { status: 503 }
@@ -72,6 +63,7 @@ export async function POST(request: Request) {
     const origin =
       request.headers.get("origin") ??
       process.env.NEXT_PUBLIC_APP_URL ??
+      process.env.NEXT_PUBLIC_SITE_URL ??
       "http://localhost:3000";
 
     const stripeResponse = await fetch(
@@ -89,10 +81,15 @@ export async function POST(request: Request) {
           "line_items[0][price]": priceId,
           "line_items[0][quantity]": "1",
           customer_email: user.email ?? "",
+          "subscription_data[metadata][user_id]": user.id,
+          "subscription_data[metadata][plan]": planId,
+          "subscription_data[metadata][interval]": interval,
+          "subscription_data[metadata][currency]": priceMeta.currency,
           "metadata[user_id]": user.id,
           "metadata[plan]": planId,
           "metadata[interval]": interval,
-          "metadata[currency]": currency,
+          "metadata[currency]": priceMeta.currency,
+          "adaptive_pricing[enabled]": "true",
         }),
       }
     );
@@ -117,7 +114,7 @@ export async function POST(request: Request) {
   } catch (error) {
     console.error("Create Stripe checkout error:", error);
     return NextResponse.json(
-      { error: "Failed to start USD checkout." },
+      { error: "Failed to start checkout." },
       { status: 500 }
     );
   }

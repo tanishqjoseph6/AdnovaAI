@@ -4,7 +4,7 @@ import { motion } from "framer-motion";
 
 const TRUST_ITEMS = [
   { icon: "🔒", label: "Secure Payments" },
-  { icon: "💳", label: "Razorpay Secure Checkout" },
+  { icon: "💳", label: "Stripe Secure Checkout" },
   { icon: "🌍", label: "Global Pricing" },
   { icon: "🔄", label: "Cancel Anytime" },
   { icon: "⚡", label: "Instant Upgrade" },

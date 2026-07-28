@@ -8,9 +8,9 @@ function startOfTodayIso() {
   return date.toISOString();
 }
 
-function inrForPlan(plan: string | null | undefined): number {
-  if (plan === "starter") return PLANS.starter.priceInr;
-  if (plan === "pro") return PLANS.pro.priceInr;
+function usdForPlan(plan: string | null | undefined): number {
+  if (plan === "starter") return PLANS.starter.priceUsd;
+  if (plan === "pro") return PLANS.pro.priceUsd;
   return 0;
 }
 
@@ -22,13 +22,19 @@ export async function GET() {
     const today = startOfTodayIso();
     const admin = authResult.admin;
 
-    const [profilesResult, creditsResult, feedbackResult, auditResult] =
+    const [profilesResult, paymentsResult, creditsResult, feedbackResult, auditResult] =
       await Promise.all([
         admin
           .from("profiles")
           .select("id, email, full_name, username, plan, subscription_status, account_status, created_at, purchase_date, payment_id")
           .order("created_at", { ascending: false })
           .limit(500),
+        admin
+          .from("payments")
+          .select("plan, amount_usd_minor, amount, currency, status, created_at, email")
+          .eq("status", "success")
+          .order("created_at", { ascending: false })
+          .limit(100),
         admin.from("user_credits").select("user_id, credits, updated_at").limit(1000),
         admin
           .from("user_feedback")
@@ -45,6 +51,7 @@ export async function GET() {
     if (profilesResult.error) throw profilesResult.error;
 
     const profiles = profilesResult.data ?? [];
+    const payments = paymentsResult.data ?? [];
     const credits = creditsResult.data ?? [];
     const feedback = feedbackResult.data ?? [];
     const paidProfiles = profiles.filter(
@@ -52,21 +59,35 @@ export async function GET() {
         (profile.plan === "starter" || profile.plan === "pro") &&
         profile.subscription_status === "active"
     );
+
     const monthlyRevenue = paidProfiles.reduce(
-      (sum, profile) => sum + inrForPlan(profile.plan),
+      (sum, profile) => sum + usdForPlan(profile.plan),
       0
     );
 
-    const recentPayments = profiles
+    const recentPayments = (payments.length > 0 ? payments : profiles
       .filter((profile) => profile.payment_id)
       .slice(0, 6)
       .map((profile) => ({
-        id: profile.payment_id,
-        email: profile.email,
         plan: profile.plan,
-        amount: inrForPlan(profile.plan),
-        date: profile.purchase_date ?? profile.created_at,
-        status: profile.subscription_status,
+        amount_usd_minor: usdForPlan(profile.plan) * 100,
+        currency: "USD",
+        created_at: profile.purchase_date ?? profile.created_at,
+        email: profile.email,
+        status: "success",
+      })))
+      .slice(0, 6)
+      .map((payment) => ({
+        id: payment.created_at,
+        email: payment.email,
+        plan: payment.plan,
+        amount:
+          typeof payment.amount_usd_minor === "number"
+            ? payment.amount_usd_minor / 100
+            : usdForPlan(payment.plan),
+        currency: payment.currency ?? "USD",
+        date: payment.created_at,
+        status: payment.status,
       }));
 
     const recentSignups = profiles.slice(0, 6).map((profile) => ({

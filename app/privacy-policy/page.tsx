@@ -73,8 +73,8 @@ export default function PrivacyPolicyPage() {
 
       <LegalSection title="5. Payment Processing">
         <p>
-          Paid subscriptions are processed through Razorpay. When you purchase a
-          plan, payment details are handled directly by Razorpay in accordance
+          Paid subscriptions are processed through Stripe. When you purchase a
+          plan, payment details are handled directly by Stripe in accordance
           with their privacy and security practices. Advora receives limited
           transaction metadata such as payment status, order identifiers, plan
           type, and billing confirmation needed to activate your subscription

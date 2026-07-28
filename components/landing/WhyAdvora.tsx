@@ -10,7 +10,7 @@ const COMPARISON_ROWS = [
   },
   {
     label: "Cost per campaign",
-    agency: "₹50,000+ minimum",
+    agency: "$600+ minimum",
     advora: "Start free, scale as you grow",
   },
   {

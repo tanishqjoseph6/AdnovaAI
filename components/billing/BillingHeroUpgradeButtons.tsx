@@ -11,7 +11,7 @@ type BillingHeroUpgradeButtonsProps = {
 export default function BillingHeroUpgradeButtons({
   subscription,
 }: BillingHeroUpgradeButtonsProps) {
-  const { interval, currency, getButtonLabel } = useBillingPricing();
+  const { interval, getButtonLabel } = useBillingPricing();
 
   const showStarterUpgrade =
     subscription.plan !== "starter" && subscription.plan !== "pro";
@@ -27,7 +27,6 @@ export default function BillingHeroUpgradeButtons({
         <BillingPlanButton
           plan="starter"
           interval={interval}
-          currency={currency}
           disabled={false}
           className="inline-flex items-center justify-center rounded-xl border border-cyan-500/30 bg-cyan-500/10 px-5 py-2.5 text-sm font-semibold text-cyan-200 transition hover:border-cyan-400/50 hover:bg-cyan-500/15 disabled:cursor-not-allowed disabled:opacity-50"
         >
@@ -38,7 +37,6 @@ export default function BillingHeroUpgradeButtons({
         <BillingPlanButton
           plan="pro"
           interval={interval}
-          currency={currency}
           disabled={false}
           className="inline-flex items-center justify-center rounded-xl bg-gradient-to-r from-cyan-400 via-violet-500 to-fuchsia-500 px-5 py-2.5 text-sm font-semibold text-white shadow-lg shadow-violet-500/20 transition hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-50"
         >

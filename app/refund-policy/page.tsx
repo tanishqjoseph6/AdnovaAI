@@ -24,9 +24,10 @@ export default function RefundPolicyPage() {
       <LegalSection title="1. Subscription Policy">
         <p>
           Advora AI offers Free, Starter, Pro, and custom subscription options.
-          Paid plans are billed in advance through Razorpay for the selected
-          billing period. Access to paid features and included credits begins
-          after successful payment confirmation.
+          Paid plans are billed in advance through Stripe in USD for the selected
+          billing period. At checkout, Stripe may charge your local currency
+          using the live exchange rate. Access to paid features and included
+          credits begins after successful payment confirmation.
         </p>
       </LegalSection>
 
@@ -78,9 +79,9 @@ export default function RefundPolicyPage() {
           for the same successful order.
         </p>
         <p>
-          If payment was deducted by your bank or UPI provider but Advora did
+          If payment was deducted by your bank or card provider but Advora did
           not receive confirmation, contact support with transaction details so
-          we can investigate with Razorpay.
+          we can investigate with Stripe.
         </p>
       </LegalSection>
 
@@ -115,7 +116,7 @@ export default function RefundPolicyPage() {
         </p>
         <ul className="list-disc space-y-2 pl-5">
           <li>Your Advora account email</li>
-          <li>Razorpay payment ID or order ID</li>
+          <li>Stripe payment or invoice ID</li>
           <li>Date and amount of the transaction</li>
           <li>A brief description of the issue</li>
         </ul>

@@ -59,8 +59,9 @@ export default function TermsOfServicePage() {
 
       <LegalSection title="4. Subscriptions and Billing">
         <p>
-          Paid plans are billed on a subscription basis through Razorpay in INR
-          unless otherwise stated. By subscribing, you authorize us and our
+          Paid plans are billed on a subscription basis through Stripe in USD.
+          At checkout, Stripe may convert the charge to your local currency using
+          the live exchange rate. By subscribing, you authorize us and our
           payment processor to charge the applicable fees for your selected
           plan and billing interval.
         </p>
@@ -123,7 +124,7 @@ export default function TermsOfServicePage() {
 
       <LegalSection title="8. Third-Party Services">
         <p>
-          The platform integrates with third-party providers such as Razorpay,
+          The platform integrates with third-party providers such as Stripe,
           authentication services, hosting infrastructure, and AI model
           providers. Your use of those services may be subject to their separate
           terms and policies.

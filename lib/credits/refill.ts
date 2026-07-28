@@ -67,6 +67,8 @@ export type CreditRefillRpcResult = {
   plan?: string;
   billing_plan?: string;
   refilled_at?: string;
+  next_reset_date?: string;
+  /** @deprecated Use next_reset_date */
   next_refill_at?: string;
 };
 

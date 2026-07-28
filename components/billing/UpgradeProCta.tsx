@@ -11,7 +11,7 @@ type UpgradeProCtaProps = {
 };
 
 export default function UpgradeProCta({ currentPlanId }: UpgradeProCtaProps) {
-  const { interval, currency, getButtonLabel } = useBillingPricing();
+  const { interval, getButtonLabel } = useBillingPricing();
 
   if (currentPlanId === "pro") {
     return null;
@@ -46,7 +46,6 @@ export default function UpgradeProCta({ currentPlanId }: UpgradeProCtaProps) {
         <BillingPlanButton
           plan="pro"
           interval={interval}
-          currency={currency}
           className="inline-flex shrink-0 items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-cyan-400 via-violet-500 to-fuchsia-500 px-8 py-3.5 text-sm font-semibold text-white shadow-xl shadow-violet-500/30 transition hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-50"
         >
           {getButtonLabel("pro", "Upgrade to Pro")}

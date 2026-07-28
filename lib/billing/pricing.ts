@@ -1,14 +1,18 @@
 import type { PaidPlanId } from "@/lib/billing/plans";
 
 export type BillingInterval = "monthly" | "yearly";
-export type BillingCurrency = "INR" | "USD";
+
+/** Canonical currency for plan catalog and subscription pricing. */
+export const PLAN_CURRENCY = "USD" as const;
+export type PlanCurrency = typeof PLAN_CURRENCY;
+
+/** ISO currency code on a completed transaction (may differ from PLAN_CURRENCY). */
+export type TransactionCurrency = string;
+
+/** @deprecated Use TransactionCurrency — kept for legacy imports. */
+export type BillingCurrency = TransactionCurrency;
 
 export const YEARLY_DISCOUNT_PERCENT = 20;
-
-const MONTHLY_INR: Record<PaidPlanId, number> = {
-  starter: 999,
-  pro: 2999,
-};
 
 const MONTHLY_USD: Record<PaidPlanId, number> = {
   starter: 19,
@@ -21,34 +25,34 @@ const YEARLY_USD: Record<PaidPlanId, number> = {
   pro: 566,
 };
 
-function roundInr(value: number): number {
-  return Math.round(value);
-}
-
-function yearlyInrFromMonthly(monthly: number): number {
-  const annual = monthly * 12;
-  const discounted = annual * (1 - YEARLY_DISCOUNT_PERCENT / 100);
-  return roundInr(discounted);
-}
-
-const YEARLY_INR: Record<PaidPlanId, number> = {
-  starter: yearlyInrFromMonthly(MONTHLY_INR.starter),
-  pro: yearlyInrFromMonthly(MONTHLY_INR.pro),
-};
-
-export function formatInr(amount: number): string {
-  return `₹${amount.toLocaleString("en-IN")}`;
-}
-
 export function formatUsd(amount: number): string {
   return `$${amount.toLocaleString("en-US")}`;
+}
+
+export function formatPaymentCurrency(
+  amountMinor: number,
+  currency: string
+): string {
+  const code = currency.toUpperCase();
+  if (code === "USD") {
+    return formatUsd(amountMinor / 100);
+  }
+
+  try {
+    return new Intl.NumberFormat("en-US", {
+      style: "currency",
+      currency: code,
+    }).format(amountMinor / 100);
+  } catch {
+    return `${(amountMinor / 100).toFixed(2)} ${code}`;
+  }
 }
 
 export type PlanPriceQuote = {
   plan: PaidPlanId;
   interval: BillingInterval;
-  currency: BillingCurrency;
-  /** Paise (INR) or cents (USD) for payment providers. */
+  currency: PlanCurrency;
+  /** Cents (USD) for payment providers. */
   amountMinor: number;
   displayAmount: string;
   /** Full annual list price before discount (yearly only). */
@@ -57,54 +61,20 @@ export type PlanPriceQuote = {
   showSaveBadge: boolean;
 };
 
-function getYearlyOriginalDisplay(
-  plan: PaidPlanId,
-  currency: BillingCurrency
-): string {
-  if (currency === "INR") {
-    return formatInr(MONTHLY_INR[plan] * 12);
-  }
+function getYearlyOriginalDisplay(plan: PaidPlanId): string {
   return formatUsd(MONTHLY_USD[plan] * 12);
 }
 
 export function getPlanPriceQuote(
   plan: PaidPlanId,
-  interval: BillingInterval,
-  currency: BillingCurrency
+  interval: BillingInterval
 ): PlanPriceQuote {
-  if (currency === "INR") {
-    if (interval === "monthly") {
-      const amount = MONTHLY_INR[plan];
-      return {
-        plan,
-        interval,
-        currency,
-        amountMinor: amount * 100,
-        displayAmount: formatInr(amount),
-        priceSuffix: "/month",
-        showSaveBadge: false,
-      };
-    }
-
-    const amount = YEARLY_INR[plan];
-    return {
-      plan,
-      interval,
-      currency,
-      amountMinor: amount * 100,
-      displayAmount: formatInr(amount),
-      originalDisplayAmount: getYearlyOriginalDisplay(plan, currency),
-      priceSuffix: "/year",
-      showSaveBadge: true,
-    };
-  }
-
   if (interval === "monthly") {
     const amount = MONTHLY_USD[plan];
     return {
       plan,
       interval,
-      currency,
+      currency: PLAN_CURRENCY,
       amountMinor: amount * 100,
       displayAmount: formatUsd(amount),
       priceSuffix: "/month",
@@ -116,10 +86,10 @@ export function getPlanPriceQuote(
   return {
     plan,
     interval,
-    currency,
+    currency: PLAN_CURRENCY,
     amountMinor: amount * 100,
     displayAmount: formatUsd(amount),
-    originalDisplayAmount: getYearlyOriginalDisplay(plan, currency),
+    originalDisplayAmount: getYearlyOriginalDisplay(plan),
     priceSuffix: "/year",
     showSaveBadge: true,
   };
@@ -127,22 +97,32 @@ export function getPlanPriceQuote(
 
 export function getPaidPlanAmountMinor(
   plan: PaidPlanId,
-  interval: BillingInterval = "monthly",
-  currency: BillingCurrency = "INR"
+  interval: BillingInterval = "monthly"
 ): number {
-  return getPlanPriceQuote(plan, interval, currency).amountMinor;
+  return getPlanPriceQuote(plan, interval).amountMinor;
 }
 
-/** Default monthly INR — backward compatible with legacy PLANS.amountPaise. */
-export function getLegacyMonthlyInrAmountPaise(plan: PaidPlanId): number {
-  return getPlanPriceQuote(plan, "monthly", "INR").amountMinor;
+export function getPlanPriceLabel(
+  plan: PaidPlanId,
+  interval: BillingInterval = "monthly"
+): string {
+  const quote = getPlanPriceQuote(plan, interval);
+  return `${quote.displayAmount}${quote.priceSuffix}`;
 }
 
 export function getCheckoutLabel(
   plan: PaidPlanId,
-  interval: BillingInterval,
-  currency: BillingCurrency
+  interval: BillingInterval
 ): string {
-  const quote = getPlanPriceQuote(plan, interval, currency);
-  return `${quote.displayAmount}${quote.priceSuffix}`;
+  return getPlanPriceLabel(plan, interval);
+}
+
+export function computeExchangeRate(
+  amountPaidMinor: number,
+  amountUsdMinor: number
+): number | null {
+  if (amountUsdMinor <= 0 || amountPaidMinor <= 0) {
+    return null;
+  }
+  return amountPaidMinor / amountUsdMinor;
 }

@@ -74,8 +74,8 @@ export function buildBillingInvoices(
       dateIso: subscription.purchase_date,
       planName: plan.name,
       amountLabel:
-        plan.priceInr !== null && plan.priceInr > 0
-          ? `₹${plan.priceInr.toLocaleString("en-IN")}`
+        plan.priceUsd !== null && plan.priceUsd > 0
+          ? `$${plan.priceUsd.toLocaleString("en-US")}`
           : plan.priceLabel,
       paymentStatus: mapSubscriptionPaymentStatus(
         subscription.subscription_status,

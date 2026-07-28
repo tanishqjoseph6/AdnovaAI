@@ -107,9 +107,9 @@ export const LANDING_FEATURES: LandingFeature[] = [
     id: "billing",
     title: "Billing & Invoices",
     description:
-      "Upgrade with Razorpay, track credits, view payment history, and download PDF invoices anytime.",
+      "Upgrade with Stripe, track credits, view payment history, and download PDF invoices anytime.",
     href: "/dashboard/billing",
-    tags: ["Razorpay", "Invoices"],
+    tags: ["Stripe", "Invoices"],
   },
   {
     id: "dashboard",
@@ -153,7 +153,7 @@ export const LANDING_FAQ = [
   },
   {
     question: "What does Pro include?",
-    answer: `Pro is ${PLANS.pro.priceLabel} with ${PRO_PLAN_CREDITS.toLocaleString("en-IN")} AI credits per month and priority support for teams scaling creative output.`,
+    answer: `Pro is ${PLANS.pro.priceLabel} with ${PRO_PLAN_CREDITS.toLocaleString("en-US")} AI credits per month and priority support for teams scaling creative output.`,
   },
   {
     question: "Can Advora analyze competitor ads?",

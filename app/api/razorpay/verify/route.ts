@@ -7,6 +7,7 @@ import {
 } from "@/lib/billing/payment-verification";
 import { recordPayment } from "@/lib/billing/payments";
 import { extractVerifiedPaymentDetails } from "@/lib/billing/razorpay-ledger";
+import { getPaidPlanAmountMinor } from "@/lib/billing/pricing";
 import { isPaidPlan } from "@/lib/billing/plans";
 import type { BillingInterval } from "@/lib/billing/pricing";
 import { createRazorpayClient, verifyPaymentSignature } from "@/lib/razorpay";
@@ -133,12 +134,19 @@ export async function POST(request: Request) {
       );
     }
 
+    const amountUsdMinor = getPaidPlanAmountMinor(
+      verified.plan,
+      verified.billingInterval
+    );
+
     const recorded = await recordPayment({
       userId: verified.userId,
       email: verified.email ?? user.email,
       plan: verified.plan,
       amount: verified.amountMinor,
       currency: verified.currency,
+      amountUsdMinor,
+      provider: "razorpay",
       razorpayPaymentId: verified.razorpayPaymentId,
       razorpayOrderId: verified.razorpayOrderId,
       status: "success",

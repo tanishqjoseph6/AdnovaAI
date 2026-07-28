@@ -17,8 +17,8 @@ export const PLANS = {
     name: "Free",
     emoji: "",
     priceLabel: "Free",
-    priceInr: 0,
-    amountPaise: 0,
+    priceUsd: 0,
+    amountCents: 0,
     /** Monthly AI credits included with the plan (refills every 30 days). */
     monthlyCredits: 50,
     purchasable: false,
@@ -33,15 +33,16 @@ export const PLANS = {
     id: "starter" as const,
     name: "Starter",
     emoji: "⭐",
-    priceLabel: "₹999/month",
-    priceInr: 999,
-    amountPaise: 99900,
+    priceLabel: "$19/month",
+    priceUsd: 19,
+    amountCents: 1900,
     monthlyCredits: 500,
     purchasable: true,
     features: [
       "500 AI credits / month",
       "Brand Kit & brand memory",
       "Competitor & landing analyzers",
+      "AI reel script generator",
       "Social scheduler",
       "Advanced AI settings",
     ],
@@ -50,9 +51,9 @@ export const PLANS = {
     id: "pro" as const,
     name: "Pro",
     emoji: "👑",
-    priceLabel: "₹2999/month",
-    priceInr: 2999,
-    amountPaise: 299900,
+    priceLabel: "$59/month",
+    priceUsd: 59,
+    amountCents: 5900,
     monthlyCredits: 2500,
     purchasable: true,
     features: [
@@ -68,8 +69,8 @@ export const PLANS = {
     name: "Custom",
     emoji: "💎",
     priceLabel: "Custom",
-    priceInr: null,
-    amountPaise: 0,
+    priceUsd: null,
+    amountCents: 0,
     monthlyCredits: 2500,
     purchasable: false,
     features: [
@@ -98,5 +99,5 @@ export function getPlan(planId: string) {
 }
 
 export function formatCreditsCount(count: number): string {
-  return count.toLocaleString("en-IN");
+  return count.toLocaleString("en-US");
 }

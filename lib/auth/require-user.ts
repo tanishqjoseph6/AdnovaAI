@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import type { User } from "@supabase/supabase-js";
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { isEmailVerified } from "@/lib/auth/email-verified";
+import { ensureLazyMonthlyCreditReset } from "@/lib/credits/server";
 
 type AuthSuccess = { user: User };
 type AuthFailure = { response: NextResponse };
@@ -42,6 +43,12 @@ export async function requireVerifiedUser(
         { status: 403 }
       ),
     };
+  }
+
+  try {
+    await ensureLazyMonthlyCreditReset(result.user.id);
+  } catch (error) {
+    console.error("Lazy credit reset failed:", error);
   }
 
   return result;

@@ -1,10 +1,8 @@
 import crypto from "crypto";
 import Razorpay from "razorpay";
 import type { PaidPlanId } from "@/lib/billing/plans";
-import {
-  getPaidPlanAmountMinor,
-  type BillingInterval,
-} from "@/lib/billing/pricing";
+import type { BillingInterval } from "@/lib/billing/pricing";
+import { getLegacyRazorpayAmountMinor } from "@/lib/billing/legacy-razorpay-pricing";
 
 type RazorpayKeyMode = "live" | "test" | "unknown";
 
@@ -151,7 +149,7 @@ export async function createPlanOrder(
   interval: BillingInterval = "monthly"
 ) {
   const razorpay = createRazorpayClient();
-  const amount = getPaidPlanAmountMinor(planId, interval, "INR");
+  const amount = getLegacyRazorpayAmountMinor(planId, interval);
 
   const order = await razorpay.orders.create({
     amount,

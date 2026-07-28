@@ -1,9 +1,6 @@
 import type { PaidPlanId } from "@/lib/billing/plans";
-import {
-  getPaidPlanAmountMinor,
-  type BillingCurrency,
-  type BillingInterval,
-} from "@/lib/billing/pricing";
+import { getLegacyRazorpayAmountMinor } from "@/lib/billing/legacy-razorpay-pricing";
+import type { BillingInterval } from "@/lib/billing/pricing";
 
 export class PaymentVerificationError extends Error {
   readonly statusCode: number;
@@ -37,14 +34,13 @@ function noteValue(notes: RazorpayNotes | undefined, key: string): string | unde
   return typeof value === "string" ? value : undefined;
 }
 
-function assertAmountMatchesPlan(
+function assertLegacyRazorpayAmountMatchesPlan(
   amount: number | string,
   plan: PaidPlanId,
   label: string,
-  interval: BillingInterval = "monthly",
-  currency: BillingCurrency = "INR"
+  interval: BillingInterval = "monthly"
 ): void {
-  const expected = getPaidPlanAmountMinor(plan, interval, currency);
+  const expected = getLegacyRazorpayAmountMinor(plan, interval);
   if (Number(amount) !== expected) {
     throw new PaymentVerificationError(`${label} amount mismatch`, 400);
   }
@@ -75,7 +71,7 @@ export function assertOrderMatchesUserPlan(
     throw new PaymentVerificationError("Billing interval mismatch for order", 400);
   }
 
-  assertAmountMatchesPlan(order.amount, plan, "Order", interval, "INR");
+  assertLegacyRazorpayAmountMatchesPlan(order.amount, plan, "Order", interval);
 
   if (order.status !== "paid") {
     throw new PaymentVerificationError(
@@ -101,7 +97,12 @@ export function assertPaymentMatchesOrder(
     throw new PaymentVerificationError("Payment not captured", 400);
   }
 
-  assertAmountMatchesPlan(payment.amount, plan, "Payment", interval, "INR");
+  assertLegacyRazorpayAmountMatchesPlan(
+    payment.amount,
+    plan,
+    "Payment",
+    interval
+  );
 
   if (userId) {
     const paymentUserId = noteValue(payment.notes, "user_id");
@@ -137,7 +138,12 @@ export function assertWebhookPaymentEntity(
     throw new PaymentVerificationError("Payment not captured", 400);
   }
 
-  assertAmountMatchesPlan(payment.amount, plan, "Payment", interval, "INR");
+  assertLegacyRazorpayAmountMatchesPlan(
+    payment.amount,
+    plan,
+    "Payment",
+    interval
+  );
 
   return {
     userId,

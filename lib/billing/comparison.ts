@@ -8,8 +8,8 @@ import {
 import { formatCreditsCount, PLANS } from "./plans";
 import { getPlanPriceQuote } from "./pricing";
 
-const STARTER_INR_MONTHLY = getPlanPriceQuote("starter", "monthly", "INR");
-const PRO_INR_MONTHLY = getPlanPriceQuote("pro", "monthly", "INR");
+const STARTER_USD_MONTHLY = getPlanPriceQuote("starter", "monthly");
+const PRO_USD_MONTHLY = getPlanPriceQuote("pro", "monthly");
 
 export type ComparisonValue = boolean | string;
 
@@ -220,8 +220,8 @@ export const PRICING_TIERS: PricingTierConfig[] = [
     emoji: "⭐",
     badge: "Best Value",
     subtitle: "Monthly credits plus every premium workflow.",
-    priceDisplay: STARTER_INR_MONTHLY.displayAmount,
-    priceSuffix: STARTER_INR_MONTHLY.priceSuffix,
+    priceDisplay: STARTER_USD_MONTHLY.displayAmount,
+    priceSuffix: STARTER_USD_MONTHLY.priceSuffix,
     features: [
       `${formatCreditsCount(STARTER_PLAN_CREDITS)} AI credits / month`,
       "Brand Kit, analyzers & scheduler",
@@ -238,8 +238,8 @@ export const PRICING_TIERS: PricingTierConfig[] = [
     emoji: "👑",
     badge: "🔥 MOST POPULAR",
     subtitle: "More monthly credits for teams shipping ads at scale.",
-    priceDisplay: PRO_INR_MONTHLY.displayAmount,
-    priceSuffix: PRO_INR_MONTHLY.priceSuffix,
+    priceDisplay: PRO_USD_MONTHLY.displayAmount,
+    priceSuffix: PRO_USD_MONTHLY.priceSuffix,
     features: [
       `${formatCreditsCount(PRO_PLAN_CREDITS)} AI credits / month`,
       "Everything in Starter",

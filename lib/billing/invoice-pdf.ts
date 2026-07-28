@@ -7,7 +7,7 @@ import {
 } from "@/lib/billing/payments";
 
 function formatInvoiceDate(iso: string): string {
-  return new Intl.DateTimeFormat("en-IN", {
+  return new Intl.DateTimeFormat("en-US", {
     dateStyle: "long",
     timeStyle: "short",
   }).format(new Date(iso));
@@ -54,8 +54,32 @@ export function buildPaymentInvoicePdf(payment: PaymentRecord): Buffer {
     );
   }
   doc.text(`Amount: ${amountLabel}`, 20, payment.billingInterval ? 142 : 134);
-  doc.text(`Payment ID: ${payment.razorpayPaymentId}`, 20, payment.billingInterval ? 150 : 142);
-  doc.text(`Order ID: ${payment.razorpayOrderId}`, 20, payment.billingInterval ? 158 : 150);
+
+  const paymentReference =
+    payment.stripePaymentId ??
+    payment.stripeInvoiceId ??
+    payment.razorpayPaymentId ??
+    "N/A";
+  const orderReference =
+    payment.stripeSubscriptionId ?? payment.razorpayOrderId ?? "N/A";
+
+  doc.text(`Payment ID: ${paymentReference}`, 20, payment.billingInterval ? 150 : 142);
+  doc.text(`Reference: ${orderReference}`, 20, payment.billingInterval ? 158 : 150);
+
+  if (payment.amountUsdMinor && payment.currency.toUpperCase() !== "USD") {
+    doc.text(
+      `USD equivalent: ${formatPaymentAmount(payment.amountUsdMinor, "USD")}`,
+      20,
+      payment.billingInterval ? 166 : 158
+    );
+    if (payment.exchangeRate) {
+      doc.text(
+        `Exchange rate: ${payment.exchangeRate.toFixed(6)}`,
+        20,
+        payment.billingInterval ? 174 : 166
+      );
+    }
+  }
 
   doc.setFontSize(9);
   doc.setTextColor(120, 120, 120);

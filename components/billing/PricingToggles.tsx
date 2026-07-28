@@ -61,14 +61,14 @@ function ToggleGroup<T extends string>({
 }
 
 export default function PricingToggles() {
-  const { interval, currency, setInterval, setCurrency } = useBillingPricing();
+  const { interval, setInterval } = useBillingPricing();
 
   return (
     <motion.div
       initial={{ opacity: 0, y: 10 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.4 }}
-      className="flex w-full max-w-full flex-col items-center justify-center gap-4 px-2 sm:flex-row sm:gap-8"
+      className="flex w-full max-w-full flex-col items-center justify-center gap-4 px-2"
     >
       <ToggleGroup
         label="Billing interval"
@@ -84,17 +84,10 @@ export default function PricingToggles() {
           },
         ]}
       />
-
-      <ToggleGroup
-        label="Currency"
-        layoutId="billing-currency-toggle"
-        value={currency}
-        onChange={setCurrency}
-        options={[
-          { id: "INR", label: "🇮🇳 INR" },
-          { id: "USD", label: "🇺🇸 USD" },
-        ]}
-      />
+      <p className="max-w-md text-center text-xs text-zinc-500">
+        All prices shown in USD. At checkout, Stripe converts to your local
+        currency using the live exchange rate.
+      </p>
     </motion.div>
   );
 }

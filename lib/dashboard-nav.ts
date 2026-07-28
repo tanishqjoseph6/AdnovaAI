@@ -9,6 +9,7 @@ export type NavItem = {
     | "scheduler"
     | "landing"
     | "competitor"
+    | "reel"
     | "history"
     | "billing"
     | "feedback"
@@ -19,7 +20,8 @@ export type NavItem = {
     | "brand_kit"
     | "competitor_analyzer"
     | "landing_analyzer"
-    | "social_scheduler";
+    | "social_scheduler"
+    | "reel_script_generator";
 };
 
 export const dashboardNav: NavItem[] = [
@@ -49,6 +51,12 @@ export const dashboardNav: NavItem[] = [
     href: "/dashboard/competitor-analyzer",
     icon: "competitor",
     premiumFeature: "competitor_analyzer",
+  },
+  {
+    label: "AI Reel Scripts",
+    href: "/dashboard/reel-script",
+    icon: "reel",
+    premiumFeature: "reel_script_generator",
   },
   { label: "History", href: "/dashboard/history", icon: "history" },
   { label: "Feedback", href: "/dashboard/feedback", icon: "feedback" },

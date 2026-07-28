@@ -15,9 +15,9 @@ function last30Days() {
   });
 }
 
-function amountForPlan(plan: string | null | undefined): number {
-  if (plan === "starter") return PLANS.starter.priceInr;
-  if (plan === "pro") return PLANS.pro.priceInr;
+function usdForPlan(plan: string | null | undefined): number {
+  if (plan === "starter") return PLANS.starter.priceUsd;
+  if (plan === "pro") return PLANS.pro.priceUsd;
   return 0;
 }
 
@@ -30,28 +30,36 @@ export async function GET() {
     since.setDate(since.getDate() - 30);
     const sinceIso = since.toISOString();
 
-    const [profilesResult, creditsResult, feedbackResult] = await Promise.all([
-      authResult.admin
-        .from("profiles")
-        .select("id, plan, subscription_status, purchase_date, created_at")
-        .gte("created_at", sinceIso)
-        .limit(1000),
-      authResult.admin
-        .from("user_credits")
-        .select("credits, plan, updated_at")
-        .gte("updated_at", sinceIso)
-        .limit(1000),
-      authResult.admin
-        .from("user_feedback")
-        .select("id, category, created_at")
-        .gte("created_at", sinceIso)
-        .limit(1000),
-    ]);
+    const [profilesResult, paymentsResult, creditsResult, feedbackResult] =
+      await Promise.all([
+        authResult.admin
+          .from("profiles")
+          .select("id, plan, subscription_status, purchase_date, created_at")
+          .gte("created_at", sinceIso)
+          .limit(1000),
+        authResult.admin
+          .from("payments")
+          .select("plan, amount_usd_minor, amount, currency, status, created_at")
+          .eq("status", "success")
+          .gte("created_at", sinceIso)
+          .limit(1000),
+        authResult.admin
+          .from("user_credits")
+          .select("credits, plan, updated_at")
+          .gte("updated_at", sinceIso)
+          .limit(1000),
+        authResult.admin
+          .from("user_feedback")
+          .select("id, category, created_at")
+          .gte("created_at", sinceIso)
+          .limit(1000),
+      ]);
 
     if (profilesResult.error) throw profilesResult.error;
 
     const days = last30Days();
     const profiles = profilesResult.data ?? [];
+    const payments = paymentsResult.data ?? [];
     const credits = creditsResult.data ?? [];
     const feedback = feedbackResult.data ?? [];
 
@@ -59,12 +67,19 @@ export async function GET() {
       day,
       value: profiles.filter((profile) => dayKey(profile.created_at) === day).length,
     }));
+
     const revenue = days.map((day) => ({
       day,
-      value: profiles
-        .filter((profile) => dayKey(profile.purchase_date) === day)
-        .reduce((sum, profile) => sum + amountForPlan(profile.plan), 0),
+      value: payments
+        .filter((payment) => dayKey(payment.created_at) === day)
+        .reduce((sum, payment) => {
+          if (typeof payment.amount_usd_minor === "number") {
+            return sum + payment.amount_usd_minor / 100;
+          }
+          return sum + usdForPlan(payment.plan);
+        }, 0),
     }));
+
     const feedbackTrend = days.map((day) => ({
       day,
       value: feedback.filter((item) => dayKey(item.created_at) === day).length,
@@ -79,19 +94,14 @@ export async function GET() {
       range: "last_30_days",
       usersGrowth,
       revenue,
-      mrr: revenue,
-      creditsUsage: days.map((day) => ({
-        day,
-        value: credits.filter((row) => dayKey(row.updated_at) === day).length,
-      })),
-      topPlans: planCounts,
-      topCountries: [{ label: "Unknown", value: profiles.length }],
       feedbackTrend,
+      planCounts,
+      creditUsage: credits.length,
     });
   } catch (error) {
     console.error("Admin analytics fetch error:", error);
     return NextResponse.json(
-      { error: "Unable to load analytics." },
+      { error: "Unable to load admin analytics." },
       { status: 500 }
     );
   }

@@ -14,7 +14,7 @@ import {
 } from "@/lib/auth/rate-limit-config";
 import { rateLimitExceededResponse } from "@/lib/auth/rate-limit-response";
 import { isValidEmail, normalizeEmail } from "@/lib/auth/validation";
-import { maybeRefillUserCredits } from "@/lib/credits/server";
+import { ensureLazyMonthlyCreditReset } from "@/lib/credits/server";
 import { createClient } from "@/lib/supabase/server";
 
 export async function POST(request: Request) {
@@ -104,7 +104,7 @@ export async function POST(request: Request) {
 
     let creditsRefilled = false;
     if (data.user && isEmailVerified(data.user)) {
-      const refill = await maybeRefillUserCredits(data.user.id);
+      const refill = await ensureLazyMonthlyCreditReset(data.user.id);
       creditsRefilled = refill.refilled === true;
     }
 

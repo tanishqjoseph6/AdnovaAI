@@ -4,7 +4,9 @@ import type {
   HistoryEntry,
   HistoryFilter,
   HistorySort,
+  ReelScriptRecord,
 } from "./types";
+import { REEL_GOAL_LABELS, REEL_PLATFORM_LABELS } from "@/lib/reel-script/types";
 
 const GENERATION_DATE_FORMAT_OPTIONS = {
   weekday: "short",
@@ -129,12 +131,43 @@ export function matchesSearchQueryForCompetitor(
   return parts.some((part) => part.toLowerCase().includes(normalized));
 }
 
+export function matchesSearchQueryForReelScript(
+  record: ReelScriptRecord,
+  query: string
+): boolean {
+  const normalized = query.trim().toLowerCase();
+  if (!normalized) return true;
+
+  const parts = [
+    record.brand_name,
+    record.product_description,
+    record.product_url ?? "",
+    record.target_audience,
+    record.brand_voice,
+    REEL_PLATFORM_LABELS[record.platform],
+    REEL_GOAL_LABELS[record.goal],
+    ...record.result.hooks,
+    record.result.scrollStoppingOpening,
+    record.result.voiceOverScript,
+    record.result.cta,
+    record.result.caption,
+    record.result.thumbnailTitle,
+    ...record.result.hashtags,
+  ];
+
+  return parts.some((part) => part.toLowerCase().includes(normalized));
+}
+
 export function matchesSearchQueryForEntry(
   entry: HistoryEntry,
   query: string
 ): boolean {
   if (entry.kind === "generation") {
     return matchesSearchQuery(entry.record, query);
+  }
+
+  if (entry.kind === "reel_script") {
+    return matchesSearchQueryForReelScript(entry.record, query);
   }
 
   return matchesSearchQueryForCompetitor(entry.record, query);

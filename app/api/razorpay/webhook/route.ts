@@ -4,6 +4,7 @@ import {
   PaymentVerificationError,
 } from "@/lib/billing/payment-verification";
 import { recordPayment } from "@/lib/billing/payments";
+import { getPaidPlanAmountMinor } from "@/lib/billing/pricing";
 import { extractVerifiedPaymentDetails } from "@/lib/billing/razorpay-ledger";
 import { isPaidPlan } from "@/lib/billing/plans";
 import type { BillingInterval } from "@/lib/billing/pricing";
@@ -106,6 +107,11 @@ export async function POST(request: Request) {
         plan: verified.plan,
         amount: verified.amountMinor,
         currency: verified.currency,
+        amountUsdMinor: getPaidPlanAmountMinor(
+          verified.plan,
+          verified.billingInterval
+        ),
+        provider: "razorpay",
         razorpayPaymentId: verified.razorpayPaymentId,
         razorpayOrderId: verified.razorpayOrderId,
         status: "failed",
@@ -186,12 +192,19 @@ export async function POST(request: Request) {
       orderId: verified.razorpayOrderId,
     });
 
+    const amountUsdMinor = getPaidPlanAmountMinor(
+      verified.plan,
+      verified.billingInterval
+    );
+
     const recorded = await recordPayment({
       userId: verified.userId,
       email: verified.email,
       plan: verified.plan,
       amount: verified.amountMinor,
       currency: verified.currency,
+      amountUsdMinor,
+      provider: "razorpay",
       razorpayPaymentId: verified.razorpayPaymentId,
       razorpayOrderId: verified.razorpayOrderId,
       status: "success",

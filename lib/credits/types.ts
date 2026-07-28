@@ -17,7 +17,7 @@ export type UserCredits = {
   /** True when credits were refilled during this fetch. */
   refilledJustNow?: boolean;
   /** ISO timestamp of the next scheduled monthly reset (UTC). */
-  nextRefillAt?: string | null;
+  nextResetDate?: string | null;
 };
 
 /**

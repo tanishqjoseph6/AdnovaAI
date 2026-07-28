@@ -22,7 +22,7 @@ export const DEFAULT_NOTIFICATIONS: Omit<AppNotification, "read">[] = [
   {
     id: "billing-updates",
     title: "Billing updates",
-    body: "Monthly and yearly plans are now available in INR and USD from the Billing page.",
+    body: "Monthly and yearly plans are now available in USD from the Billing page.",
     category: "billing",
     createdAt: NOW,
     href: "/dashboard/billing",
