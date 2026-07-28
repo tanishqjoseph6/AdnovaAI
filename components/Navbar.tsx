@@ -7,7 +7,8 @@ import Image from "next/image";
 
 const navLinks = [
   { href: "#features", label: "Features" },
-  { href: "#how-it-works", label: "How it works" },
+  { href: "#workflow", label: "Workflow" },
+  { href: "#why-advora", label: "Why Advora" },
   { href: "#pricing", label: "Pricing" },
   { href: "#faq", label: "FAQ" },
 ];

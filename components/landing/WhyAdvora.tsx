@@ -1,111 +1,204 @@
 "use client";
 
 import { motion } from "framer-motion";
+import { Check, Minus } from "lucide-react";
+import LandingSection from "@/components/landing/LandingSection";
 
-const COMPARISON_ROWS = [
+type CellValue = boolean | "partial" | false;
+
+const TOOLS = ["ChatGPT", "Canva", "Buffer", "Jasper", "Advora"] as const;
+
+const FEATURES: Array<{
+  label: string;
+  values: Record<(typeof TOOLS)[number], CellValue>;
+}> = [
   {
-    label: "Turnaround time",
-    agency: "2–4 weeks per campaign",
-    advora: "Under 30 seconds",
+    label: "All-in-one marketing workspace",
+    values: {
+      ChatGPT: false,
+      Canva: false,
+      Buffer: false,
+      Jasper: false,
+      Advora: true,
+    },
   },
   {
-    label: "Cost per campaign",
-    agency: "$600+ minimum",
-    advora: "Start free, scale as you grow",
+    label: "Competitor ad research",
+    values: {
+      ChatGPT: "partial",
+      Canva: false,
+      Buffer: false,
+      Jasper: "partial",
+      Advora: true,
+    },
   },
   {
-    label: "Revisions",
-    agency: "Limited rounds, extra fees",
-    advora: "Regenerate with your monthly credits",
+    label: "Campaign scheduling & publishing",
+    values: {
+      ChatGPT: false,
+      Canva: false,
+      Buffer: true,
+      Jasper: false,
+      Advora: true,
+    },
   },
   {
-    label: "Output formats",
-    agency: "Manual copy decks",
-    advora: "Hooks, captions, CTAs & UGC",
+    label: "Brand kit & on-brand creative",
+    values: {
+      ChatGPT: false,
+      Canva: "partial",
+      Buffer: false,
+      Jasper: "partial",
+      Advora: true,
+    },
   },
   {
-    label: "Scaling creative",
-    agency: "Hire more people",
-    advora: "Generate at AI speed",
+    label: "Hooks, captions & UGC scripts",
+    values: {
+      ChatGPT: "partial",
+      Canva: false,
+      Buffer: false,
+      Jasper: true,
+      Advora: true,
+    },
   },
   {
-    label: "Performance data",
-    agency: "Post-campaign reports",
-    advora: "Instant iteration loop",
+    label: "Landing page & ad analysis",
+    values: {
+      ChatGPT: "partial",
+      Canva: false,
+      Buffer: false,
+      Jasper: false,
+      Advora: true,
+    },
+  },
+  {
+    label: "Team approval workflow",
+    values: {
+      ChatGPT: false,
+      Canva: false,
+      Buffer: false,
+      Jasper: false,
+      Advora: true,
+    },
+  },
+  {
+    label: "Analytics → optimize loop",
+    values: {
+      ChatGPT: false,
+      Canva: false,
+      Buffer: "partial",
+      Jasper: false,
+      Advora: true,
+    },
   },
 ];
 
+function CellIcon({ value, highlight }: { value: CellValue; highlight?: boolean }) {
+  if (value === true) {
+    return (
+      <motion.span
+        initial={{ scale: 0.6, opacity: 0 }}
+        whileInView={{ scale: 1, opacity: 1 }}
+        viewport={{ once: true }}
+        transition={{ type: "spring", stiffness: 420, damping: 22 }}
+        className={`inline-flex h-7 w-7 items-center justify-center rounded-full ${
+          highlight
+            ? "bg-emerald-400/20 text-emerald-300 ring-1 ring-emerald-400/30"
+            : "bg-white/5 text-emerald-400/80"
+        }`}
+      >
+        <Check className="h-4 w-4" strokeWidth={2.5} />
+      </motion.span>
+    );
+  }
+
+  if (value === "partial") {
+    return (
+      <span className="inline-flex h-7 w-7 items-center justify-center rounded-full bg-amber-400/10 text-[10px] font-semibold text-amber-300">
+        ~
+      </span>
+    );
+  }
+
+  return (
+    <span className="inline-flex h-7 w-7 items-center justify-center rounded-full bg-white/[0.03] text-white/25">
+      <Minus className="h-3.5 w-3.5" />
+    </span>
+  );
+}
+
 export default function WhyAdvora() {
   return (
-    <section id="why-advora" className="relative py-20 md:py-28">
-      <div className="pointer-events-none absolute left-1/2 top-1/2 h-[500px] w-[500px] -translate-x-1/2 -translate-y-1/2 rounded-full bg-violet-600/10 blur-[120px]" />
-
-      <div className="relative mx-auto max-w-6xl px-4 sm:px-6">
-        <div className="mx-auto max-w-2xl text-center">
-          <p className="text-[11px] font-semibold uppercase tracking-[0.2em] text-fuchsia-400">
-            Why Advora
-          </p>
-          <h2 className="mt-3 text-3xl font-semibold tracking-tight text-white md:text-4xl">
-            Traditional workflow vs{" "}
-            <span className="gradient-text">Advora</span>
-          </h2>
-          <p className="mt-4 text-base leading-relaxed text-zinc-400 sm:text-lg">
-            Stop waiting weeks and paying retainers. Ship premium ad creative at
-            the speed of your growth.
-          </p>
-        </div>
-
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          whileInView={{ opacity: 1, y: 0 }}
-          viewport={{ once: true }}
-          transition={{ duration: 0.45 }}
-          className="glass mt-12 overflow-hidden rounded-2xl border border-white/[0.08]"
-        >
-          <div className="grid grid-cols-3 border-b border-white/[0.06] bg-white/[0.02] text-center text-sm font-semibold">
-            <div className="px-4 py-4 text-zinc-500 sm:px-6">Compare</div>
-            <div className="border-x border-white/[0.06] px-4 py-4 text-zinc-400 sm:px-6">
-              Traditional Workflow
-            </div>
-            <div className="bg-gradient-to-br from-violet-500/10 to-cyan-500/10 px-4 py-4 text-white sm:px-6">
-              Advora
-            </div>
+    <LandingSection
+      id="why-advora"
+      eyebrow="Why Advora?"
+      title={
+        <>
+          One platform instead of{" "}
+          <span className="gradient-text">five disconnected tools</span>
+        </>
+      }
+      description="ChatGPT, Canva, Buffer, and Jasper each solve one piece. Advora connects the entire marketing workflow."
+      className="bg-gradient-to-b from-transparent via-violet-950/12 to-transparent"
+    >
+      <motion.div
+        initial={{ opacity: 0, y: 20 }}
+        whileInView={{ opacity: 1, y: 0 }}
+        viewport={{ once: true }}
+        transition={{ duration: 0.5 }}
+        className="overflow-x-auto"
+      >
+        <div className="min-w-[720px] overflow-hidden rounded-2xl border border-white/10 bg-white/[0.02]">
+          <div className="grid grid-cols-6 border-b border-white/10 bg-white/[0.03] text-center text-xs font-semibold uppercase tracking-wider sm:text-sm">
+            <div className="px-4 py-4 text-left text-white/40">Capability</div>
+            {TOOLS.map((tool) => (
+              <div
+                key={tool}
+                className={`border-l border-white/10 px-3 py-4 ${
+                  tool === "Advora"
+                    ? "bg-gradient-to-b from-violet-500/15 to-cyan-500/10 text-white"
+                    : "text-white/55"
+                }`}
+              >
+                {tool}
+              </div>
+            ))}
           </div>
 
-          {COMPARISON_ROWS.map((row, index) => (
-            <div
+          {FEATURES.map((row, rowIndex) => (
+            <motion.div
               key={row.label}
-              className={`grid grid-cols-3 border-b border-white/[0.04] text-sm last:border-b-0 ${
-                index % 2 === 0 ? "bg-transparent" : "bg-white/[0.01]"
+              initial={{ opacity: 0, x: -8 }}
+              whileInView={{ opacity: 1, x: 0 }}
+              viewport={{ once: true }}
+              transition={{ duration: 0.35, delay: rowIndex * 0.04 }}
+              className={`group grid grid-cols-6 border-b border-white/[0.06] text-sm last:border-b-0 transition hover:bg-white/[0.02] ${
+                rowIndex % 2 === 0 ? "" : "bg-white/[0.01]"
               }`}
             >
-              <div className="flex items-center px-4 py-4 font-medium text-zinc-400 sm:px-6">
+              <div className="flex items-center px-4 py-4 font-medium text-white/70">
                 {row.label}
               </div>
-              <div className="flex items-center border-x border-white/[0.04] px-4 py-4 text-zinc-500 sm:px-6">
-                {row.agency}
-              </div>
-              <div className="flex items-center bg-violet-500/[0.04] px-4 py-4 font-medium text-zinc-200 sm:px-6">
-                <svg
-                  className="mr-2 h-4 w-4 shrink-0 text-cyan-400"
-                  fill="none"
-                  viewBox="0 0 24 24"
-                  stroke="currentColor"
-                  aria-hidden
+              {TOOLS.map((tool) => (
+                <div
+                  key={tool}
+                  className={`flex items-center justify-center border-l border-white/[0.06] px-3 py-4 transition ${
+                    tool === "Advora"
+                      ? "bg-violet-500/[0.05] group-hover:bg-violet-500/10"
+                      : ""
+                  }`}
                 >
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    strokeWidth={2}
-                    d="M5 13l4 4L19 7"
+                  <CellIcon
+                    value={row.values[tool]}
+                    highlight={tool === "Advora" && row.values[tool] === true}
                   />
-                </svg>
-                {row.advora}
-              </div>
-            </div>
+                </div>
+              ))}
+            </motion.div>
           ))}
-        </motion.div>
-      </div>
-    </section>
+        </div>
+      </motion.div>
+    </LandingSection>
   );
 }

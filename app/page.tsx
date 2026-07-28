@@ -1,9 +1,12 @@
 import Navbar from "@/components/Navbar";
 import Hero from "@/components/Hero";
+import LandingStats from "@/components/landing/LandingStats";
 import TrustedBrands from "@/components/landing/TrustedBrands";
+import BuiltFor from "@/components/landing/BuiltFor";
 import EverythingAdvora from "@/components/landing/EverythingAdvora";
-import HowItWorks from "@/components/landing/HowItWorks";
 import Workflow from "@/components/landing/Workflow";
+import InteractiveDemo from "@/components/landing/InteractiveDemo";
+import HowItWorks from "@/components/landing/HowItWorks";
 import DashboardPreview from "@/components/landing/DashboardPreview";
 import AiOutputExamples from "@/components/landing/AiOutputExamples";
 import CompetitorShowcase from "@/components/landing/CompetitorShowcase";
@@ -23,16 +26,19 @@ export default function Home() {
       <Navbar />
       <main>
         <Hero />
+        <LandingStats />
         <TrustedBrands />
+        <BuiltFor />
         <EverythingAdvora />
-        <HowItWorks />
         <Workflow />
+        <InteractiveDemo />
+        <WhyAdvora />
+        <HowItWorks />
         <DashboardPreview />
         <AiOutputExamples />
         <CompetitorShowcase />
         <BrandKitShowcase />
         <SocialSchedulerShowcase />
-        <WhyAdvora />
         <IntegrationsWall />
         <Testimonials />
         <LandingPricing />
